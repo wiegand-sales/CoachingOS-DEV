@@ -195,6 +195,7 @@ tr:hover td{background:var(--bg2);}
 <body>
 <div id="stg-banner" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#BA7517;color:#fff;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit">⚠ STAGING · <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#fff;text-decoration:underline">→ Live</a></div><style>#stg-banner~*{margin-top:32px!important}.sidebar{top:32px!important;height:calc(100vh - 32px)!important}</style>
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -1681,62 +1682,129 @@ function renderTab(){
 
 // ── SETTINGS ──
 function renderEinstellungen(){
-  var ma=document.getElementById('mainArea');
-  if(!ma)return;
-  function zielRow(key,label,einheit,step){
+  var ma=document.getElementById('mainArea');if(!ma)return;
+  function zRow(key,label,einheit,step){
     var t=KPI_TARGETS[key];
-    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">'
-      +'<div style="width:130px;font-size:13px;font-weight:500">'+label+'</div>'
-      +'<div style="display:flex;align-items:center;gap:6px">'
-      +'<select id="dir-'+key+'" style="width:60px;font-size:13px;padding:6px 8px">'
+    return '<div style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="width:170px;font-size:13px;font-weight:500">'+label+'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<select id="dir-'+key+'" style="width:64px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">'
       +'<option value="gte"'+(t.dir==='gte'?' selected':'')+'>≥</option>'
       +'<option value="lte"'+(t.dir==='lte'?' selected':'')+'>≤</option>'
       +'</select>'
-      +'<input type="number" id="val-'+key+'" value="'+t.val+'" step="'+(step||1)+'" min="0" max="100" style="width:80px">'
-      +'<span style="font-size:12px;color:var(--text2)">'+einheit+'</span>'
+      +'<input type="number" id="val-'+key+'" value="'+t.val+'" step="'+(step||1)+'" min="0" max="100" style="width:80px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">'
+      +(einheit?'<span style="font-size:12px;color:var(--text2)">'+einheit+'</span>':'')
       +'</div>'
-      +'<div style="font-size:11px;color:var(--text3);margin-left:auto">Aktuell: '+t.dir+' '+t.val+(einheit||'')+'</div>'
+      +'<div style="margin-left:auto;font-size:11px;color:var(--text3)">Aktuell: '+t.dir+' '+t.val+(einheit||'')+'</div>'
       +'</div>';
   }
+
   ma.innerHTML='<div class="topbar"><div class="tb-left">'
     +'<div style="width:40px;height:40px;border-radius:50%;background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:17px"><i class="ti ti-settings"></i></div>'
-    +'<div><div class="tb-name">Einstellungen</div><div class="tb-meta">Globale Konfiguration & Integrationen</div></div>'
+    +'<div><div class="tb-name">Einstellungen</div><div class="tb-meta">Integrationen · Daten · KPI-Konfiguration</div></div>'
     +'</div></div>'
-    +'<div class="content" style="max-width:680px">'
+    +'<div class="content" style="max-width:100%">'
 
-    // KPI Zielwerte
+    // ══ ZEILE 1: Integrationen (volle Breite, 2 Kacheln nebeneinander) ══
+    +'<div class="sec-title" style="margin-bottom:12px">Integrationen</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">'
+
+    // SolidRoad
+    +'<div class="card" style="cursor:pointer" onclick="openModal(\'srModal\')">'
+    +'<div style="display:flex;align-items:center;gap:14px">'
+    +'<div class="set-icon" style="background:var(--purple-bg);color:var(--purple);width:44px;height:44px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0"><i class="ti ti-robot"></i></div>'
+    +'<div style="flex:1"><div style="font-size:14px;font-weight:600">SolidRoad</div><div style="font-size:12px;color:var(--text2);margin-top:2px">KI-gestützte Vertriebssimulationen für dein Team</div></div>'
+    +(settings.srApiKey
+      ?'<span style="background:var(--teal-bg);color:var(--teal);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px">Verbunden</span>'
+      :'<span style="background:var(--bg2);color:var(--text3);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px">Nicht verbunden</span>')
+    +'</div></div>'
+
+    // FTP Sync
+    +'<div class="card">'
+    +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">'
+    +'<div class="set-icon" style="background:var(--teal-bg);color:var(--teal);width:44px;height:44px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0"><i class="ti ti-refresh"></i></div>'
+    +'<div style="flex:1"><div style="font-size:14px;font-weight:600">FTP Datensync</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Performance-Daten automatisch per CSV importieren</div></div>'
+    +'<span style="background:var(--teal-bg);color:var(--teal);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px">Aktiv</span>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<input type="url" id="ftpInput" placeholder="ftp://server.com/performance/" value="'+settings.ftpUrl+'" style="flex:1;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">'
+    +'<button class="btn btn-sm btn-primary" onclick="saveFTP()" style="flex-shrink:0">Speichern</button>'
+    +'</div></div>'
+    +'</div>'
+
+    // ══ ZEILE 2: CSV Import + Backup (volle Breite, 2 Kacheln) ══
+    +'<div class="sec-title" style="margin-bottom:12px">Daten & Backup</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">'
+
+    // CSV Import
+    +'<div class="card">'
+    +'<div class="card-title"><i class="ti ti-file-upload"></i> Performance-Daten importieren</div>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Lade eine CSV-Datei hoch um Leistungsdaten zu aktualisieren. Bestehende Einträge für das gleiche Datum werden überschrieben. Coaching-Daten bleiben unberührt.</p>'
+    +'<div style="background:var(--bg2);border-radius:var(--r-md);padding:10px 12px;margin-bottom:14px">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">CSV-Spalten (in dieser Reihenfolge):</div>'
+    +'<div style="font-family:monospace;font-size:11px;color:var(--text2);line-height:1.8">'
+    +'datum · mitarbeiter_id · gespraeche<br>'
+    +'cr_oem · cr_tw · cr_yes · cr_sy · cr_my<br>'
+    +'opt_pro_stunde · marge'
+    +'</div>'
+    +'<div style="font-size:10px;color:var(--text3);margin-top:4px">Beispiel: 2026-06-23, 1, 24, 62, 18, 21, 14, 9, 2.1, 950</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<label class="btn btn-primary btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i> CSV hochladen<input type="file" accept=".csv" style="display:none" onchange="importCSV(this.files[0])"></label>'
+    +'<button class="btn btn-sm" onclick="downloadCSVVorlage()"><i class="ti ti-download"></i> Vorlage laden</button>'
+    +'</div>'
+    +'<div id="csv-status" style="margin-top:10px;font-size:12px;min-height:18px"></div>'
+    +'</div>'
+
+    // Backup
+    +'<div class="card">'
+    +'<div class="card-title"><i class="ti ti-database"></i> Backup & Wiederherstellung</div>'
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Alle Coaching-Daten werden automatisch im Browser gespeichert. Erstelle Backups vor Dashboard-Updates.</p>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md)">'
+    +'<div><div style="font-size:13px;font-weight:500">Backup exportieren</div><div style="font-size:11px;color:var(--text2)">JSON-Download aller Coaching-Daten</div></div>'
+    +'<button class="btn btn-sm btn-primary" onclick="exportDaten()"><i class="ti ti-download"></i> Download</button>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md)">'
+    +'<div><div style="font-size:13px;font-weight:500">Backup wiederherstellen</div><div style="font-size:11px;color:var(--text2)">JSON-Datei vom vorherigen Export</div></div>'
+    +'<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-file-import"></i> JSON laden<input type="file" accept=".json" style="display:none" onchange="importDaten(this.files[0])"></label>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--amber-bg);border-radius:var(--r-md)">'
+    +'<div><div style="font-size:13px;font-weight:500;color:var(--amber-dark)">Alle Daten zurücksetzen</div><div style="font-size:11px;color:var(--amber-dark)">Löscht gespeicherte Daten, lädt Demodaten</div></div>'
+    +'<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber-dark);border-color:var(--amber)" onclick="lsClear()"><i class="ti ti-trash"></i> Reset</button>'
+    +'</div>'
+    +'</div></div>'
+    +'</div>'
+
+    // ══ ZEILE 3: KPI Zielwerte (volle Breite) ══
     +'<div class="sec-title" style="margin-bottom:12px">KPI-Zielwerte</div>'
     +'<div class="card">'
     +'<div class="card-title"><i class="ti ti-target"></i> Zielwerte & Richtung</div>'
-    +'<p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Lege für jede Kennzahl fest ob ein Wert größer (≥) oder kleiner (≤) als der Zielwert sein soll. Diese Werte gelten als globale Standards – können pro Mitarbeiter überschrieben werden.</p>'
-    +zielRow('crOEM','CR OEM','%',1)
-    +zielRow('crTeilweise','CR TW (Teilweise)','%',1)
-    +zielRow('crSuperYes','CR SY (Super Yes)','%',1)
-    +zielRow('crMegaYes','CR MY (Mega Yes)','%',1)
-    +zielRow('optPerH','Opt./Stunde','',0.1)
-    +'<div style="margin-top:16px">'
-    +'<button class="btn btn-primary btn-sm" style="width:auto" onclick="zieleSpeichern()"><i class="ti ti-check"></i> Zielwerte speichern</button>'
-    +'</div></div>'
-
-    // Integrationen
-    +'<div class="sec-title" style="margin-top:8px;margin-bottom:12px">Integrationen</div>'
-    +'<div class="set-row" style="cursor:pointer" onclick="openModal(\'srModal\')">'
-    +'<div class="set-icon" style="background:var(--purple-bg);color:var(--purple)"><i class="ti ti-robot"></i></div>'
-    +'<div style="flex:1"><div style="font-size:13px;font-weight:500">SolidRoad</div><div style="font-size:12px;color:var(--text2)">KI-gestützte Vertriebssimulationen</div></div>'
-    +(settings.srApiKey?'<span class="connected">Verbunden</span>':'<span class="disconnected">Nicht verbunden</span>')
+    +'<p style="font-size:12px;color:var(--text2);margin-bottom:6px;line-height:1.6">Lege fest ob ein Wert <strong>größer (≥)</strong> oder <strong>kleiner (≤)</strong> als der Zielwert sein soll. Gilt als globaler Standard für alle Mitarbeiter.</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 40px">'
+    +zRow('crOEM','CR OEM','%',1)
+    +zRow('crSuperYes','CR SY (Super Yes)','%',1)
+    +zRow('crTeilweise','CR TW (Teilweise)','%',1)
+    +zRow('crMegaYes','CR MY (Mega Yes)','%',1)
+    +zRow('optPerH','Opt./Stunde','',0.1)
     +'</div>'
-    +'<div class="set-row">'
-    +'<div class="set-icon" style="background:var(--teal-bg);color:var(--teal)"><i class="ti ti-refresh"></i></div>'
-    +'<div style="flex:1"><div style="font-size:13px;font-weight:500">FTP Datensync</div>'
-    +'<div style="font-size:12px;color:var(--text2)">Performance CSV Auto-Import</div>'
-    +'<div style="margin-top:8px"><input type="url" id="ftpInput" placeholder="ftp://server.com/performance/" value="'+settings.ftpUrl+'" style="font-size:12px"></div>'
-    +'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'
-    +'<span class="connected">Aktiv</span>'
-    +'<button class="btn btn-sm btn-primary" onclick="saveFTP()">Speichern</button>'
+    +'<div style="margin-top:16px;display:flex;align-items:center;gap:12px">'
+    +'<button class="btn btn-primary btn-sm" style="width:auto" onclick="zieleSpeichern()"><i class="ti ti-check"></i> Zielwerte speichern</button>'
+    +'<span id="ziele-status" style="font-size:12px;color:var(--teal)"></span>'
     +'</div></div>'
 
-    // Über
-    +'<div class="sec-title" style="margin-top:8px;margin-bottom:12px">Daten &amp; Backup</div>'    +'<div class="card">'    +'<div class="card-title"><i class="ti ti-database"></i> Datenverwaltung</div>'    +'<p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Coaching-Daten werden automatisch im Browser gespeichert. Performance-Daten per CSV importieren.</p>'    +'<div style="display:flex;flex-direction:column;gap:10px">'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md)">'    +'<div><div style="font-size:13px;font-weight:500">Backup exportieren</div><div style="font-size:11px;color:var(--text2)">JSON-Download aller Coaching-Daten</div></div>'    +'<button class="btn btn-sm btn-primary" onclick="exportDaten()"><i class="ti ti-download"></i> Download</button>'    +'</div>'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md)">'    +'<div><div style="font-size:13px;font-weight:500">Performance CSV importieren</div><div style="font-size:11px;color:var(--text2)">Spalten: date, mitarbeiterId, calls, crOEM, crTeilweise, crYes, crSuperYes, crMegaYes, optPerH, margin</div></div>'    +'<label class="btn btn-sm btn-primary" style="cursor:pointer"><i class="ti ti-upload"></i> CSV laden<input type="file" accept=".csv" style="display:none" onchange="importCSV(this.files[0])"></label>'    +'</div>'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md)">'    +'<div><div style="font-size:13px;font-weight:500">Backup wiederherstellen</div><div style="font-size:11px;color:var(--text2)">JSON-Datei vom vorherigen Export laden</div></div>'    +'<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-file-import"></i> JSON laden<input type="file" accept=".json" style="display:none" onchange="importDaten(this.files[0])"></label>'    +'</div>'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--amber-bg);border-radius:var(--r-md)">'    +'<div><div style="font-size:13px;font-weight:500;color:var(--amber-dark)">Alle Daten zurücksetzen</div><div style="font-size:11px;color:var(--amber-dark)">Löscht gespeicherte Daten, lädt Demodaten</div></div>'    +'<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber-dark);border-color:var(--amber)" onclick="lsClear()"><i class="ti ti-trash"></i> Zurücksetzen</button>'    +'</div>'    +'</div></div>'    +'<div class="sec-title" style="margin-top:8px;margin-bottom:12px">Über</div>'    +'<div class="set-row">'    +'<div class="set-icon" style="background:var(--bg2);color:var(--text2)"><i class="ti ti-info-circle"></i></div>'    +'<div><div style="font-size:13px;font-weight:500">SFP Coaching Dashboard</div>'    +'<div style="font-size:12px;color:var(--text2)">Wiegand &amp; Partner · v4.1 · Built for Peter Rode</div></div>'    +'</div>'    +'</div>';
+    // ══ ÜBER ══
+    +'<div style="margin-top:24px;padding:16px 20px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);display:flex;align-items:center;gap:16px">'
+    +'<div style="width:44px;height:44px;border-radius:50%;background:var(--purple-bg);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--purple);flex-shrink:0"><i class="ti ti-chart-dots"></i></div>'
+    +'<div><div style="font-size:14px;font-weight:600">SFP Coaching Dashboard</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-top:2px">Wiegand &amp; Partner · v4.1 · Entwickelt für Peter Rode</div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:3px">localStorage aktiv · GitHub Pages · Single-File HTML</div>'
+    +'</div>'
+    +'<div style="margin-left:auto;text-align:right">'
+    +'<div style="font-size:11px;color:var(--text3)">Staging: wiegand-sales-dev</div>'
+    +'<div style="font-size:11px;color:var(--text3)">Live: wiegand-sales</div>'
+    +'</div></div>'
+    +'</div>';
 }
 
 // ── ACTIONS ──
@@ -2088,6 +2156,7 @@ function zieleSpeichern(){
   });
   CR_GOOD=KPI_TARGETS.crOEM.val;
   renderEinstellungen();
+  var zs=document.getElementById('ziele-status');if(zs){zs.textContent='✓ Gespeichert';setTimeout(function(){zs.textContent='';},3000);}
   var btn=document.querySelector('[onclick="zieleSpeichern()"]');
   if(btn){
     btn.innerHTML='<i class="ti ti-check"></i> Gespeichert!';
