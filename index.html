@@ -328,6 +328,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <script>function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
@@ -1706,6 +1707,37 @@ function renderTab(){
           });
         },120);
       })(showEval,DIMS,CCAT);
+    }
+
+    // ── Coaching-Historie (Sessions) ──
+    html+='<div class="sec-title" style="margin-top:24px;margin-bottom:10px">Coaching-Historie</div>';
+    var sessions=(protocols[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+    if(!sessions.length){
+      html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;text-align:center;color:var(--text3)"><i class="ti ti-calendar-off" style="font-size:24px;display:block;margin-bottom:6px"></i>Noch keine Sessions vorhanden</div>';
+    } else {
+      html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">';
+      html+='<thead><tr style="background:var(--bg2)">';
+      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border)">Datum</th>';
+      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">Typ</th>';
+      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">Bewertung</th>';
+      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">Fokus</th>';
+      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">Notizen</th>';
+      html+="</tr></thead><tbody>';";
+      sessions.forEach(function(s,i){
+        var RM={Teilweise:{c:'var(--amber)',l:'Teilweise'},Yes:{c:'var(--teal)',l:'Yes'},'Super Yes':{c:'var(--purple)',l:'Super Yes'},'Mega Yes':{c:'var(--blue)',l:'Mega Yes'}};
+        var rm=s.rating?RM[s.rating]:null;
+        var rb=rm?'<span style="font-size:11px;font-weight:700;color:'+rm.c+'">'+rm.l+'</span>':'<span style="color:var(--text3)">—</span>';
+        var focus=s.focus||( s.focusAreas?s.focusAreas.join(', '):'—');
+        var notes=s.text||s.notes||'—';
+        html+='<tr style="'+(i%2?'background:var(--bg2)':'')+'">';
+        html+='<td style="padding:8px 12px;font-size:12px;white-space:nowrap;border-bottom:1px solid var(--border)">'+fd(s.date)+'</td>';
+        html+='<td style="padding:8px 12px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);border-left:1px solid var(--border)">'+(s.type||'Session')+'</td>';
+        html+='<td style="padding:8px 12px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">'+rb+'</td>';
+        html+='<td style="padding:8px 12px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);border-left:1px solid var(--border)">'+focus+'</td>';
+        html+='<td style="padding:8px 12px;font-size:11px;color:var(--text2);border-bottom:1px solid var(--border);border-left:1px solid var(--border);word-break:break-word">'+notes+'</td>';
+        html+='</tr>';
+      });
+      html+='</tbody></table></div>';
     }
   }
 
