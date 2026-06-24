@@ -321,6 +321,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <script>function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
@@ -1534,87 +1535,79 @@ function renderTab(){
   // ── COACHING EVAL TAB ──
   if(activeTab==='coaching-eval'){
     var DIMS=[
-      {key:'einwand',   label:'Einwandsbehandlung', cat:'skill'},
-      {key:'bedarf',    label:'Bedarfsanalyse',      cat:'skill'},
-      {key:'produkt',   label:'Produktwissen',       cat:'skill'},
-      {key:'gespraech', label:'Gesprächsführung',    cat:'skill'},
-      {key:'motivation',label:'Motivation',          cat:'will'},
-      {key:'coach',     label:'Coachability',        cat:'will'},
-      {key:'team',      label:'Teamfähigkeit',       cat:'will'},
-      {key:'crOEM',     label:'CR OEM',              cat:'result'},
-      {key:'crTW',      label:'TW',                  cat:'result'},
-      {key:'crSY',      label:'SY',                  cat:'result'},
-      {key:'crMY',      label:'MY',                  cat:'result'},
+      {key:'einwand',   label:'Einwandsb.',   cat:'skill'},
+      {key:'bedarf',    label:'Bedarfsana.',   cat:'skill'},
+      {key:'produkt',   label:'Produktwissen', cat:'skill'},
+      {key:'gespraech', label:'Gesprächsf.',   cat:'skill'},
+      {key:'motivation',label:'Motivation',    cat:'will'},
+      {key:'coach',     label:'Coachability',  cat:'will'},
+      {key:'team',      label:'Teamfähigk.',   cat:'will'},
+      {key:'crOEM',     label:'CR OEM',        cat:'result'},
+      {key:'crTW',      label:'TW',            cat:'result'},
+      {key:'crSY',      label:'SY',            cat:'result'},
+      {key:'crMY',      label:'MY',            cat:'result'},
     ];
     var CCAT={
-      skill: {col:'#534AB7',bg:'rgba(83,74,183,0.12)',l:'Skill'},
-      will:  {col:'#BA7517',bg:'rgba(186,117,23,0.12)',l:'Will'},
-      result:{col:'#085041',bg:'rgba(8,80,65,0.12)',   l:'Result'}
+      skill: {col:'#534AB7',bg:'rgba(83,74,183,0.15)',  l:'Skill'},
+      will:  {col:'#BA7517',bg:'rgba(186,117,23,0.15)', l:'Will'},
+      result:{col:'#085041',bg:'rgba(8,80,65,0.15)',    l:'Result'}
     };
     var evals=(reviews[emp.id]||[]).filter(function(r){return r.einwand!==undefined;})
                 .slice().sort(function(a,b){return b.date.localeCompare(a.date);});
     var showEval=evals[0]||null;
 
-    // ── Layout ──
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">';
 
-    // ── Linke Seite: Chart.js Radar ──
+    // ── Links: Chart ──
     html+='<div>';
     html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
     html+='<div class="sec-title" style="margin:0">Entwicklungsprofil</div>';
     if(evals.length>1){
       html+='<select id="evalSel" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)" onchange="setEvalDate(this.value)">';
-      evals.forEach(function(ev,i){
-        html+='<option value="'+ev.date+'"'+(i===0?' selected':'')+'>'+fd(ev.date)+(i===0?' ★':'')+'</option>';
-      });
+      evals.forEach(function(ev,i){html+='<option value="'+ev.date+'"'+(i===0?' selected':'')+'>'+fd(ev.date)+(i===0?' ★':'')+'</option>';});
       html+='</select>';
     }
     html+='</div>';
-
     html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">';
-    html+='<canvas id="radarChart" style="max-height:320px"></canvas>';
-    // Legende
-    html+='<div style="display:flex;gap:14px;justify-content:center;margin-top:12px;flex-wrap:wrap">';
+    html+='<canvas id="radarChart" height="280"></canvas>';
+    html+='<div style="display:flex;gap:14px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
     ['skill','will','result'].forEach(function(cat){
-      html+='<span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:'+CCAT[cat].col+'">'+
-        '<span style="width:12px;height:12px;border-radius:2px;background:'+CCAT[cat].col+';opacity:0.7;display:inline-block"></span>'+
-        CCAT[cat].l+'</span>';
+      html+='<span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:'+CCAT[cat].col+'">';
+      html+='<span style="width:12px;height:12px;border-radius:2px;background:'+CCAT[cat].col+';opacity:0.8;display:inline-block"></span>';
+      html+=CCAT[cat].l+'</span>';
     });
     html+='</div></div>';
-
-    // Ø Kacheln
     if(showEval){
       html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">';
       ['skill','will','result'].forEach(function(cat){
         var cdims=DIMS.filter(function(d){return d.cat===cat;});
         var avg=(cdims.reduce(function(a,d){return a+(showEval[d.key]||0);},0)/cdims.length).toFixed(1);
-        html+='<div style="background:'+CCAT[cat].bg.replace('0.12','0.2')+';border:1px solid '+CCAT[cat].col+';border-radius:var(--r-lg);padding:10px;text-align:center">'+
-          '<div style="font-size:10px;font-weight:700;color:'+CCAT[cat].col+';margin-bottom:3px">'+CCAT[cat].l.toUpperCase()+'</div>'+
-          '<div style="font-size:26px;font-weight:700;color:'+CCAT[cat].col+'">'+avg+'</div>'+
-          '<div style="font-size:10px;color:'+CCAT[cat].col+';opacity:0.7">von 10</div>'+
-          '</div>';
+        html+='<div style="background:'+CCAT[cat].bg+';border:1px solid '+CCAT[cat].col+';border-radius:var(--r-lg);padding:10px;text-align:center">';
+        html+='<div style="font-size:10px;font-weight:700;color:'+CCAT[cat].col+';margin-bottom:3px">'+CCAT[cat].l.toUpperCase()+'</div>';
+        html+='<div style="font-size:26px;font-weight:700;color:'+CCAT[cat].col+'">'+avg+'</div>';
+        html+='<div style="font-size:10px;color:'+CCAT[cat].col+';opacity:0.7">von 10</div></div>';
       });
       html+='</div>';
     }
     html+='</div>';
 
-    // ── Rechte Seite: Balken-Details ──
+    // ── Rechts: Balken ──
     html+='<div>';
     html+='<div class="sec-title" style="margin-bottom:10px">Aktuelle Bewertung</div>';
     if(showEval){
       html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px">';
       ['skill','will','result'].forEach(function(cat){
         var cdims=DIMS.filter(function(d){return d.cat===cat;});
-        html+='<div style="padding:7px 14px;background:'+CCAT[cat].bg+';border-top:2px solid '+CCAT[cat].col+'">';
+        html+='<div style="padding:6px 14px;background:'+CCAT[cat].bg+';border-top:2px solid '+CCAT[cat].col+'">';
         html+='<span style="font-size:10px;font-weight:700;color:'+CCAT[cat].col+'">'+CCAT[cat].l.toUpperCase()+'</span></div>';
         cdims.forEach(function(d){
           var v=showEval[d.key]||0;
           var bc=v>=7?'var(--teal)':v>=4?CCAT[cat].col:'var(--amber)';
           html+='<div style="padding:7px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px">';
-          html+='<div style="width:150px;font-size:12px;flex-shrink:0">'+d.label+'</div>';
+          html+='<div style="width:140px;font-size:12px;flex-shrink:0">'+d.label+'</div>';
           html+='<div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">';
           html+='<div style="height:100%;width:'+(v*10)+'%;background:'+bc+';border-radius:3px;transition:width .4s"></div></div>';
-          html+='<div style="width:20px;text-align:right;font-size:13px;font-weight:700;color:'+bc+'">'+v+'</div>';
+          html+='<div style="width:22px;text-align:right;font-size:13px;font-weight:700;color:'+bc+'">'+v+'</div>';
           html+='</div>';
         });
       });
@@ -1628,37 +1621,32 @@ function renderTab(){
       html+='<i class="ti ti-chart-radar" style="font-size:28px;display:block;margin-bottom:8px"></i>Noch keine Bewertung</div>';
     }
     html+='<button class="btn btn-primary" style="width:100%" data-eid="'+emp.id+'" onclick="openCoachingEval(parseInt(this.dataset.eid))"><i class="ti ti-clipboard-plus"></i> Mitarbeiterentwicklung bewerten</button>';
-    html+='</div>';
-    html+='</div>'; // end grid
+    html+='</div></div>';
 
     // ── Bewertungs-Historie ──
     html+='<div class="sec-title" style="margin-bottom:10px">Bewertungs-Historie</div>';
     if(!evals.length){
       html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;text-align:center;color:var(--text3)">Noch keine Bewertungen</div>';
     } else {
-      // Feste Spaltenbreiten via colgroup
-      html+='<div class="tbl"><table style="table-layout:fixed;width:100%">';
-      html+='<colgroup>';
-      html+='<col style="width:130px">';  // Datum
-      DIMS.forEach(function(){html+='<col style="width:70px">';});
-      html+='<col style="width:200px">';  // Notiz
-      html+='</colgroup>';
-      html+='<thead><tr>';
-      html+='<th style="text-align:left">Datum</th>';
+      html+='<div class="tbl" style="overflow-x:auto"><table style="table-layout:fixed;width:100%;min-width:900px"><colgroup>';
+      html+='<col style="width:120px">';
+      DIMS.forEach(function(){html+='<col style="width:60px">';});
+      html+='<col style="min-width:160px">';
+      html+='</colgroup><thead><tr>';
+      html+='<th style="text-align:left;padding:8px 10px">Datum</th>';
       ['skill','will','result'].forEach(function(cat){
         DIMS.filter(function(d){return d.cat===cat;}).forEach(function(d){
-          html+='<th style="text-align:center;background:'+CCAT[cat].bg+';color:'+CCAT[cat].col+';font-size:10px;padding:6px 4px">'+d.label+'</th>';
+          html+='<th style="text-align:center;background:'+CCAT[cat].bg+';color:'+CCAT[cat].col+';font-size:10px;padding:6px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+d.label+'">'+d.label+'</th>';
         });
       });
-      html+='<th style="text-align:left">Notiz</th>';
-      html+='</tr></thead><tbody>';
+      html+='<th style="text-align:left;padding:8px 10px">Notiz</th></tr></thead><tbody>';
       evals.forEach(function(ev,i){
-        html+='<tr'+(i===0?' style="font-weight:600;background:var(--bg2)"':'')+'>'; 
-        html+='<td style="white-space:nowrap;padding:8px 10px">'+fd(ev.date)+(i===0?' ★':'')+'</td>';
+        html+='<tr'+(i===0?' style="background:var(--bg2);font-weight:600"':'')+'>'; 
+        html+='<td style="padding:8px 10px;white-space:nowrap">'+fd(ev.date)+(i===0?' ★':'')+'</td>';
         DIMS.forEach(function(d){
           var v=ev[d.key]||0;
           var c=v>=7?'color:var(--teal)':v>=4?'':'color:var(--amber)';
-          html+='<td style="text-align:center;'+c+';padding:8px 4px">'+v+'</td>';
+          html+='<td style="text-align:center;padding:8px 4px;'+c+'">'+v+'</td>';
         });
         html+='<td style="padding:8px 10px;font-size:11px;color:var(--text2);white-space:normal;word-break:break-word">'+(ev.note||'—')+'</td>';
         html+='</tr>';
@@ -1666,70 +1654,88 @@ function renderTab(){
       html+='</tbody></table></div>';
     }
 
-    // ── Chart.js Radar initialisieren ──
+    // ── Chart.js initialisieren ──
     if(showEval){
       (function(ev,dims,ccat){
         setTimeout(function(){
           var canvas=document.getElementById('radarChart');
           if(!canvas)return;
-          // Destroy existing chart if any
-          if(canvas._chartInstance){canvas._chartInstance.destroy();}
+          if(canvas._chartInst){canvas._chartInst.destroy();}
+
           var labels=dims.map(function(d){return d.label;});
-          var data=dims.map(function(d){return ev[d.key]||0;});
-          // Background zones per category
+          var values=dims.map(function(d){return ev[d.key]||0;});
+
+          // Farbe pro Punkt basierend auf Kategorie
+          var ptColors=dims.map(function(d){return ccat[d.cat].col;});
+
+          // Hintergrund-Segmente: für jede Kategorie ein eigenes Dataset mit 0/max
+          // Trick: nur die Punkte der Kategorie bekommen Wert=10, Rest=0
+          // ABER: um die Brüche zu vermeiden, interpolieren wir sanft
+          // Besser: 3 separate Datasets mit jeweils nur den Kategorie-Punkten gefüllt
+          // Wir nutzen NaN für nicht-zugehörige Punkte mit spanGaps:true
+
           var bgDatasets=[];
           ['skill','will','result'].forEach(function(cat){
-            var bgData=dims.map(function(d){return d.cat===cat?10:0;});
+            var bgVals=dims.map(function(d){
+              return d.cat===cat?10:NaN;
+            });
             bgDatasets.push({
-              label:ccat[cat].l,
-              data:bgData,
+              data:bgVals,
               backgroundColor:ccat[cat].bg,
-              borderColor:'transparent',
-              borderWidth:0,
+              borderColor:ccat[cat].col,
+              borderWidth:0.5,
               pointRadius:0,
               fill:true,
-              order:2
+              spanGaps:true,
+              tension:0,
+              order:3
             });
           });
-          // Main data line
+
           var mainDataset={
             label:'Bewertung',
-            data:data,
-            backgroundColor:'rgba(50,50,80,0.08)',
-            borderColor:'rgba(50,50,80,0.8)',
+            data:values,
+            backgroundColor:'rgba(30,30,60,0.07)',
+            borderColor:'rgba(30,30,60,0.75)',
             borderWidth:2.5,
-            pointBackgroundColor:dims.map(function(d){return ccat[d.cat].col;}),
-            pointBorderColor:'white',
+            pointBackgroundColor:ptColors,
+            pointBorderColor:'#fff',
             pointBorderWidth:2,
             pointRadius:5,
             pointHoverRadius:7,
             fill:true,
             order:1
           };
-          var chart=new Chart(canvas,{
+
+          canvas._chartInst=new Chart(canvas,{
             type:'radar',
             data:{labels:labels,datasets:bgDatasets.concat([mainDataset])},
             options:{
               responsive:true,
-              maintainAspectRatio:true,
+              maintainAspectRatio:false,
               scales:{r:{
                 min:0,max:10,
-                ticks:{stepSize:2,font:{size:9},color:'rgba(0,0,0,0.4)',backdropColor:'transparent'},
-                grid:{color:'rgba(0,0,0,0.08)'},
-                angleLines:{color:'rgba(0,0,0,0.1)'},
-                pointLabels:{font:{size:11,weight:'500'},color:'rgba(0,0,0,0.7)'}
+                ticks:{stepSize:2,font:{size:9},color:'rgba(0,0,0,0.35)',backdropColor:'transparent'},
+                grid:{color:'rgba(0,0,0,0.07)',circular:false},
+                angleLines:{color:'rgba(0,0,0,0.08)'},
+                pointLabels:{
+                  font:{size:10.5,weight:'600'},
+                  color:function(ctx){
+                    var d=dims[ctx.index];
+                    return d?ccat[d.cat].col:'#666';
+                  }
+                }
               }},
               plugins:{
                 legend:{display:false},
-                tooltip:{callbacks:{label:function(ctx){
-                  if(ctx.dataset.label==='Bewertung')return ' '+ctx.raw+'/10';
-                  return null;
-                }}}
+                tooltip:{
+                  filter:function(item){return item.datasetIndex===bgDatasets.length;},
+                  callbacks:{label:function(ctx){return ' '+ctx.raw+'/10';}}
+                }
               }
             }
           });
-          canvas._chartInstance=chart;
-        },100);
+        },120);
       })(showEval,DIMS,CCAT);
     }
   }
