@@ -317,6 +317,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <script>function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
@@ -2293,7 +2294,7 @@ function openCoachingEval(empId){
   h+='<div style="margin-bottom:16px"><label style="font-size:12px;font-weight:600;color:var(--text2)">Notiz (optional)</label><br>';
   h+='<textarea id="cev-note" rows="2" style="margin-top:4px;width:100%;box-sizing:border-box;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical" placeholder="Beobachtungen, Schwerpunkte..."></textarea></div>';
   h+='<div style="display:flex;gap:10px">';
-  h+='<button class="btn btn-primary" style="flex:1" id="cevSave">&#10003; Bewertung speichern</button>';
+  h+='<button class="btn btn-primary" style="flex:1" data-eid="'+empId+'" onclick="saveCoachEval(parseInt(this.dataset.eid),document.getElementById(\"cevModal\"))">&#10003; Bewertung speichern</button>';
   h+='<button class="btn" id="cevCancel">Abbrechen</button></div>';
   inner.innerHTML=h;
   el.appendChild(inner);
@@ -2306,7 +2307,7 @@ function openCoachingEval(empId){
       if(sp)sp.textContent=ev.target.value;
     }
   });
-  document.getElementById('cevSave').onclick=function(){saveCoachEval(empId,el);};
+  // save handled via data-eid onclick
 }
 
 function saveCoachEval(empId,modal){
