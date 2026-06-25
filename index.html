@@ -231,6 +231,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -346,6 +347,7 @@ tr:hover td{background:var(--bg2);}
     <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
   </div>
 </div></div>
+
 
 
 
@@ -980,7 +982,9 @@ function renderSidebar(){
   var groups=[];
   positions.forEach(function(pos){
     var members=aktivEmps.filter(function(e){return (e.role||e.team||'Sonstige')===pos;});
-    if(members.length)groups.push({key:pos,label:pos,members:members});
+    var labelMap={'Sales Executive':'SE','Sales Representative':'SR','Valencia':'VLC','Vertriebsmitarbeiter':'SR','Senior Vertriebsmitarbeiter':'SE'};
+    var lbl=labelMap[pos]||pos;
+    if(members.length)groups.push({key:pos,label:lbl,members:members});
   });
   if(onboardingEmps.length)groups.push({key:'OB',label:'Onboarding',members:onboardingEmps});
   var CK='sfp_sb_col';
