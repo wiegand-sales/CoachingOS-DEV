@@ -227,6 +227,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -342,6 +343,7 @@ tr:hover td{background:var(--bg2);}
     <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
   </div>
 </div></div>
+
 
 
 
@@ -2244,11 +2246,11 @@ function renderTab(){
 
       html+='<button class="btn btn-primary btn-sm" style="width:auto;margin-top:4px" onclick="saveEmpZiele()"><i class="ti ti-check"></i> Ziele speichern</button>';
 
-      +'<div class="card" style="border-top:2px solid var(--amber)">'
-      +'<div class="card-title" style="color:var(--amber-dark)"><i class="ti ti-user-off"></i> Mitarbeiter deaktivieren</div>'
-      +'<p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Deaktivierte Mitarbeiter werden in der Sidebar und Teamübersicht ausgeblendet. Alle Daten bleiben vollständig erhalten und können jederzeit wiederhergestellt werden.</p>'
-      +'<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber-dark);border-color:var(--amber)" onclick="mitarbeiterDeaktivieren()"><i class="ti ti-user-off"></i> '+emp.name+' deaktivieren</button>'
-      +'</div>';
+      html+='<div class="card" style="border-top:2px solid var(--amber)">'
+      html+='<div class="card-title" style="color:var(--amber-dark)"><i class="ti ti-user-off"></i> Mitarbeiter deaktivieren</div>'
+      html+='<p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Deaktivierte Mitarbeiter werden in der Sidebar und Teamübersicht ausgeblendet. Alle Daten bleiben vollständig erhalten und können jederzeit wiederhergestellt werden.</p>'
+      html+='<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber-dark);border-color:var(--amber)" onclick="mitarbeiterDeaktivieren()"><i class="ti ti-user-off"></i> '+emp.name+' deaktivieren</button>'
+      html+='</div>';
   }
 
   tc2.innerHTML=html;
