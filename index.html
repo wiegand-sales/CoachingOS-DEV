@@ -234,6 +234,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -349,6 +350,7 @@ tr:hover td{background:var(--bg2);}
     <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
   </div>
 </div></div>
+
 
 
 
@@ -677,7 +679,7 @@ function lsLoad(){
     if(d.employees&&d.employees.length){
       employees=d.employees;
       // Migrate old role names to short codes
-      var _roleMap={'Sales Executive':'SE','Senior Vertriebsmitarbeiter':'SE','Vertriebsmitarbeiter':'SR','Sales Representative':'SR','Valencia':'VLC'};
+      var _roleMap={'Sales Executive':'SE','Senior Vertriebsmitarbeiter':'SE','Vertriebsmitarbeiter':'SR','Sales Representative':'SR','Valencia':'VLC','Sales Department Manager':'SDM','Sales Coach':'SC'};
       employees.forEach(function(e){if(_roleMap[e.role])e.role=_roleMap[e.role];});
     }
     if(d.protocols)protocols=d.protocols;
@@ -781,19 +783,19 @@ var ROLES=['Vertriebsmitarbeiter','Senior Vertriebsmitarbeiter','Sales Coach'];
 var GLOBAL_TARGETS=KPI_TARGETS;
 
 var employees=[
-  {id:1,name:"Johann Breuer",role:"Sales Executive",phase:"Aktiv",color:0,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:2,name:"Dogoro Dembele",role:"Sales Department Manager",phase:"Aktiv",color:1,startDate:'2026-01-01',team:"SDM",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:3,name:"Thorsten M\u00fcller",role:"Sales Executive",phase:"Aktiv",color:2,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:4,name:"Jan Klimmeck",role:"Sales Representative",phase:"Aktiv",color:3,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:5,name:"Bianca Sachon",role:"Sales Representative",phase:"Aktiv",color:4,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:6,name:"Melanie Murad",role:"Sales Executive",phase:"Aktiv",color:5,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:7,name:"Amir Hazaimia",role:"Sales Executive",phase:"Aktiv",color:0,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:8,name:"Jenny Weise",role:"Sales Executive",phase:"Aktiv",color:1,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:9,name:"Niko Nikolic",role:"Sales Representative",phase:"Aktiv",color:2,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:10,name:"Stefan Lang",role:"Sales Representative",phase:"Inaktiv",color:3,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:false,targets:null},
-  {id:11,name:"Kathrin Steininger",role:"Sales Coach",phase:"Aktiv",color:4,startDate:'2026-01-01',team:"SC",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:12,name:"Duygu Sulaiman",role:"Sales Representative",phase:"Aktiv",color:5,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
-  {id:13,name:"Olti Dragusha",role:"Sales Representative",phase:"Aktiv",color:0,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:1,name:"Johann Breuer",role:"SE",phase:"Aktiv",color:0,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:2,name:"Dogoro Dembele",role:"SDM",phase:"Aktiv",color:1,startDate:'2026-01-01',team:"SDM",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:3,name:"Thorsten M\u00fcller",role:"SE",phase:"Aktiv",color:2,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:4,name:"Jan Klimmeck",role:"SR",phase:"Aktiv",color:3,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:5,name:"Bianca Sachon",role:"SR",phase:"Aktiv",color:4,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:6,name:"Melanie Murad",role:"SE",phase:"Aktiv",color:5,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:7,name:"Amir Hazaimia",role:"SE",phase:"Aktiv",color:0,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:8,name:"Jenny Weise",role:"SE",phase:"Aktiv",color:1,startDate:'2026-01-01',team:"SE",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:9,name:"Niko Nikolic",role:"SR",phase:"Aktiv",color:2,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:10,name:"Stefan Lang",role:"SR",phase:"Inaktiv",color:3,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:false,targets:null},
+  {id:11,name:"Kathrin Steininger",role:"SC",phase:"Aktiv",color:4,startDate:'2026-01-01',team:"SC",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:12,name:"Duygu Sulaiman",role:"SR",phase:"Aktiv",color:5,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
+  {id:13,name:"Olti Dragusha",role:"SR",phase:"Aktiv",color:0,startDate:'2026-01-01',team:"SR",contract:'Vollzeit',hours:40,active:true,targets:null},
   {id:14,name:"Rafael Muresan",role:"Sales Representative (Valencia)",phase:"Aktiv",color:1,startDate:'2026-01-01',team:"VLC",contract:'Vollzeit',hours:40,active:true,targets:null},
   {id:15,name:"Julius Kolbeck",role:"Sales Representative (Valencia)",phase:"Aktiv",color:2,startDate:'2026-01-01',team:"VLC",contract:'Vollzeit',hours:40,active:true,targets:null},
   {id:16,name:"Laura Seven",role:"Sales Representative (Valencia)",phase:"Aktiv",color:3,startDate:'2026-01-01',team:"VLC",contract:'Vollzeit',hours:40,active:true,targets:null},
@@ -973,7 +975,7 @@ function renderSidebar(){
   var nc=document.getElementById('nav-coaching');if(nc)nc.classList.toggle('active',view==='coaching');
   if(view==='settings')document.getElementById('nav-settings').classList.add('active');
   var HIDDEN=['SDM','SC'];
-  var visible=employees.filter(function(e){return e.active!==false&&HIDDEN.indexOf(e.team)<0;});
+  var visible=employees.filter(function(e){return e.active!==false&&HIDDEN.indexOf(e.role)<0;});
   // Mitarbeiter in Onboarding-Phase kommen alle in eine Gruppe
   var onboardingEmps=visible.filter(function(e){return e.phase==='Onboarding';});
   var aktivEmps=visible.filter(function(e){return e.phase!=='Onboarding';});
