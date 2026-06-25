@@ -213,6 +213,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -315,6 +316,7 @@ tr:hover td{background:var(--bg2);}
     <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
   </div>
 </div></div>
+
 
 
 
@@ -2083,26 +2085,32 @@ function renderTab(){
     var ROLLEN=['Vertriebsmitarbeiter','Senior Vertriebsmitarbeiter','Sales Coach'];
 
     html+='<div class="card"><div class="card-title"><i class="ti ti-user"></i> Stammdaten</div>'
-      +'<div class="f2">'
+      +'<div class="f2" style="margin-bottom:12px">'
       +'<div><label>Vollständiger Name</label><input type="text" id="es-name" value="'+emp.name+'"></div>'
-      +'<div><label>Position</label><select id="es-role">'+ROLLEN.map(function(ro){return '<option'+(ro===emp.role?' selected':'')+'>'+ro+'</option>';}).join('')+'</select></div>'
+      +'<div><label>Position</label>'
+      +'<select id="es-role" onchange="var cv=this.value;if(cv===\'__new__\'){var nv=prompt(\'Neue Position eingeben:\');if(nv&&nv.trim()){var opt=document.createElement(\'option\');opt.value=nv.trim();opt.text=nv.trim();this.add(opt);this.value=nv.trim();}}" >'
+      +'<option'+(emp.role==='SR'?' selected':'')+'>SR</option>'
+      +'<option'+(emp.role==='SE'?' selected':'')+'>SE</option>'
+      +'<option'+(emp.role==='VLC'?' selected':'')+'>VLC</option>'
+      +'<option'+(emp.role==='SDM'?' selected':'')+'>SDM</option>'
+      +'<option'+(emp.role==='SC'?' selected':'')+'>SC</option>'
+      +'<option value="__new__">+ Neue Position hinzufügen</option>'
+      +'</select></div>'
       +'</div>'
-      +'<div class="f3">'
+      +'<div class="f3" style="margin-bottom:12px">'
       +'<div><label>Phase</label><select id="es-phase">'
       +'<option'+(emp.phase==='Onboarding'?' selected':'')+'>Onboarding</option>'
       +'<option'+(emp.phase==='Aktiv'?' selected':'')+'>Aktiv</option>'
-      +'<option'+(emp.phase==='Entwicklung'?' selected':'')+'>Entwicklung</option>'
       +'</select></div>'
-      +'<div><label>Team</label><select id="es-team">'+teamOpts+'</select></div>'
-      +'<div><label>Standort</label><input type="text" id="es-location" value="'+(emp.location||emp.team||'')+'" placeholder="z.B. Valencia"></div>'
-      +'</div>'
-      +'<div class="f3">'
-      +'<div><label>Startdatum</label><input type="date" id="es-start" value="'+(emp.startDate||'')+'"></div>'
       +'<div><label>Anstellung</label><select id="es-contract">'
       +'<option value="Vollzeit"'+(emp.contract==='Vollzeit'||emp.contract==='full'?' selected':'')+'>Vollzeit</option>'
       +'<option value="Teilzeit"'+(emp.contract==='Teilzeit'||emp.contract==='part'?' selected':'')+'>Teilzeit</option>'
       +'</select></div>'
       +'<div><label>Stunden / Woche</label><input type="number" id="es-hours" value="'+(emp.hours||40)+'" min="1" max="60"></div>'
+      +'</div>'
+      +'<div class="f2" style="margin-bottom:12px">'
+      +'<div><label>Vertragsbeginn</label><input type="date" id="es-start" value="'+(emp.startDate||'')+'"></div>'
+      +'<div><label>Vertragsende</label><input type="date" id="es-end" value="'+(emp.endDate||'')+'"></div>'
       +'</div>'
       +'<div style="margin-bottom:16px"><label>Avatar-Farbe</label><div style="margin-top:8px">'+swatches+'</div></div>'
       +'<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveEmpEinstellungen()"><i class="ti ti-check"></i> Änderungen speichern</button>'
@@ -2780,6 +2788,7 @@ function saveEmpEinstellungen(){
   var locEl=document.getElementById('es-location');
   if(locEl)emp.location=locEl.value.trim()||emp.team;
   emp.startDate=document.getElementById('es-start').value;
+  emp.endDate=document.getElementById('es-end').value||null;
   emp.contract=document.getElementById('es-contract').value;
   emp.hours=parseInt(document.getElementById('es-hours').value)||40;
   renderSidebar();renderEmpDetail();
