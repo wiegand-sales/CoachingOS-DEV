@@ -226,6 +226,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -341,6 +342,7 @@ tr:hover td{background:var(--bg2);}
     <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
   </div>
 </div></div>
+
 
 
 
@@ -2904,6 +2906,7 @@ function saveEmpZiele(){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
   if(!emp)return;
   if(!emp.targets)emp.targets={};
+  // Kern-KPIs
   emp.targets.crOEM=parseFloat(document.getElementById('es-crOEM').value)||55;
   emp.targets.crOEMDir=document.getElementById('es-d-crOEM').value;
   emp.targets.crTW=parseFloat(document.getElementById('es-crTW').value)||25;
@@ -2916,39 +2919,18 @@ function saveEmpZiele(){
   emp.targets.optPerHDir=document.getElementById('es-d-opt').value;
   emp.targets.optPerDay=parseFloat(document.getElementById('es-optDay').value)||16;
   emp.targets.optPerDayDir=document.getElementById('es-d-optDay').value;
-  ['crYes','aktiv','convOEM','optGes','marge'].forEach(function(id){
-    var el=document.getElementById('es-'+id);
-    var del=document.getElementById('es-d-'+id);
-    if(!el||!el.value)return;
-    var keyMap={crYes:'crYes',aktiv:'aktivitaeten',convOEM:'convOEM',optGes:'optGesamt',marge:'margeGesamt'};
-    var dirMap={crYes:'crYesDir',aktiv:'aktivDir',convOEM:'convOEMDir',optGes:'optGesamtDir',marge:'margeDir'};
-    emp.targets[keyMap[id]]=parseFloat(el.value);
-    if(del)emp.targets[dirMap[id]]=del.value;
-  });
-  var extraKPIMap=[
-    {id:'crYes',rk:'crYes',dk:'crYesDir'},
-    {id:'aktiv',rk:'aktivitaeten',dk:'aktivDir'},
-    {id:'convOEM',rk:'convOEM',dk:'convOEMDir'},
-    {id:'optGes',rk:'optGesamt',dk:'optGesamtDir'},
-    {id:'marge',rk:'margeGesamt',dk:'margeDir'},
-  ];
-  extraKPIMap.forEach(function(f){
+  // Weitere Zielwerte
+  [
+    {id:'crYes',  rk:'crYes',       dk:'crYesDir'},
+    {id:'aktiv',  rk:'aktivitaeten',dk:'aktivDir'},
+    {id:'convOEM',rk:'convOEM',     dk:'convOEMDir'},
+    {id:'optGes', rk:'optGesamt',   dk:'optGesamtDir'},
+    {id:'marge',  rk:'margeGesamt', dk:'margeDir'}
+  ].forEach(function(f){
     var el=document.getElementById('es-'+f.id);
     var dl=document.getElementById('es-d-'+f.id);
     if(el&&el.value!=='')emp.targets[f.rk]=parseFloat(el.value)||0;
-    if(dl)emp.targets[f.dk]=dl.value;
-  });
-  var _ekm=[
-    {id:'crYes',rk:'crYes',dk:'crYesDir'},
-    {id:'aktiv',rk:'aktivitaeten',dk:'aktivDir'},
-    {id:'convOEM',rk:'convOEM',dk:'convOEMDir'},
-    {id:'optGes',rk:'optGesamt',dk:'optGesamtDir'},
-    {id:'marge',rk:'margeGesamt',dk:'margeDir'}
-  ];
-  _ekm.forEach(function(f){
-    var el=document.getElementById('es-'+f.id);
-    var dl=document.getElementById('es-d-'+f.id);
-    if(el&&el.value!=='')emp.targets[f.rk]=parseFloat(el.value)||0;
+    else delete emp.targets[f.rk];
     if(dl)emp.targets[f.dk]=dl.value;
   });
   lsSave();
