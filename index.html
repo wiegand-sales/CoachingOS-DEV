@@ -221,6 +221,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -336,6 +337,7 @@ tr:hover td{background:var(--bg2);}
     <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
   </div>
 </div></div>
+
 
 
 
@@ -915,15 +917,17 @@ function activeEmployees(){
 }
 
 function empTargets(emp){
-  var g=GLOBAL_TARGETS||KPI_TARGETS;
+  var g=KPI_TARGETS||{};
   var t=(emp&&emp.targets)||{};
+  function val(key,fallback){return t[key]!=null?t[key]:((g[key]&&g[key].val!=null)?g[key].val:fallback);}
+  function dir(dirKey,valKey,fallback){return t[dirKey]||((g[valKey]&&g[valKey].dir)?g[valKey].dir:fallback);}
   return {
-    crOEM:      t.crOEM      != null ? t.crOEM      : (g.crOEM?g.crOEM.val:55),
-    crTW:       t.crTW       != null ? t.crTW       : (g.crTeilweise?g.crTeilweise.val:25),
-    crSuperYes: t.crSuperYes != null ? t.crSuperYes : (g.crSuperYes?g.crSuperYes.val:12),
-    crMegaYes:  t.crMegaYes  != null ? t.crMegaYes  : (g.crMegaYes?g.crMegaYes.val:8),
-    optPerH:    t.optPerH    != null ? t.optPerH    : (g.optPerH?g.optPerH.val:2.0),
-    optPerDay:  t.optPerDay  != null ? t.optPerDay  : 16
+    crOEM:      {val:val('crOEM',55),          dir:dir('crOEMDir','crOEM','gte')},
+    crTeilweise:{val:val('crTW',25),            dir:dir('crTWDir','crTeilweise','lte')},
+    crSuperYes: {val:val('crSuperYes',12),      dir:dir('crSYDir','crSuperYes','gte')},
+    crMegaYes:  {val:val('crMegaYes',8),        dir:dir('crMYDir','crMegaYes','gte')},
+    optPerH:    {val:val('optPerH',2.0),        dir:dir('optPerHDir','optPerH','gte')},
+    optPerDay:  {val:val('optPerDay',16),       dir:dir('optPerDayDir','optPerDay','gte')}
   };
 }
 
