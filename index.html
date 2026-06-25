@@ -227,6 +227,7 @@ tr:hover td{background:var(--bg2);}
 
 
 
+
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -342,6 +343,7 @@ tr:hover td{background:var(--bg2);}
     <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
   </div>
 </div></div>
+
 
 
 
@@ -2198,6 +2200,33 @@ function renderTab(){
         if(f.unit)html+='<span style="font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0">'+f.unit+'</span>';
         html+='</div></div>';
       });
+      // ── Weitere Zielwerte ──
+      html+='<div style="margin-top:12px">';
+      html+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border)">Weitere Zielwerte (Performance Trend)</div>';
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+      var extraKPIs=[
+        {id:'crYes',  dId:'crYesDir',    lbl:'CR Yes %',        rk:'crYes',       etk:'crYes',       unit:'%',  step:1,  max:100},
+        {id:'aktiv',  dId:'aktivDir',    lbl:'Aktivitäten/Tag', rk:'aktivitaeten',etk:'aktivitaeten',unit:'',   step:1,  max:9999},
+        {id:'convOEM',dId:'convOEMDir',  lbl:'Conv. OEM/Tag',   rk:'convOEM',     etk:'convOEM',     unit:'',   step:1,  max:9999},
+        {id:'optGes', dId:'optGesamtDir',lbl:'Opt. Gesamt/Tag', rk:'optGesamt',   etk:'optGesamt',   unit:'',   step:1,  max:9999},
+        {id:'marge',  dId:'margeDir',    lbl:'Marge Ziel €',    rk:'margeGesamt', etk:'margeGesamt', unit:'€',  step:10, max:999999},
+      ];
+      extraKPIs.forEach(function(f){
+        var fv=_raw[f.rk]!=null?_raw[f.rk]:(_et[f.etk]&&_et[f.etk].val!=null?_et[f.etk].val:'');
+        var fdir=_raw[f.dId]||(_et[f.etk]?_et[f.etk].dir:'gte');
+        html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px">';
+        html+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">'+f.lbl+'</div>';
+        html+='<div style="display:flex;align-items:center;gap:8px">';
+        html+='<select id="es-d-'+f.id+'" style="width:80px;flex-shrink:0;padding:7px 8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:12px;font-weight:600">';
+        html+='<option value="gte"'+(fdir==='gte'?' selected':'')+'>mind.</option>';
+        html+='<option value="lte"'+(fdir==='lte'?' selected':'')+'>max.</option>';
+        html+='</select>';
+        html+='<input type="number" id="es-'+f.id+'" value="'+fv+'" step="'+f.step+'" min="0" placeholder="—" style="flex:1;min-width:0;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:15px;font-weight:700;text-align:center">';
+        if(f.unit)html+='<span style="font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0">'+f.unit+'</span>';
+        html+='</div></div>';
+      });
+      html+='</div></div>';
+
       html+='</div></div>';
       +'<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveEmpEinstellungen()"><i class="ti ti-check"></i> Änderungen speichern</button>'
       +'</div>'
@@ -3116,33 +3145,7 @@ function zieleSpeichern(){
       btn.style.background='';
     },2000);
   }
-}      // ── Weitere Zielwerte ──
-      html+='<div style="margin-top:12px">';
-      html+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border)">Weitere Zielwerte (Performance Trend)</div>';
-      html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
-      var extraKPIs=[
-        {id:'crYes',  dId:'crYesDir',    lbl:'CR Yes %',        rk:'crYes',       etk:'crYes',       unit:'%',  step:1,  max:100},
-        {id:'aktiv',  dId:'aktivDir',    lbl:'Aktivitäten/Tag', rk:'aktivitaeten',etk:'aktivitaeten',unit:'',   step:1,  max:9999},
-        {id:'convOEM',dId:'convOEMDir',  lbl:'Conv. OEM/Tag',   rk:'convOEM',     etk:'convOEM',     unit:'',   step:1,  max:9999},
-        {id:'optGes', dId:'optGesamtDir',lbl:'Opt. Gesamt/Tag', rk:'optGesamt',   etk:'optGesamt',   unit:'',   step:1,  max:9999},
-        {id:'marge',  dId:'margeDir',    lbl:'Marge Ziel €',    rk:'margeGesamt', etk:'margeGesamt', unit:'€',  step:10, max:999999},
-      ];
-      extraKPIs.forEach(function(f){
-        var fv=_raw[f.rk]!=null?_raw[f.rk]:(_et[f.etk]&&_et[f.etk].val!=null?_et[f.etk].val:'');
-        var fdir=_raw[f.dId]||(_et[f.etk]?_et[f.etk].dir:'gte');
-        html+='<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px">';
-        html+='<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px">'+f.lbl+'</div>';
-        html+='<div style="display:flex;align-items:center;gap:8px">';
-        html+='<select id="es-d-'+f.id+'" style="width:80px;flex-shrink:0;padding:7px 8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:12px;font-weight:600">';
-        html+='<option value="gte"'+(fdir==='gte'?' selected':'')+'>mind.</option>';
-        html+='<option value="lte"'+(fdir==='lte'?' selected':'')+'>max.</option>';
-        html+='</select>';
-        html+='<input type="number" id="es-'+f.id+'" value="'+fv+'" step="'+f.step+'" min="0" placeholder="—" style="flex:1;min-width:0;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:15px;font-weight:700;text-align:center">';
-        if(f.unit)html+='<span style="font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0">'+f.unit+'</span>';
-        html+='</div></div>';
-      });
-      html+='</div></div>';
-
+}
 </script>
 </body>
 </html>
