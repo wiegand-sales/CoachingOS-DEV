@@ -639,10 +639,8 @@ tr:hover td{background:var(--bg2);}
   ma.innerHTML=h;
 
   // ── Team Performance Trend Chart.js ──
-  setTimeout(function(){
-    var canvas=document.getElementById('teamPerfChart');
-    if(!canvas)return;
-    if(canvas._ci){canvas._ci.destroy();}
+  // Verwendet getPerf() genau wie der Employee-Chart
+  (function(){
     var mMap={
       crOEM:      {f:'crOEM',      l:'CR OEM %', c:'#BA7517'},
       crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#888780'},
@@ -656,34 +654,25 @@ tr:hover td{background:var(--bg2);}
     var m=mMap[teamPerfMetric]||mMap.crOEM;
     var days=teamRange||7;
     var activeList=employees.filter(function(e){return e.active!==false;});
-    // Collect all dates that exist in performance data, sorted
-    var dateSet={};
+    // Collect all per-employee data rows in range, then group by date
+    var allRows=[];
     activeList.forEach(function(e){
-      (performance[e.id]||[]).forEach(function(p){dateSet[p.date]=true;});
+      var rows=getPerf(e.id,days);
+      rows.forEach(function(row){allRows.push(row);});
     });
-    var allDates=Object.keys(dateSet).sort();
-    // Take last N dates based on days range
-    var dates=allDates.slice(-days);
-    if(!dates.length){
-      canvas.style.display='none';
-      var msg=document.createElement('div');
-      msg.style.cssText='text-align:center;padding:40px;color:var(--text3);font-size:13px';
-      msg.textContent='Noch keine Performance-Daten vorhanden';
-      canvas.parentNode.insertBefore(msg,canvas);
-      return;
-    }
-    canvas.style.display='';
-    // Average per date across all employees
+    if(!allRows.length){return;}
+    // Group by date, compute average
+    var byDate={};
+    allRows.forEach(function(row){
+      if(!byDate[row.date])byDate[row.date]=[];
+      byDate[row.date].push(row[m.f]||0);
+    });
+    var dates=Object.keys(byDate).sort();
     var vals=dates.map(function(d){
-      var dayVals=[];
-      activeList.forEach(function(e){
-        var row=(performance[e.id]||[]).find(function(p){return p.date===d;});
-        if(row&&row[m.f]!==undefined&&row[m.f]!==null)dayVals.push(row[m.f]);
-      });
-      return dayVals.length?+(dayVals.reduce(function(a,b){return a+b;},0)/dayVals.length).toFixed(1):null;
+      var arr=byDate[d];
+      return +(arr.reduce(function(a,b){return a+b;},0)/arr.length).toFixed(1);
     });
     var labels=dates.map(function(d){return fd(d);});
-    // Target line from KPI_TARGETS
     var tKeys={crOEM:'crOEM',crTeilweise:'crTeilweise',crYes:'crYes',crSuperYes:'crSuperYes',crMegaYes:'crMegaYes'};
     var tk=tKeys[teamPerfMetric];
     var target=tk&&KPI_TARGETS[tk]?KPI_TARGETS[tk].val:null;
@@ -718,26 +707,25 @@ tr:hover td{background:var(--bg2);}
         order:2
       });
     }
-    canvas._ci=new Chart(canvas,{
-      type:'line',
-      data:{labels:labels,datasets:datasets},
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        plugins:{
-          legend:{
-            display:true,
-            position:'top',
-            labels:{font:{size:11},boxWidth:20,padding:12}
+    setTimeout(function(){
+      var canvas=document.getElementById('teamPerfChart');
+      if(!canvas)return;
+      if(canvas._ci){canvas._ci.destroy();}
+      canvas._ci=new Chart(canvas,{
+        type:'line',
+        data:{labels:labels,datasets:datasets},
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:20,padding:12}}},
+          scales:{
+            x:{ticks:{font:{size:11},maxTicksLimit:12},grid:{display:false}},
+            y:{min:yS.min,max:yS.max,ticks:{font:{size:11},stepSize:yS.step},grid:{color:'rgba(0,0,0,0.05)'}}
           }
-        },
-        scales:{
-          x:{ticks:{font:{size:11},maxTicksLimit:12},grid:{display:false}},
-          y:{min:yS.min,max:yS.max,ticks:{font:{size:11},stepSize:yS.step},grid:{color:'rgba(0,0,0,0.05)'}}
         }
-      }
-    });
-  },100);
+      });
+    },80);
+  })();
 }
 
 // ══ LOCALSTORAGE ══
