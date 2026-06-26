@@ -1528,7 +1528,7 @@ function renderEmpDetail(){
     +'<div><div class="tb-name">'+emp.name+'</div><div class="tb-meta">'+emp.role+' · '+emp.phase+(emp.startDate?' · Start '+fd(emp.startDate):'')+' · '+p.length+' Session'+(p.length!==1?'s':'')+'</div></div>'
     +'</div><div style="display:flex;gap:8px"><button class="btn" onclick="window.print()"><i class="ti ti-printer"></i> Print</button></div></div>'
     +'<div class="tab-bar" id="empTabBar">'
-    +'<div class="tab" data-tab="performance" onclick="switchTab(\'performance\')">Performance</div>'
+    +'<div class="tab" data-tab="performance" onclick="switchTab(\'performance\')">Sales Performance</div>'
     +'<div class="tab" data-tab="coaching-eval" onclick="switchTab(\'coaching-eval\')">Coaching</div>'
     +'<div class="tab" data-tab="session" onclick="switchTab(\'session\')">Session</div>'
     +'<div class="tab" data-tab="tasks" onclick="switchTab(\'tasks\')" id="tasksTabBtn">Tasks'+(tc>0?' <span style="background:var(--purple);color:#fff;border-radius:20px;font-size:10px;font-weight:600;padding:1px 6px">'+tc+'</span>':'')+'</div>'
