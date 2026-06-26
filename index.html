@@ -198,6 +198,7 @@ tr:hover td{background:var(--bg2);}
 .sb-group-body{overflow:hidden;transition:max-height .25s ease;}</style>
 </head>
 <body>
+<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px">🚧 DEV / STAGING — <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#000;text-decoration:underline">→ Live</a></div>
 <div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px;letter-spacing:0.5px">
   🚧 DEV / STAGING — Keine Produktivumgebung — <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#000;text-decoration:underline">→ Live</a>
 </div>
@@ -1529,6 +1530,7 @@ function renderEmpDetail(){
     +'</div><div style="display:flex;gap:8px"><button class="btn" onclick="window.print()"><i class="ti ti-printer"></i> Print</button></div></div>'
     +'<div class="tab-bar" id="empTabBar">'
     +'<div class="tab" data-tab="performance" onclick="switchTab(\'performance\')">Sales Performance</div>'
+    +'<div class="tab" data-tab="call-performance" onclick="switchTab(\'call-performance\')">Call Performance</div>'
     +'<div class="tab" data-tab="coaching-eval" onclick="switchTab(\'coaching-eval\')">Coaching</div>'
     +'<div class="tab" data-tab="session" onclick="switchTab(\'session\')">Session</div>'
     +'<div class="tab" data-tab="tasks" onclick="switchTab(\'tasks\')" id="tasksTabBtn">Tasks'+(tc>0?' <span style="background:var(--purple);color:#fff;border-radius:20px;font-size:10px;font-weight:600;padding:1px 6px">'+tc+'</span>':'')+'</div>'
