@@ -642,44 +642,50 @@ tr:hover td{background:var(--bg2);}
   setTimeout(function(){
     var canvas=document.getElementById('teamPerfChart');
     if(!canvas)return;
-    if(window._teamChart){window._teamChart.destroy();window._teamChart=null;}
+    if(canvas._ci){canvas._ci.destroy();}
     var mMap={
-      crOEM:{f:'crOEM',l:'CR OEM %',c:'#BA7517'},
-      crTeilweise:{f:'crTeilweise',l:'CR TW %',c:'#888780'},
-      crYes:{f:'crYes',l:'CR Yes %',c:'#639922'},
-      crSuperYes:{f:'crSuperYes',l:'CR SY %',c:'#534AB7'},
-      crMegaYes:{f:'crMegaYes',l:'CR MY %',c:'#1D9E75'},
+      crOEM:      {f:'crOEM',      l:'CR OEM %', c:'#BA7517'},
+      crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#888780'},
+      crYes:      {f:'crYes',      l:'CR Yes %', c:'#639922'},
+      crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#534AB7'},
+      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#1D9E75'},
       aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#378ADD'},
-      convOEM:{f:'convOEM',l:'Conv. OEM',c:'#7C6FF7'},
-      margeGesamt:{f:'margeGesamt',l:'Marge €',c:'#0C447C'}
+      convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#7C6FF7'},
+      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#0C447C'}
     };
     var m=mMap[teamPerfMetric]||mMap.crOEM;
     var days=teamRange||7;
-    // Collect all dates in range from all employees
-    var cutDate=new Date();cutDate.setDate(cutDate.getDate()-days);
-    var cutStr=cutDate.toISOString().slice(0,10);
-    var dateSet={};
     var activeList=employees.filter(function(e){return e.active!==false;});
+    // Collect all dates that exist in performance data, sorted
+    var dateSet={};
     activeList.forEach(function(e){
-      (performance[e.id]||[]).forEach(function(p){
-        if(p.date>=cutStr)dateSet[p.date]=true;
-      });
+      (performance[e.id]||[]).forEach(function(p){dateSet[p.date]=true;});
     });
-    var dates=Object.keys(dateSet).sort();
-    if(!dates.length){return;}
-    // Average per day across all employees
+    var allDates=Object.keys(dateSet).sort();
+    // Take last N dates based on days range
+    var dates=allDates.slice(-days);
+    if(!dates.length){
+      canvas.style.display='none';
+      var msg=document.createElement('div');
+      msg.style.cssText='text-align:center;padding:40px;color:var(--text3);font-size:13px';
+      msg.textContent='Noch keine Performance-Daten vorhanden';
+      canvas.parentNode.insertBefore(msg,canvas);
+      return;
+    }
+    canvas.style.display='';
+    // Average per date across all employees
     var vals=dates.map(function(d){
       var dayVals=[];
       activeList.forEach(function(e){
         var row=(performance[e.id]||[]).find(function(p){return p.date===d;});
-        if(row&&(row[m.f]||row[m.f]===0))dayVals.push(row[m.f]);
+        if(row&&row[m.f]!==undefined&&row[m.f]!==null)dayVals.push(row[m.f]);
       });
       return dayVals.length?+(dayVals.reduce(function(a,b){return a+b;},0)/dayVals.length).toFixed(1):null;
     });
     var labels=dates.map(function(d){return fd(d);});
-    // Target from KPI_TARGETS (general settings)
-    var tMap={crOEM:'crOEM',crTeilweise:'crTeilweise',crYes:'crYes',crSuperYes:'crSuperYes',crMegaYes:'crMegaYes'};
-    var tk=tMap[teamPerfMetric];
+    // Target line from KPI_TARGETS
+    var tKeys={crOEM:'crOEM',crTeilweise:'crTeilweise',crYes:'crYes',crSuperYes:'crSuperYes',crMegaYes:'crMegaYes'};
+    var tk=tKeys[teamPerfMetric];
     var target=tk&&KPI_TARGETS[tk]?KPI_TARGETS[tk].val:null;
     var yScales={
       crOEM:{min:0,max:100,step:20},crTeilweise:{min:0,max:100,step:20},
@@ -689,31 +695,48 @@ tr:hover td{background:var(--bg2);}
     };
     var yS=yScales[teamPerfMetric]||{min:0,max:100,step:20};
     var datasets=[{
-      label:m.l,data:vals,borderColor:m.c,backgroundColor:m.c+'22',
-      fill:true,tension:0.35,pointRadius:days<=7?4:2,
-      pointBackgroundColor:m.c,borderWidth:2,order:1
+      label:m.l,
+      data:vals,
+      borderColor:m.c,
+      backgroundColor:m.c+'22',
+      fill:true,
+      tension:0.35,
+      pointRadius:dates.length<=10?4:2,
+      pointBackgroundColor:m.c,
+      borderWidth:2,
+      order:1
     }];
     if(target!==null){
       datasets.push({
         label:'Ziel ('+target+')',
         data:dates.map(function(){return target;}),
-        borderColor:'#E24B4A',borderDash:[4,3],borderWidth:1.5,
-        pointRadius:0,fill:false,order:2
+        borderColor:'#E24B4A',
+        borderDash:[5,4],
+        borderWidth:2,
+        pointRadius:0,
+        fill:false,
+        order:2
       });
     }
-    window._teamChart=new Chart(canvas,{
+    canvas._ci=new Chart(canvas,{
       type:'line',
       data:{labels:labels,datasets:datasets},
       options:{
         responsive:true,
-        plugins:{legend:{display:target!==null,position:'top',labels:{font:{size:11},boxWidth:20,padding:12}}},
+        plugins:{
+          legend:{
+            display:true,
+            position:'top',
+            labels:{font:{size:11},boxWidth:20,padding:12}
+          }
+        },
         scales:{
-          x:{ticks:{font:{size:11},maxTicksLimit:10},grid:{display:false}},
+          x:{ticks:{font:{size:11},maxTicksLimit:12},grid:{display:false}},
           y:{min:yS.min,max:yS.max,ticks:{font:{size:11},stepSize:yS.step},grid:{color:'rgba(0,0,0,0.05)'}}
         }
       }
     });
-  },50);
+  },100);
 }
 
 // ══ LOCALSTORAGE ══
