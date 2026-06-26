@@ -723,6 +723,7 @@ tr:hover td{background:var(--bg2);}
       data:{labels:labels,datasets:datasets},
       options:{
         responsive:true,
+        maintainAspectRatio:false,
         plugins:{
           legend:{
             display:true,
@@ -1558,7 +1559,7 @@ function renderTeam(){
       TMETRICS.forEach(function(it){
         s+='<button class="'+(teamPerfMetric===it.k?'active':'')+'" data-m="'+it.k+'" onclick="setTeamMetric(this.dataset.m)">'+it.l+'</button>';
       });
-      s+='</div></div><canvas id="teamPerfChart" height="80"></canvas></div>';
+      s+='</div></div><div style="position:relative;height:160px"><canvas id="teamPerfChart"></canvas></div></div>';
       return s;
     })()
     // Alert Banner
