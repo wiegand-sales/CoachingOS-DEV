@@ -640,7 +640,7 @@ tr:hover td{background:var(--bg2);}
   ma.innerHTML=h;
 
   // ── Team Performance Trend Chart.js ──
-  // allP ist bereits in renderTeam berechnet — direkt nutzen
+  window._teamChartData=null; // reset
   (function(allRows,metric,days,kpiTargets){
     var mMap={
       crOEM:      {f:'crOEM',      l:'CR OEM %', c:'#BA7517'},
@@ -692,26 +692,29 @@ tr:hover td{background:var(--bg2);}
         pointRadius:0,fill:false,order:2
       });
     }
-    // setTimeout nötig: Canvas braucht Browser-Layout nach innerHTML-Injection
-    setTimeout(function(){
-      var canvas=document.getElementById('teamPerfChart');
-      if(!canvas){return;}
-      if(canvas._ci){try{canvas._ci.destroy();}catch(e){}}
-      canvas._ci=new Chart(canvas,{
-        type:'line',
-        data:{labels:labels,datasets:datasets},
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:20,padding:12}}},
-          scales:{
-            x:{ticks:{font:{size:11},maxTicksLimit:12},grid:{display:false}},
-            y:{min:yS.min,max:yS.max,ticks:{font:{size:11},stepSize:yS.step},grid:{color:'rgba(0,0,0,0.05)'}}
-          }
-        }
-      });
-    },50);
+    window._teamChartData={labels:labels,datasets:datasets,yS:yS};
   })(allP, teamPerfMetric, teamRange||7, KPI_TARGETS);
+
+  setTimeout(function(){
+    if(!window._teamChartData)return;
+    var d=window._teamChartData;
+    var canvas=document.getElementById('teamPerfChart');
+    if(!canvas)return;
+    if(canvas._ci){try{canvas._ci.destroy();}catch(e){}}
+    canvas._ci=new Chart(canvas,{
+      type:'line',
+      data:{labels:d.labels,datasets:d.datasets},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:20,padding:12}}},
+        scales:{
+          x:{ticks:{font:{size:11},maxTicksLimit:12},grid:{display:false}},
+          y:{min:d.yS.min,max:d.yS.max,ticks:{font:{size:11},stepSize:d.yS.step},grid:{color:'rgba(0,0,0,0.05)'}}
+        }
+      }
+    });
+  },150);
 }
 
 // ══ LOCALSTORAGE ══
