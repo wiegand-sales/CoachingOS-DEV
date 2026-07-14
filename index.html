@@ -3225,6 +3225,17 @@ function parsePercent(v){
   if(n>0&&n<=1)n=n*100;   // 0,45 -> 45 (Bruchzahl-Eingabe erkannt)
   return n;
 }
+function parseDateDE(v){
+  if(!v)return v;
+  v=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;   // schon ISO
+  var m=v.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);   // TT.MM.JJJJ oder TT/MM/JJJJ
+  if(m){
+    var d=('0'+m[1]).slice(-2),mo=('0'+m[2]).slice(-2),y=m[3];
+    return y+'-'+mo+'-'+d;
+  }
+  return v;
+}
 
 function importCSV(file){
   if(!file)return;
@@ -3255,7 +3266,7 @@ function importCSV(file){
         var emp=employees.find(function(e){return e.name.toLowerCase()===((row.mitarbeiter_name||'').toLowerCase());});
         if(!emp){if(row.mitarbeiter_name)notFound.push(row.mitarbeiter_name);return;}
         payload.push({
-          employee_id:emp.id,date:row.datum,
+          employee_id:emp.id,date:parseDateDE(row.datum),
           aktivitaeten:parseIntNum(row.aktivitaeten),not_reached:parseIntNum(row.not_reached),
           not_possible:parseIntNum(row.not_possible),not_successful:parseIntNum(row.not_successful),
           conv_oem:parseIntNum(row.conv_oem),conv_tw:parseIntNum(row.conv_tw),conv_yes:parseIntNum(row.conv_yes),
