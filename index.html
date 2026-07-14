@@ -498,7 +498,10 @@ function loadEmployeesFromSupabase(){
   });
 }
 
+var _appInitStarted = false;
 function initAppAfterLogin(){
+  if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
+  _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
   Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase()]).then(function(){
     lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
@@ -513,9 +516,7 @@ sb.auth.getSession().then(function(res){
   }
 });
 sb.auth.onAuthStateChange(function(event, session){
-  if(session && document.getElementById('auth-gate').style.display !== 'none'){
-    initAppAfterLogin();
-  }
+  if(session){ initAppAfterLogin(); }
 });
 
 function renderCoachingAnsicht(){
@@ -3465,6 +3466,7 @@ var hasData=Object.keys(performance).some(function(k){return performance[k]&&per
 if(!hasData){
   showView('team');
   setTimeout(function(){
+    if(document.getElementById('fst-banner'))return;   // Banner existiert schon, kein zweites erzeugen
     var banner=document.createElement('div');
     banner.id='fst-banner';
     banner.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:8000;display:flex;align-items:center;justify-content:center';
