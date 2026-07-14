@@ -480,7 +480,7 @@ function initAppAfterLogin(){
   _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
   loadEmployeesFromSupabase().then(function(){
-    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase()]).then(function(){
+    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase()]).then(function(){
       lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
       runAppInit();
     });
@@ -689,9 +689,6 @@ var LS_KEY='sfp_coaching_v1';
 function lsSave(){
   try{
     localStorage.setItem(LS_KEY,JSON.stringify({
-      employees:employees,
-      protocols:protocols,
-      solidroadData:solidroadData,
       savedAt:new Date().toISOString()
     }));
   }catch(e){console.warn('lsSave failed:',e);}
@@ -704,8 +701,6 @@ function lsLoad(){
     var d=JSON.parse(raw);
     // employees kommt jetzt exklusiv aus Supabase (loadEmployeesFromSupabase) -- NICHT mehr
     // aus dem localStorage-Cache ueberschreiben, sonst gewinnt der alte Demo-Stand.
-    if(d.protocols)protocols=d.protocols;
-    if(d.solidroadData)solidroadData=d.solidroadData;
     return true;
   }catch(e){console.warn('lsLoad failed:',e);return false;}
 }
@@ -730,8 +725,6 @@ function importDaten(file){
       var d=JSON.parse(e.target.result);
       // employees, KPI_TARGETS, settings, ratingCriteria werden bewusst NICHT mehr aus dem
       // Backup uebernommen -- leben jetzt in Supabase
-      if(d.protocols)protocols=d.protocols;
-      if(d.solidroadData)solidroadData=d.solidroadData;
       lsSave();renderSidebar();renderMain();
       alert('Backup importiert.');
     }catch(ex){alert('Fehler: '+ex.message);}
@@ -3037,9 +3030,16 @@ function saveSRSim(){
   var score=parseInt(document.getElementById('srScore').value)||0;
   var tags=(document.getElementById('srTags').value||'').split(',').map(function(t){return t.trim();}).filter(Boolean);
   if(!name||!score)return;
-  if(!solidroadData[selectedEmp])solidroadData[selectedEmp]={simulations:[]};
-  solidroadData[selectedEmp].simulations.unshift({id:Date.now(),date:date,name:name,score:score,status:'passed',tags:tags});
-  renderTab();
+  var payload={employee_id:selectedEmp,date:date,name:name,score:score,status:'passed',tags:tags};
+  sb.from('solidroad_simulations').insert(payload).select().single().then(function(res){
+    if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    var r=res.data;
+    if(!solidroadData[selectedEmp])solidroadData[selectedEmp]={simulations:[]};
+    solidroadData[selectedEmp].simulations.unshift({id:r.id,date:r.date,name:r.name,score:r.score,status:r.status,tags:r.tags||[]});
+    renderTab();
+  }).catch(function(err){
+    alert('Unerwarteter Fehler: '+err.message);
+  });
 }
 
 function saveRatingCriterion(){
@@ -3209,6 +3209,22 @@ function loadEmployeeKpiTargetsFromSupabase(){
       emp.targets[r.metric_key]=r.val;
       if(r.dir)emp.targets[r.metric_key+'Dir']=r.dir;
     });
+    return true;
+  });
+}
+
+function loadSolidroadFromSupabase(){
+  return sb.from('solidroad_simulations').select('*').then(function(res){
+    if(res.error){console.warn('solidroad_simulations load failed:',res.error);return false;}
+    var byEmp={};
+    res.data.forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]={simulations:[]};
+      byEmp[r.employee_id].simulations.push({
+        id:r.id,date:r.date,name:r.name,score:r.score,status:r.status||'passed',tags:r.tags||[]
+      });
+    });
+    Object.keys(byEmp).forEach(function(k){byEmp[k].simulations.sort(function(a,b){return b.date.localeCompare(a.date);});});
+    solidroadData=byEmp;
     return true;
   });
 }
