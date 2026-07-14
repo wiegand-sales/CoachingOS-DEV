@@ -3220,6 +3220,11 @@ function parseNum(v){
   return isNaN(n)?0:n;
 }
 function parseIntNum(v){return Math.round(parseNum(v));}
+function parsePercent(v){
+  var n=parseNum(v);
+  if(n>0&&n<=1)n=n*100;   // 0,45 -> 45 (Bruchzahl-Eingabe erkannt)
+  return n;
+}
 
 function importCSV(file){
   if(!file)return;
@@ -3258,8 +3263,8 @@ function importCSV(file){
           wka:parseIntNum(row.wka),opt_per_h:parseNum(row.opt_per_h),opt_gesamt:parseIntNum(row.opt_gesamt),
           marge_oem:parseNum(row.marge_oem),marge_upsell:parseNum(row.marge_upsell),
           marge_wka:parseNum(row.marge_wka),marge_gesamt:parseNum(row.marge_gesamt),
-          cr_oem:parseNum(row.cr_oem),cr_teilweise:parseNum(row.cr_teilweise),cr_yes:parseNum(row.cr_yes),
-          cr_super_yes:parseNum(row.cr_super_yes),cr_mega_yes:parseNum(row.cr_mega_yes)
+          cr_oem:parsePercent(row.cr_oem),cr_teilweise:parsePercent(row.cr_teilweise),cr_yes:parsePercent(row.cr_yes),
+          cr_super_yes:parsePercent(row.cr_super_yes),cr_mega_yes:parsePercent(row.cr_mega_yes)
         });
       });
       if(!payload.length){
