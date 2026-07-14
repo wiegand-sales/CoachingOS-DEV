@@ -120,23 +120,6 @@ tr:hover td{background:var(--bg2);}
 .sess-hist{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;}
 .sess-row{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--border);}
 .sess-row:last-child{border-bottom:none;}
-/* ONBOARDING */
-.ob-day-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg2);border-radius:var(--r-md);margin-bottom:8px;margin-top:14px;}
-.ob-day-label{font-size:13px;font-weight:600;color:var(--purple);flex:1;}
-.ob-step{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:8px;overflow:hidden;}
-.ob-hdr{display:flex;align-items:center;gap:11px;padding:12px 14px;cursor:pointer;}
-.ob-hdr:hover{background:var(--bg2);}
-.ob-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
-.ob-check.done{background:var(--teal);border-color:var(--teal);color:#fff;}
-.ob-label{font-size:13px;font-weight:500;flex:1;}
-.ob-status{font-size:11px;color:var(--text3);}
-.ob-chev{font-size:14px;color:var(--text3);transition:transform .2s;}
-.ob-chev.open{transform:rotate(180deg);}
-.ob-detail{display:none;border-top:1px solid var(--border);background:var(--bg2);padding:12px 14px 14px 47px;}
-.ob-detail.open{display:block;}
-.ob-desc{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px;}
-.ob-video-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;}
-.ob-video-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
 .ftp-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:2px 7px;border-radius:20px;background:var(--teal-bg);color:var(--teal-dark);}
 /* SOLIDROAD */
 .sr-sim{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
@@ -303,14 +286,6 @@ tr:hover td{background:var(--bg2);}
   <div style="margin-bottom:10px"><label>Beschreibung</label><textarea id="taskDesc" placeholder="Was soll der Mitarbeiter tun..." style="min-height:80px"></textarea></div>
   <div class="f3"><div><label>Priorität</label><select id="taskPrio"><option value="high">Hoch</option><option value="medium" selected>Mittel</option><option value="low">Niedrig</option></select></div><div><label>Fälligkeitsdatum</label><input type="date" id="taskDue"></div><div><label>Quelle</label><input type="text" id="taskQuelle" placeholder="Session 10.06"></div></div>
   <div class="modal-actions"><button class="btn" onclick="closeModal('addTaskModal')">Abbrechen</button><button class="btn btn-primary" onclick="saveNewTask()"><i class="ti ti-check"></i> Aufgabe hinzufügen</button></div>
-</div></div>
-
-<div class="modal-ov hidden" id="obModal"><div class="modal">
-  <div class="modal-title">Onboarding-Schritt hinzufügen</div>
-  <div style="margin-bottom:10px"><label>Schrittname</label><input type="text" id="obLabelInput" placeholder="z.B. Erweiterte Produktschulung"></div>
-  <div class="f2"><div><label>Tag</label><input type="number" id="obTagInput" placeholder="1" min="1" value="1"></div><div><label>Video-URL (FTP or https://)</label><input type="url" id="obVideoInput" placeholder="https://..."></div></div>
-  <div style="margin-bottom:14px"><label>Beschreibung for staff</label><textarea id="obDetailInput" placeholder="Was wird in diesem Schritt behandelt..."></textarea></div>
-  <div class="modal-actions"><button class="btn" onclick="closeModal('obModal')">Abbrechen</button><button class="btn btn-primary" onclick="saveOBStep()"><i class="ti ti-check"></i> Add Step</button></div>
 </div></div>
 
 <div class="modal-ov hidden" id="ratingModal"><div class="modal">
@@ -705,7 +680,6 @@ function lsSave(){
       employees:employees,
       protocols:protocols,
       solidroadData:solidroadData,
-      onboarding:onboarding,
       tasks:tasks,
       reviews:reviews,
       KPI_TARGETS:KPI_TARGETS,
@@ -726,7 +700,6 @@ function lsLoad(){
     // aus dem localStorage-Cache ueberschreiben, sonst gewinnt der alte Demo-Stand.
     if(d.protocols)protocols=d.protocols;
     if(d.solidroadData)solidroadData=d.solidroadData;
-    if(d.onboarding)onboarding=d.onboarding;
     if(d.tasks)tasks=d.tasks;
     if(d.reviews)reviews=d.reviews;
     if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
@@ -744,7 +717,7 @@ function lsClear(){
 }
 
 function exportDaten(){
-  var d={exportiert:new Date().toISOString(),version:'sfp-v1',employees:employees,protocols:protocols,performance:performance,solidroadData:solidroadData,onboarding:onboarding,tasks:tasks,reviews:reviews,KPI_TARGETS:KPI_TARGETS,settings:settings,ratingCriteria:ratingCriteria};
+  var d={exportiert:new Date().toISOString(),version:'sfp-v1',employees:employees,protocols:protocols,performance:performance,solidroadData:solidroadData,tasks:tasks,reviews:reviews,KPI_TARGETS:KPI_TARGETS,settings:settings,ratingCriteria:ratingCriteria};
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
   a.download='sfp-backup-'+today()+'.json';a.click();
@@ -758,7 +731,6 @@ function importDaten(file){
       // employees wird bewusst NICHT mehr aus dem Backup uebernommen -- lebt jetzt in Supabase
       if(d.protocols)protocols=d.protocols;
       if(d.solidroadData)solidroadData=d.solidroadData;
-      if(d.onboarding)onboarding=d.onboarding;
       if(d.tasks)tasks=d.tasks;
       if(d.reviews)reviews=d.reviews;
       if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
@@ -884,16 +856,6 @@ var solidroadData={
   4:{simulations:[{id:5,date:'2026-06-10',name:'Own-brand pitch – existing customer',score:96,status:'passed',tags:['Pitch','Closing']},{id:6,date:'2026-06-05',name:'Objection: Quality concerns',score:89,status:'passed',tags:['Objection Handling']}]},
   5:{simulations:[{id:7,date:'2026-06-08',name:'Needs analysis – SME customer',score:67,status:'passed',tags:['Needs Analysis']}]},
 };
-
-var onboarding={1:[true,true,true,true,true],2:[true,true,true,false,false],3:[true,false,false,false,false],4:[true,true,true,true,true],5:[true,true,true,false,false]};
-
-var obSteps=[
-  {label:'Einführungsgespräch',day:1,detail:'First meeting with the coach. Goals and development plan are discussed. Duration approx. 60 minutes.',videoUrl:''},
-  {label:'Product Training – Basics',day:1,detail:'Core knowledge of toner, ink and consumables. Differences between OEM and own-brand. Price-value arguments.',videoUrl:''},
-  {label:'Gesprächsleitfaden',day:2,detail:'The Wiegand & Partner framework: Needs Analysis → Value Presentation → Objection Handling → Closing. Includes role plays.',videoUrl:''},
-  {label:'Erste Kundengespräche',day:2,detail:'Accompanied practice phase. Coach listens in and gives immediate feedback after each call.',videoUrl:''},
-  {label:'Zielvereinbarung',day:3,detail:'Quarterly targets: CR OEM target, average rating target, Super Yes / Mega Yes per week.',videoUrl:''},
-];
 
 var tasks={
   1:[
@@ -1109,11 +1071,6 @@ function aufmerksamkeitFarbe(tage){
 }
 
 
-function onboardingProgress(id){
-  var steps=onboarding[id];if(!steps||!steps.length)return 0;
-  return steps.filter(function(x){return x;}).length/steps.length;
-}
-
 function toggleTeamGrp(key){
   var CK='sfp_team_col';
   var col={};try{col=JSON.parse(localStorage.getItem(CK)||'{}');}catch(ex){}
@@ -1239,24 +1196,6 @@ function renderTeam(){
       +'<div style="font-size:12px;color:var(--text2)">'+e.role+'</div></div>'
       +'<span class="phase-badge" style="background:'+phaseBg(e.phase)+';color:'+phaseCol(e.phase)+'">'+e.phase+'</span>'
       +'</div>'
-      // Onboarding-Indikator – fester Platz, immer gleich hoch
-      +(function(){
-        var ob=onboarding[e.id]||[];
-        var done=ob.filter(Boolean).length;
-        var total=ob.length||1;
-        var pct=Math.round(done/total*100);
-        if(e.phase==='Onboarding'){
-          return '<div style="background:var(--amber-bg);border-radius:var(--r-md);padding:7px 10px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">'
-            +'<span style="font-size:11px;font-weight:600;color:var(--amber-dark)"><i class="ti ti-school" style="margin-right:4px"></i>Onboarding: '+done+'/'+total+' Schritte</span>'
-            +'<div style="display:flex;align-items:center;gap:6px">'
-            +'<div style="width:60px;height:5px;background:rgba(0,0,0,.1);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--amber);border-radius:3px"></div></div>'
-            +'<span style="font-size:11px;font-weight:600;color:var(--amber-dark)">'+pct+'%</span>'
-            +'</div></div>';
-        } else {
-          // Leerer Platzhalter – gleiche Höhe wie der Onboarding-Balken
-          return '<div style="height:33px;margin-bottom:10px"></div>';
-        }
-      })()
       // CR OEM Balken
       +'<div style="margin-bottom:10px">'
       +'<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
@@ -1585,8 +1524,6 @@ function renderTab(){
   var tc2=document.getElementById('tabContent');
   if(!tc2)return;
   var p=protocols[emp.id]||[];
-  var ob=onboarding[emp.id]||obSteps.map(function(){return false;});
-  var obD=ob.filter(Boolean).length;
   var sr=solidroadData[emp.id]||{simulations:[]};
   var alerts=checkAlerts(emp.id);
   var html='';
@@ -3089,17 +3026,6 @@ function saveSRSim(){
   renderTab();
 }
 
-function saveOBStep(){
-  var label=document.getElementById('obLabelInput').value.trim();
-  var day=parseInt(document.getElementById('obDayInput').value)||1;
-  var video=document.getElementById('obVideoInput').value.trim();
-  var detail=document.getElementById('obDetailInput').value.trim();
-  if(!label)return;
-  obSteps.push({label:label,day:day,detail:detail||'No description.',videoUrl:video});
-  employees.forEach(function(e){if(!onboarding[e.id])onboarding[e.id]=[];onboarding[e.id].push(false);});
-  closeModal('obModal');
-  renderTab();
-}
 function saveRatingCriterion(){
   var name=document.getElementById('rcName').value.trim();
   var cat=document.getElementById('rcCat').value;
@@ -3162,7 +3088,6 @@ function saveNewEmp(){
     protocols[ne.id]=[];
     performance[ne.id]=[];
     if(typeof solidroadData!=='undefined')solidroadData[ne.id]={simulations:[]};
-    if(typeof onboarding!=='undefined'&&typeof obSteps!=='undefined')onboarding[ne.id]=obSteps.map(function(){return false;});
     if(typeof tasks!=='undefined')tasks[ne.id]=[];
     closeModal('addEmpModal');
     renderSidebar();renderMain();
