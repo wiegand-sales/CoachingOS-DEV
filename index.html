@@ -476,7 +476,7 @@ function initAppAfterLogin(){
   if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
   _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
-  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase()]).then(function(){
+  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase()]).then(function(){
     lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
     runAppInit();
   });
@@ -687,7 +687,6 @@ function lsSave(){
       employees:employees,
       protocols:protocols,
       solidroadData:solidroadData,
-      reviews:reviews,
       KPI_TARGETS:KPI_TARGETS,
       settings:settings,
       ratingCriteria:ratingCriteria,
@@ -706,7 +705,6 @@ function lsLoad(){
     // aus dem localStorage-Cache ueberschreiben, sonst gewinnt der alte Demo-Stand.
     if(d.protocols)protocols=d.protocols;
     if(d.solidroadData)solidroadData=d.solidroadData;
-    if(d.reviews)reviews=d.reviews;
     if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
     if(d.settings)settings=d.settings;
     if(d.ratingCriteria)ratingCriteria=d.ratingCriteria;
@@ -736,7 +734,6 @@ function importDaten(file){
       // employees wird bewusst NICHT mehr aus dem Backup uebernommen -- lebt jetzt in Supabase
       if(d.protocols)protocols=d.protocols;
       if(d.solidroadData)solidroadData=d.solidroadData;
-      if(d.reviews)reviews=d.reviews;
       if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
       if(d.settings)settings=d.settings;
       if(d.ratingCriteria)ratingCriteria=d.ratingCriteria;
@@ -2955,13 +2952,33 @@ function saveCoachEval(empId){
     var el=document.getElementById('cev-'+k);
     entry[k]=el?parseInt(el.value):5;
   });
-  if(!reviews[empId])reviews[empId]=[];
-  reviews[empId]=reviews[empId].filter(function(r){return !(r.date===date&&r.einwand!==undefined);});
-  reviews[empId].push(entry);
-  lsSave();
-  var modal=document.getElementById('cevModal');
-  if(modal)modal.remove();
-  renderTab();
+  sb.from('reviews').select('id').eq('employee_id',empId).eq('type','Mitarbeiterentwicklung').eq('date',date).maybeSingle().then(function(existRes){
+    if(existRes.error){alert('Fehler beim Speichern: '+existRes.error.message);return;}
+    var existingId=existRes.data?existRes.data.id:null;
+    var payload={employee_id:empId,type:'Mitarbeiterentwicklung',date:date,status:'abgeschlossen',notes:note};
+    var upsert=existingId
+      ? sb.from('reviews').update(payload).eq('id',existingId).select().single()
+      : sb.from('reviews').insert(payload).select().single();
+    upsert.then(function(res){
+      if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+      var reviewId=res.data.id;
+      var kpiRows=KEYS.map(function(k){return {review_id:reviewId,metric_key:k,value:entry[k]};});
+      sb.from('review_kpis').upsert(kpiRows,{onConflict:'review_id,metric_key'}).then(function(res2){
+        if(res2.error)console.warn('review_kpis upsert failed:',res2.error);
+        if(!reviews[empId])reviews[empId]=[];
+        reviews[empId]=reviews[empId].filter(function(r){return !(r.date===date&&r.einwand!==undefined);});
+        entry.id=reviewId;
+        reviews[empId].push(entry);
+        var modal=document.getElementById('cevModal');
+        if(modal)modal.remove();
+        renderTab();
+      });
+    }).catch(function(err){
+      alert('Unerwarteter Fehler: '+err.message);
+    });
+  }).catch(function(err){
+    alert('Unerwarteter Fehler: '+err.message);
+  });
 }
 
 function toggleSessCard(eid){
@@ -3177,6 +3194,33 @@ function loadProtocolsFromSupabase(){
     });
     Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
     protocols=byEmp;
+    return true;
+  });
+}
+
+function loadReviewsFromSupabase(){
+  return Promise.all([
+    sb.from('reviews').select('*').eq('type','Mitarbeiterentwicklung'),
+    sb.from('review_kpis').select('*')
+  ]).then(function(results){
+    var reviewsRes=results[0],kpisRes=results[1];
+    if(reviewsRes.error){console.warn('reviews load failed:',reviewsRes.error);return false;}
+    if(kpisRes.error)console.warn('review_kpis load failed (Bewertungen werden trotzdem geladen, nur ohne Einzel-Werte):',kpisRes.error);
+    var kpisByReview={};
+    (kpisRes.data||[]).forEach(function(k){
+      if(!kpisByReview[k.review_id])kpisByReview[k.review_id]={};
+      kpisByReview[k.review_id][k.metric_key]=k.value;
+    });
+    var byEmp={};
+    reviewsRes.data.forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
+      var entry={id:r.id,date:r.date,note:r.notes||'',einwand:0};
+      var kpis=kpisByReview[r.id]||{};
+      Object.keys(kpis).forEach(function(k){entry[k]=kpis[k];});
+      byEmp[r.employee_id].push(entry);
+    });
+    Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
+    reviews=byEmp;
     return true;
   });
 }
@@ -3591,16 +3635,6 @@ if(!hasData){
 
 
 // ── REVIEW ACTIONS ──
-
-function addReview(){
-  var type=prompt('Gesprächstyp:\nOnboarding-Gespräch / Performance-Gespräch / Jahresgespräch','Performance-Gespräch');
-  if(!type||!type.trim())return;
-  var date=prompt('Geplantes Datum (JJJJ-MM-TT):',today());
-  if(!date)return;
-  if(!reviews[selectedEmp])reviews[selectedEmp]=[];
-  reviews[selectedEmp].push({id:Date.now(),type:type.trim(),date:date,status:date<today()?'overdue':'upcoming',notes:'',goals:'',rating:null,kpis:{}});
-  renderTab();
-}
 
 // ── EMP SETTINGS ACTIONS ──
 
