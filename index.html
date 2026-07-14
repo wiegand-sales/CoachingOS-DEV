@@ -1677,7 +1677,7 @@ function renderTab(){
         var ups=row.upsells||0,wka=row.wka||0;
         var optGes=row.optGesamt||(convOEM+ups+wka)||0;
         var marge=row.margeGesamt||row.margin||0;
-        var crOEM=row.crOEM||0,crTW=row.crTeilweise||0,crSY=row.crSuperYes||0,crMY=row.crMegaYes||0;
+        var crOEM=Math.round(row.crOEM||0),crTW=Math.round(row.crTeilweise||0),crSY=Math.round(row.crSuperYes||0),crMY=Math.round(row.crMegaYes||0);
         var optH=row.optPerH||0;
         function fc(v,t,dir){if(!t&&t!==0)return '';return(dir==='lte'?v<=t:v>=t)?'color:var(--teal)':'color:var(--red)';}
         html+='<tr>'
@@ -3222,7 +3222,7 @@ function parseNum(v){
 function parseIntNum(v){return Math.round(parseNum(v));}
 function parsePercent(v){
   var n=parseNum(v);
-  if(n>0&&n<=1)n=n*100;   // 0,45 -> 45 (Bruchzahl-Eingabe erkannt)
+  if(n>0&&n<=1)n=Math.round(n*100);   // 0,45 -> 45 (gerundet, vermeidet Fliesskomma-Reste wie 44.999999999)
   return n;
 }
 function parseDateDE(v){
