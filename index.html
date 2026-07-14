@@ -1141,7 +1141,7 @@ function renderTeam(){
     var lsType=_ls?(_ls.type||'—'):'—';
     var lsTopics=_ls&&_ls.topics&&_ls.topics.length?_ls.topics.slice(0,2).join(', '):'—';
 
-    rows+='<tr style="cursor:pointer" onclick="selectEmp('+e.id+')">'
+    rows+='<tr style="cursor:pointer" onclick="selectEmp(\'+e.id+\')">'
       // Mitarbeiter
       +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)">'
       +'<div style="display:flex;align-items:center;gap:9px">'
@@ -1171,7 +1171,7 @@ function renderTeam(){
       // Inhalt des Coachings
       +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">'+lsTopics+'</td>'
       // Aktion
-      +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSessionModal('+e.id+')"><i class="ti ti-calendar-plus"></i> Planen</button></td>'
+      +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSessionModal(\'+e.id+\')"><i class="ti ti-calendar-plus"></i> Planen</button></td>'
       +'</tr>';
   });
 
@@ -1192,7 +1192,7 @@ function renderTeam(){
     var oem=ea('crOEM');
     var oemTarget=KPI_TARGETS.crOEM.val;var oemOk=KPI_TARGETS.crOEM.dir==='lte'?oem<=oemTarget:oem>=oemTarget;var oemNear=KPI_TARGETS.crOEM.dir==='lte'?oem<=oemTarget*1.15:oem>=oemTarget*0.85;var oemColor=oem!==null?(oemOk?'var(--teal)':oemNear?'var(--amber)':'var(--red)'):'var(--text3)';
 
-    cards+='<div class="team-card" onclick="selectEmp('+e.id+')">'
+    cards+='<div class="team-card" onclick="selectEmp(\'+e.id+\')">'
       // Header
       +'<div class="tc-hdr">'
       +'<div class="av" style="width:42px;height:42px;font-size:14px;background:'+c.bg+';color:'+c.text+'">'+ini(e.name)+'</div>'
@@ -1245,7 +1245,7 @@ function renderTeam(){
       +'<span style="font-size:11px;color:var(--text2)"><i class="ti ti-calendar-event" style="font-size:12px;margin-right:3px"></i>Letzte Session: <strong style="color:'+aFarbe+'">'+(tage===null?'Keine':tage===0?'Heute':tage+'d')+'</strong></span>'
       +'<span style="font-size:11px;color:var(--text2)"><strong style="color:var(--purple)">'+sCount+'</strong> Session'+(sCount!==1?'s':'')+'</span>'
       +'</div>'
-      +'<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSessionModal('+e.id+')" style="padding:4px 9px;font-size:11px"><i class="ti ti-calendar-plus"></i> Planen</button>'
+      +'<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSessionModal(\'+e.id+\')" style="padding:4px 9px;font-size:11px"><i class="ti ti-calendar-plus"></i> Planen</button>'
       +'</div>'
       // Entwicklungsfelder – feste Zeile, immer da
       +'<div style="font-size:11px;color:var(--text2);min-height:34px">'
@@ -1278,7 +1278,7 @@ function renderTeam(){
     var _ls=_ss[0]||null;
     var lsType=_ls?(_ls.type||'—'):'—';
     var lsTopics=_ls&&_ls.topics&&_ls.topics.length?_ls.topics.slice(0,2).join(', '):'—';
-    coachRows+='<tr style="cursor:pointer" onclick="selectEmp('+e.id+')">'
+    coachRows+='<tr style="cursor:pointer" onclick="selectEmp(\'+e.id+\')">'
       +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)">'
       +'<div style="display:flex;align-items:center;gap:9px">'
       +'<div class="av" style="width:30px;height:30px;font-size:11px;background:'+c.bg+';color:'+c.text+'">'+ini(e.name)+'</div>'
@@ -1291,7 +1291,7 @@ function renderTeam(){
           +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">'+lsType+'</td>'
           +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">'+lsTopics+'</td>'
           +(al.length?'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><span style="color:var(--amber);font-weight:600;font-size:12px">⚠ '+al.length+'</span></td>':'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><span style="color:var(--teal)">✓</span></td>')
-          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSessionModal('+e.id+')"><i class="ti ti-calendar-plus"></i> Planen</button></td>';
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSessionModal(\'+e.id+\')"><i class="ti ti-calendar-plus"></i> Planen</button></td>';
       })()
       +'</tr>';
   });
@@ -2421,17 +2421,17 @@ function renderTab(){
         else{dueLabel='Fällig in '+dueDays+'d';}
       }
       return '<div class="task-item'+(od?' overdue':'')+(t.done?' done-item':'')+'" id="task-'+t.id+'">'
-        +'<div class="task-row" onclick="toggleTaskDetail('+t.id+')">'
-        +'<div class="task-check'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleTask('+t.id+')">'+(t.done?'<i class="ti ti-check" style="font-size:11px"></i>':'')+'</div>'
+        +'<div class="task-row" onclick="toggleTaskDetail(\''+t.id+'\')">'
+        +'<div class="task-check'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleTask(\'+t.id+\')">'+(t.done?'<i class="ti ti-check" style="font-size:11px"></i>':'')+'</div>'
         +'<div style="flex:1;min-width:0"><div class="task-title'+(t.done?' done':'')+'">'+(od?'<i class="ti ti-alert-circle" style="font-size:13px;color:var(--red);margin-right:4px"></i>':'')+t.text+'</div>'
         +'<div class="task-meta">'+(t.source?'<span>'+t.source+'</span>':'')+( dueLabel?'<span style="color:'+dueColor+'">'+dueLabel+'</span>':'')+'</div></div>'
         +'<span class="task-prio" style="background:'+ps.bg+';color:'+ps.color+'">'+t.priority+'</span>'
-        +'<button class="task-del" onclick="event.stopPropagation();deleteTask('+t.id+')"><i class="ti ti-x"></i></button>'
+        +'<button class="task-del" onclick="event.stopPropagation();deleteTask(\'+t.id+\')"><i class="ti ti-x"></i></button>'
         +'</div>'
         +'<div class="task-detail" id="td-'+t.id+'">'+(t.description||'No description added.')
         +'<div class="task-actions">'
-        +(!t.done?'<button class="btn btn-sm btn-primary" onclick="toggleTask('+t.id+')"><i class="ti ti-check"></i> Mark as done</button>':'<button class="btn btn-sm" onclick="toggleTask('+t.id+')"><i class="ti ti-rotate-left"></i> Reopen</button>')
-        +'<button class="btn btn-sm btn-danger" onclick="deleteTask('+t.id+')"><i class="ti ti-trash"></i> Delete</button>'
+        +(!t.done?'<button class="btn btn-sm btn-primary" onclick="toggleTask(\''+t.id+'\')"><i class="ti ti-check"></i> Mark as done</button>':'<button class="btn btn-sm" onclick="toggleTask(\''+t.id+'\')"><i class="ti ti-rotate-left"></i> Reopen</button>')
+        +'<button class="btn btn-sm btn-danger" onclick="deleteTask(\''+t.id+'\')"><i class="ti ti-trash"></i> Delete</button>'
         +'</div></div></div>';
     }
     if(overdueTasks.length>0){
