@@ -382,15 +382,6 @@ tr:hover td{background:var(--bg2);}
 
 
 <!-- SCORECARD MODAL -->
-<div class="modal-ov hidden" id="scorecardModal"><div class="modal" style="width:680px;max-width:96vw">
-  <div class="modal-title"><i class="ti ti-clipboard-check" style="margin-right:8px;color:var(--purple)"></i>Session bewerten</div>
-  <div id="scorecardInhalt"></div>
-  <div class="modal-actions">
-    <button class="btn" onclick="closeModal('scorecardModal')">Abbrechen</button>
-    <button class="btn btn-primary" onclick="scorecardSpeichern()"><i class="ti ti-check"></i> Session speichern</button>
-  </div>
-</div></div>
-
 
 
 
@@ -503,7 +494,7 @@ function initAppAfterLogin(){
   if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
   _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
-  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase()]).then(function(){
+  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase()]).then(function(){
     lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
     runAppInit();
   });
@@ -2306,7 +2297,7 @@ function renderTab(){
       html+='<textarea id="'+f.id+'" rows="2" style="width:100%;box-sizing:border-box;padding:8px 12px;font-size:12px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);background:var(--bg);color:var(--text);resize:vertical"></textarea>';
       html+='</div>';
     });
-    html+='<button class="btn btn-primary" style="width:100%" data-eid="'+emp.id+'" onclick="saveSession(parseInt(this.dataset.eid))"><i class="ti ti-device-floppy"></i> Session speichern</button>';
+    html+='<button class="btn btn-primary" style="width:100%" data-eid="'+emp.id+'" onclick="saveSession(this.dataset.eid)"><i class="ti ti-device-floppy"></i> Session speichern</button>';
     html+='</div></div>';
     html+='<div>';
     html+='<div class="sec-title" style="margin-bottom:14px">Session-Historie <span style="font-size:12px;font-weight:400;color:var(--text3)">('+sessions.length+')</span></div>';
@@ -3054,22 +3045,32 @@ function saveSession(empId){
   var topics=[];
   var sel=document.getElementById('sess-topic-sel');
   if(sel&&sel.value)topics.push(sel.value);
-  var entry={
-    id:Date.now(),date:date,uhrzeit:uhrzeit,type:type,rating:null,
-    topics:topics,start:start,stop:stop,cont:cont,notes:notes,
-    text:notes,focus:topics.join(', ')
+  var focus=topics.join(', ');
+  var payload={
+    employee_id:empId,date:date,uhrzeit:uhrzeit||null,art:type,rating:null,
+    note:notes,focus:focus,status:'abgeschlossen',
+    start_note:start,stop_note:stop,continue_note:cont
   };
-  if(!protocols[empId])protocols[empId]=[];
-  protocols[empId].push(entry);
-  lsSave();
-  ['sess-start','sess-stop','sess-cont','sess-note'].forEach(function(id){
-    var el=document.getElementById(id);if(el)el.value='';
+  sb.from('protocols').insert(payload).select().single().then(function(res){
+    if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    var r=res.data;
+    var entry={
+      id:r.id,date:r.date,uhrzeit:uhrzeit,type:type,rating:null,
+      topics:topics,start:start,stop:stop,cont:cont,notes:notes,note:notes,focus:focus,status:'abgeschlossen'
+    };
+    if(!protocols[empId])protocols[empId]=[];
+    protocols[empId].unshift(entry);
+    ['sess-start','sess-stop','sess-cont','sess-note'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.value='';
+    });
+    var tsel=document.getElementById('sess-topic-sel');
+    if(tsel)tsel.value='';
+    var tel=document.getElementById('sess-time');
+    if(tel)tel.value='';
+    renderTab();
+  }).catch(function(err){
+    alert('Unerwarteter Fehler: '+err.message);
   });
-  var tsel=document.getElementById('sess-topic-sel');
-  if(tsel)tsel.value='';
-  var tel=document.getElementById('sess-time');
-  if(tel)tel.value='';
-  renderTab();
 }
 
 function setMetric(m){perfMetric=m;renderTab();}
@@ -3207,6 +3208,25 @@ function loadPerformanceFromSupabase(){
     });
     Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
     performance=byEmp;
+    return true;
+  });
+}
+
+function loadProtocolsFromSupabase(){
+  return sb.from('protocols').select('*').then(function(res){
+    if(res.error){console.warn('protocols load failed:',res.error);return false;}
+    var byEmp={};
+    res.data.forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
+      byEmp[r.employee_id].push({
+        id:r.id,date:r.date,uhrzeit:r.uhrzeit?r.uhrzeit.slice(0,5):'',type:r.art,rating:r.rating,
+        note:r.note,notes:r.note,focus:r.focus,status:r.status,
+        start:r.start_note||'',stop:r.stop_note||'',cont:r.continue_note||'',
+        topics:r.focus?[r.focus]:[]
+      });
+    });
+    Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
+    protocols=byEmp;
     return true;
   });
 }
@@ -3567,21 +3587,6 @@ function setEmpColor(colorIdx){
 }
 
 
-
-function scorecardSpeichern(){
-  var pr=protocols[selectedEmp];
-  if(!pr||!pr.length)return;
-  var p=pr[0];
-  var bew=document.getElementById('sc-bewertung');
-  var not=document.getElementById('sc-notizen');
-  var fok=document.getElementById('sc-fokus');
-  if(bew&&bew.value)p.rating=bew.value;
-  if(not&&not.value)p.note=not.value;
-  if(fok&&fok.value)p.focus=fok.value;
-  closeModal('scorecardModal');
-  renderSidebar();
-  renderTab();
-}
 
 function zieleSpeichern(){
   var keys=['crOEM','crTeilweise','crSuperYes','crMegaYes','optPerH'];
