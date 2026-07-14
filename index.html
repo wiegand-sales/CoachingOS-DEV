@@ -469,7 +469,7 @@ function initAppAfterLogin(){
   if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
   _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
-  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase()]).then(function(){
+  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase()]).then(function(){
     lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
     runAppInit();
   });
@@ -680,7 +680,6 @@ function lsSave(){
       employees:employees,
       protocols:protocols,
       solidroadData:solidroadData,
-      tasks:tasks,
       reviews:reviews,
       KPI_TARGETS:KPI_TARGETS,
       settings:settings,
@@ -700,7 +699,6 @@ function lsLoad(){
     // aus dem localStorage-Cache ueberschreiben, sonst gewinnt der alte Demo-Stand.
     if(d.protocols)protocols=d.protocols;
     if(d.solidroadData)solidroadData=d.solidroadData;
-    if(d.tasks)tasks=d.tasks;
     if(d.reviews)reviews=d.reviews;
     if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
     if(d.settings)settings=d.settings;
@@ -731,7 +729,6 @@ function importDaten(file){
       // employees wird bewusst NICHT mehr aus dem Backup uebernommen -- lebt jetzt in Supabase
       if(d.protocols)protocols=d.protocols;
       if(d.solidroadData)solidroadData=d.solidroadData;
-      if(d.tasks)tasks=d.tasks;
       if(d.reviews)reviews=d.reviews;
       if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
       if(d.settings)settings=d.settings;
@@ -3038,7 +3035,12 @@ function saveRatingCriterion(){
 }
 function toggleTask(id){
   var t=(tasks[selectedEmp]||[]).find(function(x){return x.id===id;});
-  if(t){t.done=!t.done;renderTab();}
+  if(!t)return;
+  t.done=!t.done;
+  renderTab();
+  sb.from('tasks').update({done:t.done}).eq('id',id).then(function(res){
+    if(res.error){console.warn('task update failed:',res.error);}
+  });
 }
 function toggleTaskDetail(id){
   var el=document.getElementById('td-'+id);
@@ -3048,6 +3050,9 @@ function deleteTask(id){
   if(!confirm('Delete this task?'))return;
   tasks[selectedEmp]=(tasks[selectedEmp]||[]).filter(function(x){return x.id!==id;});
   renderTab();
+  sb.from('tasks').delete().eq('id',id).then(function(res){
+    if(res.error){alert('Fehler beim Löschen: '+res.error.message);}
+  });
 }
 function saveNewTask(){
   var text=document.getElementById('taskText').value.trim();
@@ -3056,14 +3061,27 @@ function saveNewTask(){
   var due=document.getElementById('taskDue').value;
   var source=document.getElementById('taskQuelle')?document.getElementById('taskQuelle').value.trim():'';
   if(!text)return;
-  if(!tasks[selectedEmp])tasks[selectedEmp]=[];
-  tasks[selectedEmp].unshift({id:Date.now(),text:text,description:desc,done:false,priority:prio,dueDate:due,source:source});
-  document.getElementById('taskText').value='';
-  document.getElementById('taskDesc').value='';
-  document.getElementById('taskDue').value='';
-  var tsrc=document.getElementById('taskQuelle');if(tsrc)tsrc.value='';
-  closeModal('addTaskModal');
-  renderTab();
+  var payload={
+    employee_id:selectedEmp,text:text,description:desc,done:false,
+    priority:prio,due_date:due||null,source:source
+  };
+  sb.from('tasks').insert(payload).select().single().then(function(res){
+    if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    var r=res.data;
+    if(!tasks[selectedEmp])tasks[selectedEmp]=[];
+    tasks[selectedEmp].unshift({
+      id:r.id,text:r.text,description:r.description||'',done:false,
+      priority:r.priority,dueDate:r.due_date,source:r.source||''
+    });
+    document.getElementById('taskText').value='';
+    document.getElementById('taskDesc').value='';
+    document.getElementById('taskDue').value='';
+    var tsrc=document.getElementById('taskQuelle');if(tsrc)tsrc.value='';
+    closeModal('addTaskModal');
+    renderTab();
+  }).catch(function(err){
+    alert('Unerwarteter Fehler: '+err.message);
+  });
 }
 function saveNewEmp(){
   var name=document.getElementById('newName').value.trim();
@@ -3152,6 +3170,23 @@ function loadProtocolsFromSupabase(){
     });
     Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
     protocols=byEmp;
+    return true;
+  });
+}
+
+function loadTasksFromSupabase(){
+  return sb.from('tasks').select('*').then(function(res){
+    if(res.error){console.warn('tasks load failed:',res.error);return false;}
+    var byEmp={};
+    res.data.forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
+      byEmp[r.employee_id].push({
+        id:r.id,text:r.text,description:r.description||'',done:r.done,
+        priority:r.priority,dueDate:r.due_date,source:r.source||''
+      });
+    });
+    Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return (b.dueDate||'').localeCompare(a.dueDate||'');});});
+    tasks=byEmp;
     return true;
   });
 }
