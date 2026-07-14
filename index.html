@@ -3117,7 +3117,7 @@ function saveCoachEval(empId){
       var reviewId=res.data.id;
       var kpiRows=KEYS.map(function(k){return {review_id:reviewId,metric_key:k,value:entry[k]};});
       sb.from('review_kpis').upsert(kpiRows,{onConflict:'review_id,metric_key'}).then(function(res2){
-        if(res2.error)console.warn('review_kpis upsert failed:',res2.error);
+        if(res2.error)alert('Bewertung gespeichert, aber die Einzel-Werte (12 Dimensionen) konnten NICHT gespeichert werden: '+res2.error.message);
         if(!reviews[empId])reviews[empId]=[];
         reviews[empId]=reviews[empId].filter(function(r){return !(r.date===date&&r.einwand!==undefined);});
         entry.id=reviewId;
@@ -3229,7 +3229,10 @@ function toggleTask(id){
   t.done=!t.done;
   renderTab();
   sb.from('tasks').update({done:t.done}).eq('id',id).then(function(res){
-    if(res.error){console.warn('task update failed:',res.error);}
+    if(res.error){
+      alert('Fehler beim Speichern: '+res.error.message+'\n\nDie Änderung ist lokal sichtbar, aber NICHT gespeichert.');
+      t.done=!t.done;renderTab();
+    }
   });
 }
 function toggleTaskDetail(id){
@@ -3707,7 +3710,7 @@ function saveEmpEinstellungen(){
     start_date:emp.startDate||null,end_date:emp.endDate||null,
     contract:emp.contract,hours:emp.hours
   }).eq('id',emp.id).then(function(res){
-    if(res.error)console.warn('employee update failed:',res.error);
+    if(res.error)alert('Fehler beim Speichern in Supabase: '+res.error.message+'\n\nDie Änderung ist lokal sichtbar, aber NICHT gespeichert -- bitte nochmal versuchen.');
   });
   // Hinweis: "location" wird aktuell nur lokal gehalten (kein Feld in employees-Tabelle)
 }
@@ -3757,7 +3760,7 @@ function mitarbeiterDeaktivieren(){
   renderSidebar();
   renderMain();
   sb.from('employees').update({active:false}).eq('id',emp.id).then(function(res){
-    if(res.error)console.warn('employee deactivate failed:',res.error);
+    if(res.error)alert('Fehler beim Deaktivieren: '+res.error.message+'\n\nDer Mitarbeiter ist lokal ausgeblendet, aber die Änderung wurde NICHT gespeichert.');
   });
 }
 
@@ -3823,7 +3826,7 @@ function saveInlineCallBewertung(empId){
     };
     if(scoreRows.length){
       sb.from('call_rating_scores').insert(scoreRows).then(function(res2){
-        if(res2.error)console.warn('call_rating_scores insert failed:',res2.error);
+        if(res2.error)alert('Bewertung gespeichert, aber die Einzel-Scores konnten NICHT gespeichert werden: '+res2.error.message);
         afterScores();
       });
     } else {
