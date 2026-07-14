@@ -3474,7 +3474,12 @@ function openSessionModal(empId){
 function openModal(id){document.getElementById(id).classList.remove('hidden');}
 function closeModal(id){document.getElementById(id).classList.add('hidden');}
 document.querySelectorAll('.modal-ov').forEach(function(m){
-  m.addEventListener('click',function(e){if(e.target===m)m.classList.add('hidden');});
+  var downOnOverlay=false;
+  m.addEventListener('mousedown',function(e){downOnOverlay=(e.target===m);});
+  m.addEventListener('click',function(e){
+    if(e.target===m&&downOnOverlay)m.classList.add('hidden');
+    downOnOverlay=false;
+  });
 });
 function runAppInit(){
 renderSidebar();
