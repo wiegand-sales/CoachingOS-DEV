@@ -500,8 +500,8 @@ function loadEmployeesFromSupabase(){
 
 function initAppAfterLogin(){
   document.getElementById('auth-gate').style.display = 'none';
-  loadEmployeesFromSupabase().then(function(){
-    lsLoad();               // Rest der Daten (protocols, performance, ...) bleibt vorerst lokal
+  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase()]).then(function(){
+    lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
     runAppInit();
   });
 }
@@ -3309,6 +3309,95 @@ function saveNewEmp(){
   }).catch(function(err){
     alert('Unerwarteter Fehler beim Speichern: '+err.message);
   });
+}
+
+function downloadCSVVorlage(){
+  var cols=['datum','mitarbeiter_name','aktivitaeten','not_reached','not_possible','not_successful','conv_oem','conv_tw','conv_yes','conv_sy','conv_my','upsells','wka','opt_per_h','opt_gesamt','marge_oem','marge_upsell','marge_wka','marge_gesamt','cr_oem','cr_teilweise','cr_yes','cr_super_yes','cr_mega_yes','calls','margin'];
+  var exampleName=(employees[0]&&employees[0].name)||'Vorname Nachname';
+  var example=[today(),exampleName,63,44,1,5,13,0,5,3,5,10,3,2.1,26,1200,300,50,1550,72,0,38,23,38,63,2699];
+  var csv=cols.join(',')+'\n'+example.join(',')+'\n';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='performance-vorlage.csv';
+  a.click();
+}
+
+function loadPerformanceFromSupabase(){
+  return sb.from('performance').select('*').then(function(res){
+    if(res.error){console.warn('performance load failed:',res.error);return false;}
+    var byEmp={};
+    res.data.forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
+      byEmp[r.employee_id].push({
+        date:r.date,notReached:r.not_reached,notPossible:r.not_possible,notSuccessful:r.not_successful,
+        convTW:r.conv_tw,convYes:r.conv_yes,convSY:r.conv_sy,convMY:r.conv_my,upsells:r.upsells,wka:r.wka,
+        margeOEM:r.marge_oem,margeUpsell:r.marge_upsell,margeWKA:r.marge_wka,optPerH:r.opt_per_h,
+        convOEM:r.conv_oem,aktivitaeten:r.aktivitaeten,optGesamt:r.opt_gesamt,margeGesamt:r.marge_gesamt,
+        crOEM:r.cr_oem,crTeilweise:r.cr_teilweise,crYes:r.cr_yes,crSuperYes:r.cr_super_yes,crMegaYes:r.cr_mega_yes,
+        calls:r.calls,margin:r.margin
+      });
+    });
+    Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
+    performance=byEmp;
+    return true;
+  });
+}
+
+function importCSV(file){
+  if(!file)return;
+  var statusEl=document.getElementById('csv-status');
+  if(statusEl){statusEl.style.color='var(--text2)';statusEl.textContent='Lese Datei…';}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim();});
+      if(lines.length<2){if(statusEl)statusEl.textContent='Keine Datenzeilen gefunden.';return;}
+      var header=lines[0].split(',').map(function(h){return h.trim();});
+      var rows=lines.slice(1).map(function(line){
+        var vals=line.split(',').map(function(v){return v.trim();});
+        var row={};
+        header.forEach(function(h,i){row[h]=vals[i];});
+        return row;
+      });
+      var payload=[],notFound=[];
+      rows.forEach(function(row){
+        var emp=employees.find(function(e){return e.name.toLowerCase()===((row.mitarbeiter_name||'').toLowerCase());});
+        if(!emp){if(row.mitarbeiter_name)notFound.push(row.mitarbeiter_name);return;}
+        payload.push({
+          employee_id:emp.id,date:row.datum,
+          aktivitaeten:parseInt(row.aktivitaeten)||0,not_reached:parseInt(row.not_reached)||0,
+          not_possible:parseInt(row.not_possible)||0,not_successful:parseInt(row.not_successful)||0,
+          conv_oem:parseInt(row.conv_oem)||0,conv_tw:parseInt(row.conv_tw)||0,conv_yes:parseInt(row.conv_yes)||0,
+          conv_sy:parseInt(row.conv_sy)||0,conv_my:parseInt(row.conv_my)||0,upsells:parseInt(row.upsells)||0,
+          wka:parseInt(row.wka)||0,opt_per_h:parseFloat(row.opt_per_h)||0,opt_gesamt:parseInt(row.opt_gesamt)||0,
+          marge_oem:parseFloat(row.marge_oem)||0,marge_upsell:parseFloat(row.marge_upsell)||0,
+          marge_wka:parseFloat(row.marge_wka)||0,marge_gesamt:parseFloat(row.marge_gesamt)||0,
+          cr_oem:parseFloat(row.cr_oem)||0,cr_teilweise:parseFloat(row.cr_teilweise)||0,cr_yes:parseFloat(row.cr_yes)||0,
+          cr_super_yes:parseFloat(row.cr_super_yes)||0,cr_mega_yes:parseFloat(row.cr_mega_yes)||0,
+          calls:parseInt(row.calls)||0,margin:parseFloat(row.margin)||0
+        });
+      });
+      if(!payload.length){
+        if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Keine gültigen Zeilen. Unbekannte Mitarbeiter: '+(notFound.join(', ')||'-');}
+        return;
+      }
+      sb.from('performance').upsert(payload,{onConflict:'employee_id,date'}).then(function(res){
+        if(res.error){
+          if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Fehler: '+res.error.message;}
+          return;
+        }
+        var msg='✓ Import erfolgreich: '+payload.length+' Zeile(n).';
+        if(notFound.length)msg+=' Unbekannte Mitarbeiter übersprungen: '+notFound.join(', ');
+        if(statusEl){statusEl.style.color='var(--teal)';statusEl.textContent=msg;}
+        loadPerformanceFromSupabase().then(function(){renderTab();});
+      }).catch(function(err){
+        if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Unerwarteter Fehler: '+err.message;}
+      });
+    }catch(ex){
+      if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Fehler beim Verarbeiten: '+ex.message;}
+    }
+  };
+  reader.readAsText(file);
 }
 
 function saveFTP(){settings.ftpUrl=document.getElementById('ftpInput').value.trim();alert('FTP-URL gespeichert.');}
