@@ -1148,13 +1148,13 @@ function renderTeam(){
   var allP=list.map(function(e){return getPerf(e.id,days);}).reduce(function(a,b){return a.concat(b);},[]);
   function tAvg(key){if(!allP.length)return null;return allP.reduce(function(a,x){return a+x[key];},0)/allP.length;}
   var totalAlerts=list.reduce(function(a,e){return a+checkAlerts(e.id).length;},0);
-  var totalMargin=list.reduce(function(a,e){return a+getPerf(e.id,days).reduce(function(b,x){return b+(x.margin||0);},0);},0);
+  var totalMargin=list.reduce(function(a,e){return a+getPerf(e.id,days).reduce(function(b,x){return b+(x.margeGesamt||x.margin||0);},0);},0);
   var oem7=tAvg('crOEM'),sy7=tAvg('crSuperYes'),my7=tAvg('crMegaYes');
   // Für Zeitraum-Vergleich: immer auch 7d berechnen
   var allP7=days===7?allP:list.map(function(e){return getPerf(e.id,7);}).reduce(function(a,b){return a.concat(b);},[]);
   function tAvg7(key){if(!allP7.length)return null;return allP7.reduce(function(a,x){return a+x[key];},0)/allP7.length;}
   var oemD=tAvg('crOEM'),syD=tAvg('crSuperYes'),myD=tAvg('crMegaYes');
-  var totalMargin7=days===7?totalMargin:list.reduce(function(a,e){return a+getPerf(e.id,7).reduce(function(b,x){return b+(x.margin||0);},0);},0);
+  var totalMargin7=days===7?totalMargin:list.reduce(function(a,e){return a+getPerf(e.id,7).reduce(function(b,x){return b+(x.margeGesamt||x.margin||0);},0);},0);
   function delta(vD,v7){
     if(days===7||vD===null||v7===null)return null;
     return Math.round(vD)-Math.round(v7);
@@ -1180,7 +1180,7 @@ function renderTeam(){
     var al=checkAlerts(e.id);
     var ep=getPerf(e.id,days);
     function ea(key){return ep.length?ep.reduce(function(a,x){return a+x[key];},0)/ep.length:null;}
-    var em=ep.reduce(function(a,x){return a+(x.margin||0);},0);
+    var em=ep.reduce(function(a,x){return a+(x.margeGesamt||x.margin||0);},0);
     var sCount=(protocols[e.id]||[]).length;
     var tage=tageSeitLetzterSession(e.id);
     var aFarbe=aufmerksamkeitFarbe(tage);
@@ -1231,7 +1231,7 @@ function renderTeam(){
     var av=avgSkill(e.id);
     var ep=getPerf(e.id,days);
     function ea(key){return ep.length?Math.round(ep.reduce(function(a,x){return a+x[key];},0)/ep.length):null;}
-    var em=ep.reduce(function(a,x){return a+(x.margin||0);},0);
+    var em=ep.reduce(function(a,x){return a+(x.margeGesamt||x.margin||0);},0);
     var al=checkAlerts(e.id);
     var sCount=(protocols[e.id]||[]).length;
     var tage=tageSeitLetzterSession(e.id);
