@@ -3238,9 +3238,9 @@ function loadCallRatingsFromSupabase(){
   ]).then(function(results){
     var ratingsRes=results[0],scoresRes=results[1];
     if(ratingsRes.error){console.warn('call_ratings load failed:',ratingsRes.error);return false;}
-    if(scoresRes.error){console.warn('call_rating_scores load failed:',scoresRes.error);return false;}
+    if(scoresRes.error)console.warn('call_rating_scores load failed (Bewertungen werden trotzdem geladen, nur ohne Einzel-Scores):',scoresRes.error);
     var scoresByRating={};
-    scoresRes.data.forEach(function(s){
+    (scoresRes.data||[]).forEach(function(s){
       if(!scoresByRating[s.call_rating_id])scoresByRating[s.call_rating_id]={};
       scoresByRating[s.call_rating_id][s.item_key]=s.value;
     });
