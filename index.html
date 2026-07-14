@@ -705,12 +705,6 @@ function lsLoad(){
   }catch(e){console.warn('lsLoad failed:',e);return false;}
 }
 
-function lsClear(){
-  if(!confirm('Alle gespeicherten Daten löschen?'))return;
-  localStorage.removeItem(LS_KEY);
-  location.reload();
-}
-
 function exportDaten(){
   var d={exportiert:new Date().toISOString(),version:'sfp-v1',employees:employees,protocols:protocols,performance:performance,solidroadData:solidroadData,tasks:tasks,reviews:reviews,KPI_TARGETS:KPI_TARGETS,settings:settings,ratingCriteria:ratingCriteria};
   var a=document.createElement('a');
@@ -719,19 +713,204 @@ function exportDaten(){
 }
 
 function importDaten(file){
+  if(!confirm('Backup wiederherstellen?\n\nDie Daten aus der Datei werden in die Datenbank zurückgeschrieben (bestehende Einträge mit gleicher ID werden überschrieben, nichts wird gelöscht).'))return;
   var reader=new FileReader();
   reader.onload=function(e){
     try{
       var d=JSON.parse(e.target.result);
-      // employees, KPI_TARGETS, settings, ratingCriteria werden bewusst NICHT mehr aus dem
-      // Backup uebernommen -- leben jetzt in Supabase
-      lsSave();renderSidebar();renderMain();
-      alert('Backup importiert.');
-    }catch(ex){alert('Fehler: '+ex.message);}
+      restoreBackupToSupabase(d);
+    }catch(ex){alert('Fehler beim Lesen der Datei: '+ex.message);}
   };
   reader.readAsText(file);
 }
 
+function restoreBackupToSupabase(d){
+  var status=function(msg){
+    var el=document.getElementById('restore-status');
+    if(el)el.textContent=msg;
+    console.log('[Restore]',msg);
+  };
+  function checkErr(res,label){
+    if(res&&res.error){throw new Error(label+': '+res.error.message);}
+    return res;
+  }
+  status('Starte Wiederherstellung…');
+
+  var empRows=(d.employees||[]).map(function(e){
+    return {id:e.id,name:e.name,role:e.role,phase:e.phase,color_index:e.color||0,
+      start_date:e.startDate||null,end_date:e.endDate||null,team:e.team,contract:e.contract,
+      hours:e.hours,active:e.active!==false};
+  });
+
+  var chain=Promise.resolve();
+
+  if(empRows.length){
+    chain=chain.then(function(){
+      status('Mitarbeiter (' + empRows.length + ')…');
+      return sb.from('employees').upsert(empRows,{onConflict:'id'}).then(function(res){return checkErr(res,'Mitarbeiter');});
+    });
+  }
+
+  var empTargetRows=[];
+  (d.employees||[]).forEach(function(e){
+    if(!e.targets)return;
+    Object.keys(e.targets).forEach(function(k){
+      if(k.endsWith('Dir'))return;
+      var dirKey=k+'Dir';
+      empTargetRows.push({employee_id:e.id,metric_key:k,val:e.targets[k],dir:e.targets[dirKey]||'gte'});
+    });
+  });
+  if(empTargetRows.length){
+    chain=chain.then(function(){
+      status('Individuelle KPI-Ziele (' + empTargetRows.length + ')…');
+      return sb.from('employee_kpi_targets').upsert(empTargetRows,{onConflict:'employee_id,metric_key'}).then(function(res){return checkErr(res,'Individuelle KPI-Ziele');});
+    });
+  }
+
+  var perfRows=[];
+  Object.keys(d.performance||{}).forEach(function(empId){
+    (d.performance[empId]||[]).forEach(function(p){
+      perfRows.push({employee_id:empId,date:p.date,not_reached:p.notReached||0,not_possible:p.notPossible||0,
+        not_successful:p.notSuccessful||0,conv_tw:p.convTW||0,conv_yes:p.convYes||0,conv_sy:p.convSY||0,
+        conv_my:p.convMY||0,upsells:p.upsells||0,wka:p.wka||0,marge_oem:p.margeOEM||0,marge_upsell:p.margeUpsell||0,
+        marge_wka:p.margeWKA||0,opt_per_h:p.optPerH||0,conv_oem:p.convOEM||0,aktivitaeten:p.aktivitaeten||0,
+        opt_gesamt:p.optGesamt||0,marge_gesamt:p.margeGesamt||0,cr_oem:p.crOEM,cr_teilweise:p.crTeilweise,
+        cr_yes:p.crYes,cr_super_yes:p.crSuperYes,cr_mega_yes:p.crMegaYes});
+    });
+  });
+  if(perfRows.length){
+    chain=chain.then(function(){
+      status('Performance-Daten (' + perfRows.length + ')…');
+      return sb.from('performance').upsert(perfRows,{onConflict:'employee_id,date'}).then(function(res){return checkErr(res,'Performance-Daten');});
+    });
+  }
+
+  var protoRows=[];
+  Object.keys(d.protocols||{}).forEach(function(empId){
+    (d.protocols[empId]||[]).forEach(function(p){
+      protoRows.push({id:p.id,employee_id:empId,date:p.date,uhrzeit:p.uhrzeit||null,art:p.type,
+        rating:p.rating,note:p.note||p.notes||'',focus:p.focus||'',status:p.status||'abgeschlossen',
+        start_note:p.start||'',stop_note:p.stop||'',continue_note:p.cont||''});
+    });
+  });
+  if(protoRows.length){
+    chain=chain.then(function(){
+      status('Sessions (' + protoRows.length + ')…');
+      return sb.from('protocols').upsert(protoRows,{onConflict:'id'}).then(function(res){return checkErr(res,'Sessions');});
+    });
+  }
+
+  var taskRows=[];
+  Object.keys(d.tasks||{}).forEach(function(empId){
+    (d.tasks[empId]||[]).forEach(function(t){
+      taskRows.push({id:t.id,employee_id:empId,text:t.text,description:t.description||'',
+        done:!!t.done,priority:t.priority||'medium',due_date:t.dueDate||null,source:t.source||''});
+    });
+  });
+  if(taskRows.length){
+    chain=chain.then(function(){
+      status('Aufgaben (' + taskRows.length + ')…');
+      return sb.from('tasks').upsert(taskRows,{onConflict:'id'}).then(function(res){return checkErr(res,'Aufgaben');});
+    });
+  }
+
+  var solRows=[];
+  Object.keys(d.solidroadData||{}).forEach(function(empId){
+    ((d.solidroadData[empId]||{}).simulations||[]).forEach(function(s){
+      solRows.push({id:s.id,employee_id:empId,date:s.date,name:s.name,score:s.score,
+        status:s.status||'passed',tags:s.tags||[]});
+    });
+  });
+  if(solRows.length){
+    chain=chain.then(function(){
+      status('SolidRoad-Simulationen (' + solRows.length + ')…');
+      return sb.from('solidroad_simulations').upsert(solRows,{onConflict:'id'}).then(function(res){return checkErr(res,'SolidRoad-Simulationen');});
+    });
+  }
+
+  var reviewRows=[],reviewKpiRows=[];
+  var REVIEW_KEYS=['einwand','bedarf','produkt','gespraech','motivation','coach','zuverl','team','crOEM','crTW','crSY','crMY'];
+  Object.keys(d.reviews||{}).forEach(function(empId){
+    (d.reviews[empId]||[]).forEach(function(r){
+      if(r.einwand===undefined)return;
+      reviewRows.push({id:r.id,employee_id:empId,type:'Mitarbeiterentwicklung',date:r.date,
+        status:'abgeschlossen',notes:r.note||''});
+      REVIEW_KEYS.forEach(function(k){
+        if(r[k]!==undefined)reviewKpiRows.push({review_id:r.id,metric_key:k,value:r[k]});
+      });
+    });
+  });
+  if(reviewRows.length){
+    chain=chain.then(function(){
+      status('Mitarbeiterentwicklung (' + reviewRows.length + ')…');
+      return sb.from('reviews').upsert(reviewRows,{onConflict:'id'}).then(function(res){return checkErr(res,'Mitarbeiterentwicklung');});
+    }).then(function(){
+      return sb.from('review_kpis').upsert(reviewKpiRows,{onConflict:'review_id,metric_key'}).then(function(res){return checkErr(res,'Mitarbeiterentwicklung-Werte');});
+    });
+  }
+
+  var callRows=[],callScoreRows=[];
+  Object.keys(d.callRatings||{}).forEach(function(empId){
+    (d.callRatings[empId]||[]).forEach(function(c){
+      callRows.push({id:c.id,employee_id:empId,date:c.date,auftragsnr:c.auftragsnr||'',
+        bewertet_von:c.bewertetVon||'',status:c.status||'nein',b2b:c.b2b||'B2C',
+        einwand:c.einwand||'',hinweis:c.hinweis||''});
+      Object.keys(c.scores||{}).forEach(function(k){
+        callScoreRows.push({call_rating_id:c.id,item_key:k,value:c.scores[k]});
+      });
+    });
+  });
+  if(callRows.length){
+    chain=chain.then(function(){
+      status('QA-Bewertungen (' + callRows.length + ')…');
+      return sb.from('call_ratings').upsert(callRows,{onConflict:'id'}).then(function(res){return checkErr(res,'QA-Bewertungen');});
+    }).then(function(){
+      return sb.from('call_rating_scores').upsert(callScoreRows,{onConflict:'call_rating_id,item_key'}).then(function(res){return checkErr(res,'QA-Bewertungen-Scores');});
+    });
+  }
+
+  if(d.KPI_TARGETS){
+    var kpiRows=Object.keys(d.KPI_TARGETS).map(function(k){
+      var t=d.KPI_TARGETS[k];return {metric_key:k,label:t.label,val:t.val,dir:t.dir};
+    });
+    chain=chain.then(function(){
+      status('Globale KPI-Ziele…');
+      return sb.from('kpi_targets').upsert(kpiRows,{onConflict:'metric_key'}).then(function(res){return checkErr(res,'Globale KPI-Ziele');});
+    });
+  }
+  if(d.ratingCriteria&&d.ratingCriteria.length){
+    var rcRows=d.ratingCriteria.map(function(r,i){
+      return {name:r.name,category:r.cat,target:r.target,description:r.desc||'',sort_order:i};
+    });
+    chain=chain.then(function(){
+      status('Bewertungskriterien…');
+      return sb.from('rating_criteria').insert(rcRows).then(function(res){return checkErr(res,'Bewertungskriterien');});
+    });
+  }
+  if(d.settings&&d.settings.ftpUrl!==undefined){
+    chain=chain.then(function(){
+      status('FTP-Einstellung…');
+      return sb.from('settings').upsert({key:'ftpUrl',value:d.settings.ftpUrl},{onConflict:'key'}).then(function(res){return checkErr(res,'FTP-Einstellung');});
+    });
+  }
+  if(d.settings&&(d.settings.srApiKey||d.settings.srOrgId)){
+    chain=chain.then(function(){
+      status('SolidRoad-Zugangsdaten…');
+      return sb.from('admin_secrets').upsert([
+        {key:'srApiKey',value:d.settings.srApiKey||''},
+        {key:'srOrgId',value:d.settings.srOrgId||''}
+      ],{onConflict:'key'}).then(function(res){return checkErr(res,'SolidRoad-Zugangsdaten');});
+    });
+  }
+
+  chain.then(function(){
+    status('✓ Wiederherstellung abgeschlossen. Lade neu…');
+    setTimeout(function(){location.reload();},1500);
+  }).catch(function(err){
+    status('');
+    alert('Fehler bei der Wiederherstellung: '+err.message+'\n\nEinige Tabellen wurden evtl. schon geschrieben (Reihenfolge siehe Statusanzeige), bitte Datenbank pruefen bevor du es erneut versuchst.');
+  });
+}
 function kalKlick(d){
   openSessionModal(0);
   setTimeout(function(){var el=document.getElementById('sessionDatum');if(el)el.value=d;},50);
@@ -2753,12 +2932,9 @@ function renderEinstellungen(){
     +'<button class="btn btn-sm btn-primary" onclick="exportDaten()"><i class="ti ti-download"></i> Download</button>'
     +'</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md)">'
-    +'<div><div style="font-size:13px;font-weight:500">Backup wiederherstellen</div><div style="font-size:11px;color:var(--text2)">JSON-Datei vom vorherigen Export</div></div>'
+    +'<div><div style="font-size:13px;font-weight:500">Backup wiederherstellen</div><div style="font-size:11px;color:var(--text2)">JSON-Datei vom vorherigen Export</div><div id="restore-status" style="font-size:11px;color:var(--purple);margin-top:4px"></div></div>'
     +'<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-file-import"></i> JSON laden<input type="file" accept=".json" style="display:none" onchange="importDaten(this.files[0])"></label>'
     +'</div>'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--amber-bg);border-radius:var(--r-md)">'
-    +'<div><div style="font-size:13px;font-weight:500;color:var(--amber-dark)">Alle Daten zurücksetzen</div><div style="font-size:11px;color:var(--amber-dark)">Löscht gespeicherte Daten, lädt Demodaten</div></div>'
-    +'<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber-dark);border-color:var(--amber)" onclick="lsClear()"><i class="ti ti-trash"></i> Reset</button>'
     +'</div>'
     +'</div></div>'
     +'</div>'
