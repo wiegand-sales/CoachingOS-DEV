@@ -3211,6 +3211,16 @@ function loadPerformanceFromSupabase(){
   });
 }
 
+function parseNum(v){
+  if(v===undefined||v===null||v==='')return 0;
+  v=String(v).trim();
+  if(v.indexOf(',')>-1&&v.indexOf('.')>-1){v=v.replace(/\./g,'').replace(',','.');}
+  else if(v.indexOf(',')>-1){v=v.replace(',','.');}
+  var n=parseFloat(v);
+  return isNaN(n)?0:n;
+}
+function parseIntNum(v){return Math.round(parseNum(v));}
+
 function importCSV(file){
   if(!file)return;
   var statusEl=document.getElementById('csv-status');
@@ -3220,7 +3230,9 @@ function importCSV(file){
     try{
       var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim();});
       if(lines.length<2){if(statusEl)statusEl.textContent='Keine Datenzeilen gefunden.';return;}
-      var rawHeader=lines[0].split(',').map(function(h){return h.trim();});
+      // Trennzeichen automatisch erkennen: deutsches Excel exportiert bei Komma-Dezimalzahlen oft mit Semikolon
+      var delim=(lines[0].split(';').length>lines[0].split(',').length)?';':',';
+      var rawHeader=lines[0].split(delim).map(function(h){return h.trim();});
       // deutsche Spaltennamen -> interne Feldnamen; falls jemand die alten internen Namen
       // direkt einträgt (z.B. "datum"), wird das ebenfalls akzeptiert
       var header=rawHeader.map(function(h){
@@ -3228,7 +3240,7 @@ function importCSV(file){
         return hit?hit[1]:h.toLowerCase();
       });
       var rows=lines.slice(1).map(function(line){
-        var vals=line.split(',').map(function(v){return v.trim();});
+        var vals=line.split(delim).map(function(v){return v.trim();});
         var row={};
         header.forEach(function(h,i){row[h]=vals[i];});
         return row;
@@ -3239,15 +3251,15 @@ function importCSV(file){
         if(!emp){if(row.mitarbeiter_name)notFound.push(row.mitarbeiter_name);return;}
         payload.push({
           employee_id:emp.id,date:row.datum,
-          aktivitaeten:parseInt(row.aktivitaeten)||0,not_reached:parseInt(row.not_reached)||0,
-          not_possible:parseInt(row.not_possible)||0,not_successful:parseInt(row.not_successful)||0,
-          conv_oem:parseInt(row.conv_oem)||0,conv_tw:parseInt(row.conv_tw)||0,conv_yes:parseInt(row.conv_yes)||0,
-          conv_sy:parseInt(row.conv_sy)||0,conv_my:parseInt(row.conv_my)||0,upsells:parseInt(row.upsells)||0,
-          wka:parseInt(row.wka)||0,opt_per_h:parseFloat(row.opt_per_h)||0,opt_gesamt:parseInt(row.opt_gesamt)||0,
-          marge_oem:parseFloat(row.marge_oem)||0,marge_upsell:parseFloat(row.marge_upsell)||0,
-          marge_wka:parseFloat(row.marge_wka)||0,marge_gesamt:parseFloat(row.marge_gesamt)||0,
-          cr_oem:parseFloat(row.cr_oem)||0,cr_teilweise:parseFloat(row.cr_teilweise)||0,cr_yes:parseFloat(row.cr_yes)||0,
-          cr_super_yes:parseFloat(row.cr_super_yes)||0,cr_mega_yes:parseFloat(row.cr_mega_yes)||0
+          aktivitaeten:parseIntNum(row.aktivitaeten),not_reached:parseIntNum(row.not_reached),
+          not_possible:parseIntNum(row.not_possible),not_successful:parseIntNum(row.not_successful),
+          conv_oem:parseIntNum(row.conv_oem),conv_tw:parseIntNum(row.conv_tw),conv_yes:parseIntNum(row.conv_yes),
+          conv_sy:parseIntNum(row.conv_sy),conv_my:parseIntNum(row.conv_my),upsells:parseIntNum(row.upsells),
+          wka:parseIntNum(row.wka),opt_per_h:parseNum(row.opt_per_h),opt_gesamt:parseIntNum(row.opt_gesamt),
+          marge_oem:parseNum(row.marge_oem),marge_upsell:parseNum(row.marge_upsell),
+          marge_wka:parseNum(row.marge_wka),marge_gesamt:parseNum(row.marge_gesamt),
+          cr_oem:parseNum(row.cr_oem),cr_teilweise:parseNum(row.cr_teilweise),cr_yes:parseNum(row.cr_yes),
+          cr_super_yes:parseNum(row.cr_super_yes),cr_mega_yes:parseNum(row.cr_mega_yes)
         });
       });
       if(!payload.length){
