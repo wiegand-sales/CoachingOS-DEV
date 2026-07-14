@@ -2819,13 +2819,15 @@ function renderEinstellungen(){
     +'<div class="card-title"><i class="ti ti-file-upload"></i> Performance-Daten importieren</div>'
     +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Lade eine CSV-Datei hoch um Leistungsdaten zu aktualisieren. Bestehende Einträge für das gleiche Datum werden überschrieben. Coaching-Daten bleiben unberührt.</p>'
     +'<div style="background:var(--bg2);border-radius:var(--r-md);padding:10px 12px;margin-bottom:14px">'
-    +'<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">CSV-Spalten (in dieser Reihenfolge):</div>'
+    +'<div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">CSV-Spalten (deutsche Bezeichnungen, siehe „Vorlage laden"):</div>'
     +'<div style="font-family:monospace;font-size:11px;color:var(--text2);line-height:1.8">'
-    +'datum · mitarbeiter_id · gespraeche<br>'
-    +'cr_oem · cr_tw · cr_yes · cr_sy · cr_my<br>'
-    +'opt_pro_stunde · marge'
+    +'Datum · Mitarbeiter · Aktivitäten<br>'
+    +'Nicht Erreicht · Nicht Möglich · Nicht Erfolgreich<br>'
+    +'Conv. OEM/TW/Yes/SY/MY · Upsells · WKA<br>'
+    +'Opt./Std. · Opt. Gesamt · Marge OEM/Upsells/WKA/Gesamt<br>'
+    +'CR OEM/TW/Yes/SY/MY %'
     +'</div>'
-    +'<div style="font-size:10px;color:var(--text3);margin-top:4px">Beispiel: 2026-06-23, 1, 24, 62, 18, 21, 14, 9, 2.1, 950</div>'
+    +'<div style="font-size:10px;color:var(--text3);margin-top:4px">Mitarbeiter-Name muss exakt wie in der Mitarbeiterliste geschrieben sein.</div>'
     +'</div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
     +'<label class="btn btn-primary btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i> CSV hochladen<input type="file" accept=".csv" style="display:none" onchange="importCSV(this.files[0])"></label>'
@@ -3167,11 +3169,21 @@ function saveNewEmp(){
   });
 }
 
+// Deutsche Spaltennamen (CSV) <-> interne Feldnamen (Supabase-Tabelle "performance")
+var CSV_COLS=[
+  ['Datum','datum'],['Mitarbeiter','mitarbeiter_name'],['Aktivitäten','aktivitaeten'],
+  ['Nicht Erreicht','not_reached'],['Nicht Möglich','not_possible'],['Nicht Erfolgreich','not_successful'],
+  ['Conv. OEM','conv_oem'],['Conv. TW','conv_tw'],['Conv. Yes','conv_yes'],['Conv. SY','conv_sy'],['Conv. MY','conv_my'],
+  ['Upsells','upsells'],['WKA','wka'],['Opt./Std.','opt_per_h'],['Opt. Gesamt','opt_gesamt'],
+  ['Marge OEM','marge_oem'],['Marge Upsells','marge_upsell'],['Marge WKA','marge_wka'],['Marge Gesamt','marge_gesamt'],
+  ['CR OEM %','cr_oem'],['CR TW %','cr_teilweise'],['CR Yes %','cr_yes'],['CR SY %','cr_super_yes'],['CR MY %','cr_mega_yes']
+];
+
 function downloadCSVVorlage(){
-  var cols=['datum','mitarbeiter_name','aktivitaeten','not_reached','not_possible','not_successful','conv_oem','conv_tw','conv_yes','conv_sy','conv_my','upsells','wka','opt_per_h','opt_gesamt','marge_oem','marge_upsell','marge_wka','marge_gesamt','cr_oem','cr_teilweise','cr_yes','cr_super_yes','cr_mega_yes','calls','margin'];
+  var headers=CSV_COLS.map(function(c){return c[0];});
   var exampleName=(employees[0]&&employees[0].name)||'Vorname Nachname';
-  var example=[today(),exampleName,63,44,1,5,13,0,5,3,5,10,3,2.1,26,1200,300,50,1550,72,0,38,23,38,63,2699];
-  var csv=cols.join(',')+'\n'+example.join(',')+'\n';
+  var example=[today(),exampleName,63,44,1,5,13,0,5,3,5,10,3,2.1,26,1200,300,50,1550,72,0,38,23,38];
+  var csv=headers.join(',')+'\n'+example.join(',')+'\n';
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download='performance-vorlage.csv';
@@ -3189,8 +3201,7 @@ function loadPerformanceFromSupabase(){
         convTW:r.conv_tw,convYes:r.conv_yes,convSY:r.conv_sy,convMY:r.conv_my,upsells:r.upsells,wka:r.wka,
         margeOEM:r.marge_oem,margeUpsell:r.marge_upsell,margeWKA:r.marge_wka,optPerH:r.opt_per_h,
         convOEM:r.conv_oem,aktivitaeten:r.aktivitaeten,optGesamt:r.opt_gesamt,margeGesamt:r.marge_gesamt,
-        crOEM:r.cr_oem,crTeilweise:r.cr_teilweise,crYes:r.cr_yes,crSuperYes:r.cr_super_yes,crMegaYes:r.cr_mega_yes,
-        calls:r.calls,margin:r.margin
+        crOEM:r.cr_oem,crTeilweise:r.cr_teilweise,crYes:r.cr_yes,crSuperYes:r.cr_super_yes,crMegaYes:r.cr_mega_yes
       });
     });
     Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
@@ -3208,7 +3219,13 @@ function importCSV(file){
     try{
       var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim();});
       if(lines.length<2){if(statusEl)statusEl.textContent='Keine Datenzeilen gefunden.';return;}
-      var header=lines[0].split(',').map(function(h){return h.trim();});
+      var rawHeader=lines[0].split(',').map(function(h){return h.trim();});
+      // deutsche Spaltennamen -> interne Feldnamen; falls jemand die alten internen Namen
+      // direkt einträgt (z.B. "datum"), wird das ebenfalls akzeptiert
+      var header=rawHeader.map(function(h){
+        var hit=CSV_COLS.find(function(c){return c[0].toLowerCase()===h.toLowerCase();});
+        return hit?hit[1]:h.toLowerCase();
+      });
       var rows=lines.slice(1).map(function(line){
         var vals=line.split(',').map(function(v){return v.trim();});
         var row={};
@@ -3229,8 +3246,7 @@ function importCSV(file){
           marge_oem:parseFloat(row.marge_oem)||0,marge_upsell:parseFloat(row.marge_upsell)||0,
           marge_wka:parseFloat(row.marge_wka)||0,marge_gesamt:parseFloat(row.marge_gesamt)||0,
           cr_oem:parseFloat(row.cr_oem)||0,cr_teilweise:parseFloat(row.cr_teilweise)||0,cr_yes:parseFloat(row.cr_yes)||0,
-          cr_super_yes:parseFloat(row.cr_super_yes)||0,cr_mega_yes:parseFloat(row.cr_mega_yes)||0,
-          calls:parseInt(row.calls)||0,margin:parseFloat(row.margin)||0
+          cr_super_yes:parseFloat(row.cr_super_yes)||0,cr_mega_yes:parseFloat(row.cr_mega_yes)||0
         });
       });
       if(!payload.length){
