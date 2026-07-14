@@ -3288,7 +3288,8 @@ function saveNewEmp(){
   var role=document.getElementById('newRole').value;
   var phase=document.getElementById('newPhase').value;
   var startDate=document.getElementById('newStart').value;
-  var team=document.getElementById('newTeam').value.trim()||'Deutschland';
+  var teamEl=document.getElementById('newTeam');
+  var team=teamEl?(teamEl.value.trim()||'Deutschland'):'Deutschland';
   var contract=document.getElementById('newContract').value;
   var hours=parseInt(document.getElementById('newHours').value)||40;
   if(!name)return alert('Bitte einen Namen eingeben.');
@@ -3309,6 +3310,8 @@ function saveNewEmp(){
     if(typeof tasks!=='undefined')tasks[ne.id]=[];
     closeModal('addEmpModal');
     renderSidebar();renderMain();
+  }).catch(function(err){
+    alert('Unerwarteter Fehler beim Speichern: '+err.message);
   });
 }
 
