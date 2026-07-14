@@ -238,9 +238,10 @@ tr:hover td{background:var(--bg2);}
   </div>
 </div>
 <div class="sidebar">
-  <div class="sb-header">
+  <div class="sb-header" style="position:relative">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
     <div class="sb-sub">Wiegand &amp; Partner</div>
+    <button onclick="logout()" title="Abmelden" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px"><i class="ti ti-logout"></i></button>
   </div>
   <div class="sb-nav">
     <div class="sb-item" id="nav-team" onclick="showView('team')"><i class="ti ti-layout-grid"></i> SFP Team</div>
@@ -432,6 +433,12 @@ tr:hover td{background:var(--bg2);}
 var SUPABASE_URL = 'https://kjlkneodyvfqgaukdjvb.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_6C8m6s4zxS2lQKFGEMd_yw_fnEBGN8k';
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function logout(){
+  sb.auth.signOut().then(function(){
+    location.reload();
+  });
+}
 
 function loginWithPassword(){
   var email = document.getElementById('auth-email').value.trim();
