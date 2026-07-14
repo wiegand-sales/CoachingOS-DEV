@@ -730,12 +730,8 @@ function lsLoad(){
     var raw=localStorage.getItem(LS_KEY);
     if(!raw)return false;
     var d=JSON.parse(raw);
-    if(d.employees&&d.employees.length){
-      employees=d.employees;
-      // Migrate old role names to short codes
-      var _roleMap={'Sales Executive':'SE','Senior Vertriebsmitarbeiter':'SE','Vertriebsmitarbeiter':'SR','Sales Representative':'SR','Valencia':'VLC','Sales Department Manager':'SDM','Sales Coach':'SC'};
-      employees.forEach(function(e){if(_roleMap[e.role])e.role=_roleMap[e.role];});
-    }
+    // employees kommt jetzt exklusiv aus Supabase (loadEmployeesFromSupabase) -- NICHT mehr
+    // aus dem localStorage-Cache ueberschreiben, sonst gewinnt der alte Demo-Stand.
     if(d.protocols)protocols=d.protocols;
     if(d.solidroadData)solidroadData=d.solidroadData;
     if(d.onboarding)onboarding=d.onboarding;
@@ -767,7 +763,7 @@ function importDaten(file){
   reader.onload=function(e){
     try{
       var d=JSON.parse(e.target.result);
-      if(d.employees)employees=d.employees;
+      // employees wird bewusst NICHT mehr aus dem Backup uebernommen -- lebt jetzt in Supabase
       if(d.protocols)protocols=d.protocols;
       if(d.solidroadData)solidroadData=d.solidroadData;
       if(d.onboarding)onboarding=d.onboarding;
