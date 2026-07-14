@@ -479,9 +479,11 @@ function initAppAfterLogin(){
   if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
   _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
-  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase()]).then(function(){
-    lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
-    runAppInit();
+  loadEmployeesFromSupabase().then(function(){
+    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase()]).then(function(){
+      lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
+      runAppInit();
+    });
   });
 }
 
@@ -3197,6 +3199,20 @@ function loadProtocolsFromSupabase(){
   });
 }
 
+function loadEmployeeKpiTargetsFromSupabase(){
+  return sb.from('employee_kpi_targets').select('*').then(function(res){
+    if(res.error){console.warn('employee_kpi_targets load failed:',res.error);return false;}
+    res.data.forEach(function(r){
+      var emp=employees.find(function(e){return e.id===r.employee_id;});
+      if(!emp)return;
+      if(!emp.targets)emp.targets={};
+      emp.targets[r.metric_key]=r.val;
+      if(r.dir)emp.targets[r.metric_key+'Dir']=r.dir;
+    });
+    return true;
+  });
+}
+
 function loadKpiTargetsFromSupabase(){
   return sb.from('kpi_targets').select('*').then(function(res){
     if(res.error){console.warn('kpi_targets load failed:',res.error);return false;}
@@ -3518,16 +3534,38 @@ function saveEmpZiele(){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
   if(!emp)return;
   if(!emp.targets)emp.targets={};
-  [{id:'crOEM',rk:'crOEM',dk:'crOEMDir'},{id:'crTW',rk:'crTW',dk:'crTWDir'},{id:'crYes',rk:'crYes',dk:'crYesDir'},{id:'crSY',rk:'crSuperYes',dk:'crSYDir'},{id:'crMY',rk:'crMegaYes',dk:'crMYDir'},{id:'convOEM',rk:'convOEM',dk:'convOEMDir'},{id:'opt',rk:'optPerH',dk:'optPerHDir'},{id:'optDay',rk:'optGesamt',dk:'optGesamtDir'},{id:'aktiv',rk:'aktivitaeten',dk:'aktivDir'},{id:'marge',rk:'margeGesamt',dk:'margeDir'}].forEach(function(f){
+  var fields=[{id:'crOEM',rk:'crOEM',dk:'crOEMDir'},{id:'crTW',rk:'crTW',dk:'crTWDir'},{id:'crYes',rk:'crYes',dk:'crYesDir'},{id:'crSY',rk:'crSuperYes',dk:'crSYDir'},{id:'crMY',rk:'crMegaYes',dk:'crMYDir'},{id:'convOEM',rk:'convOEM',dk:'convOEMDir'},{id:'opt',rk:'optPerH',dk:'optPerHDir'},{id:'optDay',rk:'optGesamt',dk:'optGesamtDir'},{id:'aktiv',rk:'aktivitaeten',dk:'aktivDir'},{id:'marge',rk:'margeGesamt',dk:'margeDir'}];
+  var upserts=[],deletes=[];
+  fields.forEach(function(f){
     var el=document.getElementById('es-'+f.id);
     var dl=document.getElementById('es-d-'+f.id);
-    if(el&&el.value!=='')emp.targets[f.rk]=parseFloat(el.value);
-    else delete emp.targets[f.rk];
+    if(el&&el.value!==''){
+      emp.targets[f.rk]=parseFloat(el.value);
+      upserts.push({employee_id:emp.id,metric_key:f.rk,val:emp.targets[f.rk],dir:dl?dl.value:'gte'});
+    } else {
+      delete emp.targets[f.rk];
+      deletes.push(f.rk);
+    }
     if(dl)emp.targets[f.dk]=dl.value;
   });
-  lsSave();
-  alert('Ziele gespeichert für '+emp.name+'.');
-  renderTab();
+  var chain=Promise.resolve();
+  if(deletes.length){
+    chain=chain.then(function(){
+      return sb.from('employee_kpi_targets').delete().eq('employee_id',emp.id).in('metric_key',deletes);
+    });
+  }
+  if(upserts.length){
+    chain=chain.then(function(){
+      return sb.from('employee_kpi_targets').upsert(upserts,{onConflict:'employee_id,metric_key'});
+    });
+  }
+  chain.then(function(res){
+    if(res&&res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    alert('Ziele gespeichert für '+emp.name+'.');
+    renderTab();
+  }).catch(function(err){
+    alert('Unerwarteter Fehler: '+err.message);
+  });
 }
 function mitarbeiterDeaktivieren(){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
