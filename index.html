@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#fff;--bg2:#f7f7f5;--bg3:#f0efec;
@@ -198,57 +199,60 @@ tr:hover td{background:var(--bg2);}
 .sb-group-body{overflow:hidden;transition:max-height .25s ease;}</style>
 </head>
 <body>
-<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px">DEV / STAGING</div>
-<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px">🚧 DEV / STAGING — <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#000;text-decoration:underline">→ Live</a></div>
-<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px">🚧 DEV / STAGING — <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#000;text-decoration:underline">→ Live</a></div>
-<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px">🚧 DEV / STAGING — <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#000;text-decoration:underline">→ Live</a></div>
-<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px">🚧 DEV / STAGING — <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#000;text-decoration:underline">→ Live</a></div>
-<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;font-size:12px;font-weight:600;padding:5px;letter-spacing:0.5px">
-  🚧 DEV / STAGING — Keine Produktivumgebung — <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#000;text-decoration:underline">→ Live</a>
+<div id="stg-banner" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#BA7517;color:#fff;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit">⚠ STAGING · <a href="https://wiegand-sales.github.io/CoachingOS/" style="color:#fff;text-decoration:underline">→ Live</a></div><style>#stg-banner~*{margin-top:32px!important}.sidebar{top:32px!important;height:calc(100vh - 32px)!important}</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="auth-gate" style="position:fixed;inset:0;z-index:20000;background:var(--bg,#f5f5f4);display:flex;align-items:center;justify-content:center;font-family:inherit;">
+  <div style="background:#fff;border-radius:12px;padding:32px;width:340px;box-shadow:0 4px 24px rgba(0,0,0,.08);">
+    <h2 style="margin:0 0 4px;font-size:18px;">Coaching OS</h2>
+    <p style="margin:0 0 20px;color:#6b6b68;font-size:13px;">Anmeldung per Magic Link</p>
+    <div id="auth-form">
+      <input id="auth-email" type="email" placeholder="name@wiegand-gmbh.de" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;">
+      <button onclick="sendMagicLink()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#3C3489;color:#fff;font-weight:600;font-size:14px;cursor:pointer;">Link senden</button>
+      <div id="auth-msg" style="margin-top:10px;font-size:12px;color:#6b6b68;"></div>
+    </div>
+  </div>
 </div>
-<div id="stg-banner" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#BA7517;color:#fff;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit">⚠ STAGING · <a href="https://wiegand-sales.github.io/coaching-dashboard/" style="color:#fff;text-decoration:underline">→ Live</a></div><style>#stg-banner~*{margin-top:32px!important}.sidebar{top:32px!important;height:calc(100vh - 32px)!important}</style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <div class="sidebar">
   <div class="sb-header">
     <div class="sb-logo"><div class="sb-dot"></div><span class="sb-title">SFP Coaching</span></div>
@@ -456,7 +460,59 @@ tr:hover td{background:var(--bg2);}
 
 
 
-<script>function renderCoachingAnsicht(){
+<script>
+// ══ SUPABASE SETUP ══
+var SUPABASE_URL = 'https://kjlkneodyvfqgaukdjvb.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_6C8m6s4zxS2lQKFGEMd_yw_fnEBGN8k';
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function sendMagicLink(){
+  var email = document.getElementById('auth-email').value.trim();
+  var msg = document.getElementById('auth-msg');
+  if(!email){ msg.textContent = 'Bitte E-Mail eingeben.'; return; }
+  msg.textContent = 'Sende Link…';
+  sb.auth.signInWithOtp({ email: email }).then(function(res){
+    if(res.error){ msg.textContent = 'Fehler: ' + res.error.message; }
+    else { msg.textContent = 'Link gesendet — bitte E-Mail-Postfach prüfen.'; }
+  });
+}
+
+// employees aus Supabase laden und ins bestehende App-Format uebersetzen
+function loadEmployeesFromSupabase(){
+  return sb.from('employees').select('*').order('name').then(function(res){
+    if(res.error){ console.warn('employees load failed:', res.error); return false; }
+    employees = res.data.map(function(e){
+      return {
+        id: e.id, name: e.name, role: e.role, phase: e.phase,
+        color: e.color_index, startDate: e.start_date, endDate: e.end_date || null,
+        team: e.team, contract: e.contract, hours: e.hours, active: e.active
+      };
+    });
+    return true;
+  });
+}
+
+function initAppAfterLogin(){
+  document.getElementById('auth-gate').style.display = 'none';
+  loadEmployeesFromSupabase().then(function(){
+    lsLoad();               // Rest der Daten (protocols, performance, ...) bleibt vorerst lokal
+    runAppInit();
+  });
+}
+
+sb.auth.getSession().then(function(res){
+  if(res.data.session){ initAppAfterLogin(); }
+  else {
+    document.getElementById('auth-form').style.display = 'block';
+  }
+});
+sb.auth.onAuthStateChange(function(event, session){
+  if(session && document.getElementById('auth-gate').style.display !== 'none'){
+    initAppAfterLogin();
+  }
+});
+
+function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
   var liste=employees.filter(function(e){return e.active!==false;});
@@ -3230,16 +3286,26 @@ function saveNewEmp(){
   var contract=document.getElementById('newContract').value;
   var hours=parseInt(document.getElementById('newHours').value)||40;
   if(!name)return alert('Bitte einen Namen eingeben.');
-  var ne={id:Date.now(),name:name,role:role,phase:phase,color:employees.length%COLORS.length,startDate:startDate,team:team,contract:contract,hours:hours,active:true};
-  employees.push(ne);
-  protocols[ne.id]=[];
-  performance[ne.id]=[];
-  if(typeof solidroadData!=='undefined')solidroadData[ne.id]={simulations:[]};
-  if(typeof onboarding!=='undefined'&&typeof obSteps!=='undefined')onboarding[ne.id]=obSteps.map(function(){return false;});
-  if(typeof tasks!=='undefined')tasks[ne.id]=[];
-  closeModal('addEmpModal');
-  renderSidebar();renderMain();
+  var payload={
+    name:name,role:role,phase:phase,start_date:startDate||null,
+    team:team,contract:contract,hours:hours,active:true,
+    color_index:employees.length%COLORS.length
+  };
+  sb.from('employees').insert(payload).select().single().then(function(res){
+    if(res.error){alert('Fehler beim Speichern in Supabase: '+res.error.message);return;}
+    var e=res.data;
+    var ne={id:e.id,name:e.name,role:e.role,phase:e.phase,color:e.color_index,startDate:e.start_date,team:e.team,contract:e.contract,hours:e.hours,active:e.active};
+    employees.push(ne);
+    protocols[ne.id]=[];
+    performance[ne.id]=[];
+    if(typeof solidroadData!=='undefined')solidroadData[ne.id]={simulations:[]};
+    if(typeof onboarding!=='undefined'&&typeof obSteps!=='undefined')onboarding[ne.id]=obSteps.map(function(){return false;});
+    if(typeof tasks!=='undefined')tasks[ne.id]=[];
+    closeModal('addEmpModal');
+    renderSidebar();renderMain();
+  });
 }
+
 function saveFTP(){settings.ftpUrl=document.getElementById('ftpInput').value.trim();alert('FTP-URL gespeichert.');}
 function saveTargets(){
   KPI_TARGETS.crOEM.val=parseFloat(document.getElementById('tOEM').value)||55;
@@ -3332,6 +3398,14 @@ function saveEmpEinstellungen(){
   emp.contract=document.getElementById('es-contract').value;
   emp.hours=parseInt(document.getElementById('es-hours').value)||40;
   renderSidebar();renderEmpDetail();  lsSave();
+  sb.from('employees').update({
+    name:emp.name,role:emp.role,phase:emp.phase,team:emp.team,
+    start_date:emp.startDate||null,end_date:emp.endDate||null,
+    contract:emp.contract,hours:emp.hours
+  }).eq('id',emp.id).then(function(res){
+    if(res.error)console.warn('employee update failed:',res.error);
+  });
+  // Hinweis: "location" wird aktuell nur lokal gehalten (kein Feld in employees-Tabelle)
 }
 function saveEmpZiele(){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
@@ -3356,6 +3430,9 @@ function mitarbeiterDeaktivieren(){
   view='team';
   renderSidebar();
   renderMain();
+  sb.from('employees').update({active:false}).eq('id',emp.id).then(function(res){
+    if(res.error)console.warn('employee deactivate failed:',res.error);
+  });
 }
 
 
@@ -3446,7 +3523,7 @@ function closeModal(id){document.getElementById(id).classList.add('hidden');}
 document.querySelectorAll('.modal-ov').forEach(function(m){
   m.addEventListener('click',function(e){if(e.target===m)m.classList.add('hidden');});
 });
-lsLoad();
+function runAppInit(){
 renderSidebar();
 var hasData=Object.keys(performance).some(function(k){return performance[k]&&performance[k].length>0;});
 if(!hasData){
@@ -3477,6 +3554,8 @@ if(!hasData){
 } else {
   showView('team');
 }
+}
+
 
 // ── REVIEW ACTIONS ──
 function completeReview(id){
