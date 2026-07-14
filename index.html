@@ -865,29 +865,6 @@ var protocols={
   4:[{id:5,date:'2026-06-11',rating:'Mega Yes',note:'Thomas switched a long-term customer to own-brand. Best-practice example.',focus:'Eigenmarken-Umstieg',skills:{Bedarfsermittlung:92,Nutzenargumentation:95,Einwandbehandlung:88,Vertrauensaufbau:95,Abschlusstechnik:90},criteria:{1:92,2:95,3:88,4:90,5:95}}],
   5:[{id:6,date:'2026-06-09',rating:'Teilweise',note:'Aktives Zuhören gut, aber Verbindung zum Nutzen der Eigenmarke fehlt noch.',focus:'Nutzenargumentation',skills:{Bedarfsermittlung:70,Nutzenargumentation:50,Einwandbehandlung:55,Vertrauensaufbau:72,Abschlusstechnik:45},criteria:{1:70,2:50,3:55,4:46,5:72}}],
 };
-function genPerf(base,days){
-  var arr=[];
-  for(var i=0;i<days;i++){
-    var d=new Date('2026-06-13T00:00:00');
-    d.setDate(d.getDate()-i);
-    if(d.getDay()===0||d.getDay()===6) continue;
-    var calls=Math.round(base.calls+Math.random()*6-3);
-    var crOEM=Math.min(100,Math.max(0,Math.round(base.crOEM+Math.random()*14-7)));
-    var conv=Math.round(calls*crOEM/100);
-    arr.push({
-      id:i,date:d.toISOString().slice(0,10),calls:calls,
-      crOEM:crOEM,
-      crTeilweise:Math.min(100,Math.max(0,Math.round(base.crTeilweise+Math.random()*8-4))),
-      crYes:Math.min(100,Math.max(0,Math.round(base.crYes+Math.random()*8-4))),
-      crSuperYes:Math.min(100,Math.max(0,Math.round(base.crSuperYes+Math.random()*8-4))),
-      crMegaYes:Math.min(100,Math.max(0,Math.round(base.crMegaYes+Math.random()*6-3))),
-      optPerH:Math.max(0,Math.round((base.optPerH+Math.random()*.8-.4)*10)/10),
-      margin:Math.round(conv*(base.marginPerConv+Math.random()*4-2)),
-      note:''
-    });
-  }
-  return arr;
-}
 var performance={
   1:[{"date": "2026-06-22", "notReached": 123, "notPossible": 7, "notSuccessful": 18, "convTW": 3, "convYes": 6, "convSY": 8, "convMY": 8, "upsells": 4, "wka": 0, "margeOEM": 3303.73, "margeUpsell": 227.04, "margeWKA": 0.0, "optPerH": 0, "convOEM": 25, "aktivitaeten": 173, "optGesamt": 29, "margeGesamt": 3530.77, "crOEM": 58.0, "crTeilweise": 12.0, "crYes": 27.0, "crSuperYes": 36.0, "crMegaYes": 36.0, "calls": 173, "margin": 3530.77}, {"date": "2026-06-19", "notReached": 53, "notPossible": 0, "notSuccessful": 12, "convTW": 3, "convYes": 4, "convSY": 5, "convMY": 1, "upsells": 7, "wka": 0, "margeOEM": 1118.04, "margeUpsell": 138.59, "margeWKA": 0.0, "optPerH": 0, "convOEM": 13, "aktivitaeten": 78, "optGesamt": 20, "margeGesamt": 1256.63, "crOEM": 52.0, "crTeilweise": 23.0, "crYes": 40.0, "crSuperYes": 50.0, "crMegaYes": 10.0, "calls": 78, "margin": 1256.63}, {"date": "2026-06-18", "notReached": 92, "notPossible": 6, "notSuccessful": 9, "convTW": 2, "convYes": 6, "convSY": 5, "convMY": 4, "upsells": 14, "wka": 1, "margeOEM": 1176.85, "margeUpsell": 338.32, "margeWKA": 8.02, "optPerH": 0, "convOEM": 17, "aktivitaeten": 124, "optGesamt": 32, "margeGesamt": 1523.19, "crOEM": 65.0, "crTeilweise": 12.0, "crYes": 40.0, "crSuperYes": 33.0, "crMegaYes": 27.0, "calls": 124, "margin": 1523.19}, {"date": "2026-06-16", "notReached": 126, "notPossible": 7, "notSuccessful": 12, "convTW": 1, "convYes": 4, "convSY": 6, "convMY": 6, "upsells": 8, "wka": 0, "margeOEM": 1323.9, "margeUpsell": 394.77, "margeWKA": 0.0, "optPerH": 0, "convOEM": 17, "aktivitaeten": 162, "optGesamt": 25, "margeGesamt": 1718.67, "crOEM": 59.0, "crTeilweise": 6.0, "crYes": 25.0, "crSuperYes": 38.0, "crMegaYes": 38.0, "calls": 162, "margin": 1718.67}, {"date": "2026-06-15", "notReached": 126, "notPossible": 4, "notSuccessful": 21, "convTW": 3, "convYes": 7, "convSY": 8, "convMY": 4, "upsells": 10, "wka": 0, "margeOEM": 2665.26, "margeUpsell": 563.94, "margeWKA": 0.0, "optPerH": 0, "convOEM": 22, "aktivitaeten": 173, "optGesamt": 32, "margeGesamt": 3229.2, "crOEM": 51.0, "crTeilweise": 14.0, "crYes": 37.0, "crSuperYes": 42.0, "crMegaYes": 21.0, "calls": 173, "margin": 3229.2}, {"date": "2026-06-12", "notReached": 44, "notPossible": 8, "notSuccessful": 8, "convTW": 0, "convYes": 2, "convSY": 5, "convMY": 0, "upsells": 10, "wka": 0, "margeOEM": 642.46, "margeUpsell": 420.27, "margeWKA": 0.0, "optPerH": 0, "convOEM": 7, "aktivitaeten": 67, "optGesamt": 17, "margeGesamt": 1062.73, "crOEM": 47.0, "crTeilweise": 0.0, "crYes": 29.0, "crSuperYes": 71.0, "crMegaYes": 0.0, "calls": 67, "margin": 1062.73}, {"date": "2026-06-11", "notReached": 109, "notPossible": 7, "notSuccessful": 18, "convTW": 3, "convYes": 5, "convSY": 11, "convMY": 6, "upsells": 6, "wka": 0, "margeOEM": 1445.74, "margeUpsell": 393.43, "margeWKA": 0.0, "optPerH": 0, "convOEM": 25, "aktivitaeten": 159, "optGesamt": 31, "margeGesamt": 1839.17, "crOEM": 58.0, "crTeilweise": 12.0, "crYes": 23.0, "crSuperYes": 50.0, "crMegaYes": 27.0, "calls": 159, "margin": 1839.17}, {"date": "2026-06-10", "notReached": 91, "notPossible": 7, "notSuccessful": 16, "convTW": 2, "convYes": 7, "convSY": 5, "convMY": 9, "upsells": 11, "wka": 0, "margeOEM": 1753.81, "margeUpsell": 788.02, "margeWKA": 0.0, "optPerH": 0, "convOEM": 23, "aktivitaeten": 137, "optGesamt": 34, "margeGesamt": 2541.83, "crOEM": 59.0, "crTeilweise": 9.0, "crYes": 33.0, "crSuperYes": 24.0, "crMegaYes": 43.0, "calls": 137, "margin": 2541.83}, {"date": "2026-06-09", "notReached": 155, "notPossible": 10, "notSuccessful": 28, "convTW": 3, "convYes": 6, "convSY": 7, "convMY": 8, "upsells": 4, "wka": 0, "margeOEM": 3105.3, "margeUpsell": 149.89, "margeWKA": 0.0, "optPerH": 0, "convOEM": 24, "aktivitaeten": 217, "optGesamt": 28, "margeGesamt": 3255.19, "crOEM": 46.0, "crTeilweise": 13.0, "crYes": 29.0, "crSuperYes": 33.0, "crMegaYes": 38.0, "calls": 217, "margin": 3255.19}, {"date": "2026-06-08", "notReached": 31, "notPossible": 2, "notSuccessful": 5, "convTW": 1, "convYes": 1, "convSY": 0, "convMY": 0, "upsells": 0, "wka": 0, "margeOEM": 89.02, "margeUpsell": 0.0, "margeWKA": 0.0, "optPerH": 0, "convOEM": 2, "aktivitaeten": 40, "optGesamt": 2, "margeGesamt": 89.02, "crOEM": 29.0, "crTeilweise": 50.0, "crYes": 100.0, "crSuperYes": 0.0, "crMegaYes": 0.0, "calls": 40, "margin": 89.02}, {"date": "2026-06-05", "notReached": 115, "notPossible": 5, "notSuccessful": 22, "convTW": 2, "convYes": 5, "convSY": 3, "convMY": 6, "upsells": 4, "wka": 0, "margeOEM": 1551.69, "margeUpsell": 136.71, "margeWKA": 0.0, "optPerH": 0, "convOEM": 16, "aktivitaeten": 158, "optGesamt": 20, "margeGesamt": 1688.4, "crOEM": 42.0, "crTeilweise": 13.0, "crYes": 36.0, "crSuperYes": 21.0, "crMegaYes": 43.0, "calls": 158, "margin": 1688.4}, {"date": "2026-06-03", "notReached": 155, "notPossible": 6, "notSuccessful": 28, "convTW": 5, "convYes": 3, "convSY": 4, "convMY": 8, "upsells": 7, "wka": 0, "margeOEM": 1510.91, "margeUpsell": 452.79, "margeWKA": 0.0, "optPerH": 0, "convOEM": 20, "aktivitaeten": 209, "optGesamt": 27, "margeGesamt": 1963.7, "crOEM": 42.0, "crTeilweise": 25.0, "crYes": 20.0, "crSuperYes": 27.0, "crMegaYes": 53.0, "calls": 209, "margin": 1963.7}, {"date": "2026-06-02", "notReached": 168, "notPossible": 4, "notSuccessful": 29, "convTW": 3, "convYes": 4, "convSY": 10, "convMY": 5, "upsells": 4, "wka": 0, "margeOEM": 1244.92, "margeUpsell": 121.77, "margeWKA": 0.0, "optPerH": 0, "convOEM": 22, "aktivitaeten": 223, "optGesamt": 26, "margeGesamt": 1366.69, "crOEM": 43.0, "crTeilweise": 14.0, "crYes": 21.0, "crSuperYes": 53.0, "crMegaYes": 26.0, "calls": 223, "margin": 1366.69}, {"date": "2026-06-01", "notReached": 182, "notPossible": 14, "notSuccessful": 30, "convTW": 3, "convYes": 7, "convSY": 8, "convMY": 9, "upsells": 2, "wka": 2, "margeOEM": 2372.26, "margeUpsell": 179.56, "margeWKA": 104.64, "optPerH": 0, "convOEM": 27, "aktivitaeten": 253, "optGesamt": 31, "margeGesamt": 2656.46, "crOEM": 47.0, "crTeilweise": 11.0, "crYes": 29.0, "crSuperYes": 33.0, "crMegaYes": 38.0, "calls": 253, "margin": 2656.46}],
   2:[{"date": "2026-06-22", "notReached": 11, "notPossible": 1, "notSuccessful": 1, "convTW": 0, "convYes": 0, "convSY": 2, "convMY": 0, "upsells": 2, "wka": 0, "margeOEM": 1192.57, "margeUpsell": 275.51, "margeWKA": 0.0, "optPerH": 0, "convOEM": 2, "aktivitaeten": 15, "optGesamt": 4, "margeGesamt": 1468.08, "crOEM": 67.0, "crTeilweise": 0.0, "crYes": 0.0, "crSuperYes": 100.0, "crMegaYes": 0.0, "calls": 15, "margin": 1468.08}, {"date": "2026-06-18", "notReached": 8, "notPossible": 0, "notSuccessful": 1, "convTW": 0, "convYes": 1, "convSY": 2, "convMY": 0, "upsells": 2, "wka": 0, "margeOEM": 541.97, "margeUpsell": 665.25, "margeWKA": 0.0, "optPerH": 0, "convOEM": 3, "aktivitaeten": 12, "optGesamt": 5, "margeGesamt": 1207.22, "crOEM": 75.0, "crTeilweise": 0.0, "crYes": 33.0, "crSuperYes": 67.0, "crMegaYes": 0.0, "calls": 12, "margin": 1207.22}, {"date": "2026-06-17", "notReached": 22, "notPossible": 0, "notSuccessful": 4, "convTW": 4, "convYes": 4, "convSY": 4, "convMY": 0, "upsells": 5, "wka": 1, "margeOEM": 1794.15, "margeUpsell": 640.46, "margeWKA": 95.48, "optPerH": 0, "convOEM": 12, "aktivitaeten": 38, "optGesamt": 18, "margeGesamt": 2530.09, "crOEM": 75.0, "crTeilweise": 33.0, "crYes": 50.0, "crSuperYes": 50.0, "crMegaYes": 0.0, "calls": 38, "margin": 2530.09}, {"date": "2026-06-15", "notReached": 3, "notPossible": 2, "notSuccessful": 2, "convTW": 0, "convYes": 0, "convSY": 2, "convMY": 0, "upsells": 0, "wka": 0, "margeOEM": 127.92, "margeUpsell": 0.0, "margeWKA": 0.0, "optPerH": 0, "convOEM": 2, "aktivitaeten": 9, "optGesamt": 2, "margeGesamt": 127.92, "crOEM": 50.0, "crTeilweise": 0.0, "crYes": 0.0, "crSuperYes": 100.0, "crMegaYes": 0.0, "calls": 9, "margin": 127.92}, {"date": "2026-06-10", "notReached": 8, "notPossible": 1, "notSuccessful": 0, "convTW": 1, "convYes": 0, "convSY": 0, "convMY": 0, "upsells": 8, "wka": 0, "margeOEM": 353.56, "margeUpsell": 1209.97, "margeWKA": 0.0, "optPerH": 0, "convOEM": 1, "aktivitaeten": 10, "optGesamt": 9, "margeGesamt": 1563.53, "crOEM": 100.0, "crTeilweise": 100.0, "crYes": 0, "crSuperYes": 0, "crMegaYes": 0, "calls": 10, "margin": 1563.53}, {"date": "2026-06-09", "notReached": 5, "notPossible": 0, "notSuccessful": 0, "convTW": 0, "convYes": 0, "convSY": 1, "convMY": 1, "upsells": 0, "wka": 0, "margeOEM": 402.54, "margeUpsell": 0.0, "margeWKA": 0.0, "optPerH": 0, "convOEM": 2, "aktivitaeten": 7, "optGesamt": 2, "margeGesamt": 402.54, "crOEM": 100.0, "crTeilweise": 0.0, "crYes": 0.0, "crSuperYes": 50.0, "crMegaYes": 50.0, "calls": 7, "margin": 402.54}, {"date": "2026-06-02", "notReached": 6, "notPossible": 0, "notSuccessful": 0, "convTW": 1, "convYes": 1, "convSY": 0, "convMY": 0, "upsells": 0, "wka": 1, "margeOEM": 166.63, "margeUpsell": 0.0, "margeWKA": 112.71, "optPerH": 0, "convOEM": 2, "aktivitaeten": 8, "optGesamt": 3, "margeGesamt": 279.34, "crOEM": 100.0, "crTeilweise": 50.0, "crYes": 100.0, "crSuperYes": 0.0, "crMegaYes": 0.0, "calls": 8, "margin": 279.34}, {"date": "2026-06-01", "notReached": 7, "notPossible": 0, "notSuccessful": 1, "convTW": 0, "convYes": 1, "convSY": 0, "convMY": 0, "upsells": 0, "wka": 0, "margeOEM": 23.68, "margeUpsell": 0.0, "margeWKA": 0.0, "optPerH": 0, "convOEM": 1, "aktivitaeten": 9, "optGesamt": 1, "margeGesamt": 23.68, "crOEM": 50.0, "crTeilweise": 0.0, "crYes": 100.0, "crSuperYes": 0.0, "crMegaYes": 0.0, "calls": 9, "margin": 23.68}],
@@ -962,7 +939,6 @@ function fd(d){
 function today(){return new Date().toISOString().slice(0,10);}
 function avgSkill(id){var p=protocols[id];if(!p||!p.length||!p[0].skills)return null;var v=Object.values(p[0].skills);return Math.round(v.reduce(function(a,b){return a+b;},0)/v.length);}
 function lastRating(id){var p=protocols[id];return(p&&p.length)?p[0].rating:null;}
-function srAvg(id){var d=solidroadData[id];if(!d||!d.simulations.length)return null;var v=d.simulations.map(function(s){return s.score;});return Math.round(v.reduce(function(a,b){return a+b;},0)/v.length);}
 function scoreColor(s){return s>=85?'var(--teal)':s>=70?'var(--purple)':'var(--amber)';}
 function phaseBg(ph){return{Aktiv:RS['Yes'].bg,Onboarding:RS['Teilweise'].bg,Entwicklung:RS['Super Yes'].bg}[ph]||'#f0efec';}
 function phaseCol(ph){return{Aktiv:RS['Yes'].color,Onboarding:RS['Teilweise'].color,Entwicklung:RS['Super Yes'].color}[ph]||'#6b6b67';}
@@ -1098,9 +1074,6 @@ function renderMain(){if(view==='team')renderTeam();else if(view==='coaching')re
 // ── TEAM VIEW ──
 
 // ── COACHING HELPERS ──
-function sessionsFuerMA(id){
-  return (protocols[id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-}
 function letzteSessionMA(id){
   var p=protocols[id]||[];
   return p.length?p.slice().sort(function(a,b){return b.date.localeCompare(a.date);})[0]:null;
@@ -1159,64 +1132,6 @@ function toggleTeamGrp(key){
   if(arrow)arrow.style.transform=col[key]?'rotate(-90deg)':'rotate(0deg)';
 }
 
-function buildGroupedCards(list,days){
-  var TGROUPS=[
-    {key:'SE',label:'SE',filter:function(e){return e.team==='SE';}},
-    {key:'SR',label:'SR',filter:function(e){return e.team==='SR';}},
-    {key:'VLC',label:'VLC',filter:function(e){return e.team==='VLC';}},
-  ];
-  var CK='sfp_team_col';
-  var col={};try{col=JSON.parse(localStorage.getItem(CK)||'{}');}catch(ex){}
-  var h='';
-  TGROUPS.forEach(function(grp){
-    var members=list.filter(grp.filter);
-    if(!members.length)return;
-    var isCol=!!col[grp.key];
-    h+='<div style="margin-bottom:20px">';
-    h+='<div class="team-grp-hdr" data-key="'+grp.key+'" onclick="toggleTeamGrp(this.dataset.key)" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:10px">';
-    h+='<span style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">'+grp.label+'</span>';
-    h+='<span style="background:var(--purple-bg);color:var(--purple);font-size:11px;font-weight:600;padding:1px 8px;border-radius:20px">'+members.length+'</span>';
-    h+='<span id="tgarr-'+grp.key+'" style="margin-left:auto;color:var(--text3);font-size:12px;display:inline-block;transition:transform .2s;transform:'+(isCol?'rotate(-90deg)':'rotate(0deg)')+'">▾</span>';
-    h+='</div>';
-    h+='<div id="tgbody-'+grp.key+'" style="display:'+(isCol?'none':'grid')+'" class="team-grid">';
-    members.forEach(function(emp){
-      var c=COLORS[emp.color%COLORS.length];
-      var ep=getPerf(emp.id,days);
-      function ea(key){return ep.length?Math.round(ep.reduce(function(a,x){return a+x[key];},0)/ep.length):null;}
-      var crOEM=ea('crOEM'),marge=ea('margeGesamt');
-      var empT=empTargets(emp);
-      function kCol(v,t,dir){if(v===null||!t)return'var(--text2)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
-      var ob=emp.phase==='Onboarding';
-      var obPct=ob?Math.round(onboardingProgress(emp.id)*100):null;
-      var r=lastRating(emp.id);var rs=r?RS[r]:null;
-      var al=checkAlerts(emp.id);
-      h+='<div class="card" style="cursor:pointer" onclick="selectEmp('+emp.id+')">';
-      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
-      h+='<div class="av" style="width:36px;height:36px;font-size:13px;background:'+c.bg+';color:'+c.text+'">'+ini(emp.name)+'</div>';
-      h+='<div style="flex:1"><div style="font-weight:600;font-size:13px">'+emp.name+'</div><div style="font-size:11px;color:var(--text2)">'+emp.role+'</div></div>';
-      h+='<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--bg2);color:var(--text2)">'+emp.phase+'</span>';
-      h+='</div>';
-      if(ob&&obPct!==null){h+='<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px"><span>Onboarding</span><span>'+obPct+'%</span></div><div style="height:5px;background:var(--bg3);border-radius:3px"><div style="height:100%;width:'+obPct+'%;background:var(--amber);border-radius:3px"></div></div></div>';}
-      h+='<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--text2)">CR OEM</span><span style="font-weight:600;color:'+kCol(crOEM,empT.crOEM.val,empT.crOEM.dir)+'">'+(crOEM!==null?crOEM+'%':'—')+'</span></div>';
-      h+='<div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;position:relative"><div style="height:100%;width:'+Math.min(crOEM||0,100)+'%;background:'+kCol(crOEM,empT.crOEM.val,empT.crOEM.dir)+';border-radius:3px"></div>';
-      h+='<div style="position:absolute;top:0;bottom:0;left:'+empT.crOEM.val+'%;width:2px;background:rgba(0,0,0,0.25)"></div></div></div>';
-      h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px">';
-      [{k:'crTeilweise',l:'TW',t:empT.crTeilweise},{k:'crYes',l:'Yes',t:null},{k:'crSuperYes',l:'SY',t:empT.crSuperYes},{k:'crMegaYes',l:'MY',t:empT.crMegaYes}].forEach(function(m){
-        var v=ea(m.k);var vCol=m.t?kCol(v,m.t.val,m.t.dir):'var(--text2)';
-        h+='<div style="text-align:center;background:var(--bg2);border-radius:var(--r-sm);padding:4px 2px"><div style="font-size:9px;color:var(--text3)">'+m.l+'</div><div style="font-size:12px;font-weight:600;color:'+vCol+'">'+(v!==null?v+'%':'—')+'</div></div>';
-      });
-      h+='</div>';
-      h+='<div style="display:flex;justify-content:space-between;font-size:11px;border-top:1px solid var(--border);padding-top:8px">';
-      h+='<span style="color:var(--text2)">Marge ('+days+'d)</span>';
-      h+='<span style="font-weight:600;color:var(--blue)">'+(marge!==null?'€'+Math.round(marge).toLocaleString('de-DE'):'—')+'</span>';
-      h+='</div>';
-      if(al.length){h+='<div style="margin-top:6px;font-size:10px;color:var(--red)">⚠ '+al.length+' KPI-Alert'+(al.length>1?'s':'')+'</div>';}
-      h+='</div>';
-    });
-    h+='</div></div>';
-  });
-  return h;
-}
 
 
 function setTeamFilter(k){teamFilter=k;renderMain();}
@@ -1241,13 +1156,6 @@ function renderTeam(){
   function delta(vD,v7){
     if(days===7||vD===null||v7===null)return null;
     return Math.round(vD)-Math.round(v7);
-  }
-  function deltaHTML(d,pct){
-    if(d===null)return '';
-    var sign=d>0?'+':'';
-    var col=d>0?'var(--teal)':d<0?'var(--red)':'var(--text3)';
-    var arrow=d>0?'↑':d<0?'↓':'→';
-    return '<span style="font-size:11px;font-weight:600;color:'+col+'">'+arrow+' '+sign+d+(pct?'%':'')+'</span>';
   }
 
   function crCell(val,target,dir){
@@ -3163,34 +3071,7 @@ function saveSession(empId){
 function setMetric(m){perfMetric=m;renderTab();}
 function setRange(r){perfRange=r;renderTab();}
 
-function saveNote(){
-  var date=document.getElementById('nd').value;
-  var rating=document.getElementById('nr').value;
-  var focus=document.getElementById('nf').value.trim();
-  var text=document.getElementById('nt').value.trim();
-  if(!text)return;
-  var criteria={};
-  ratingCriteria.forEach(function(rc){var el=document.getElementById('rc-'+rc.id);if(el&&el.value)criteria[rc.id]=parseInt(el.value);});
-  if(!protocols[selectedEmp])protocols[selectedEmp]=[];
-  protocols[selectedEmp].unshift({id:Date.now(),date:date,rating:rating,note:text,focus:focus,criteria:criteria});
-  renderSidebar();renderTab();
-}
 
-function savePerf(){
-  var date=document.getElementById('pd').value;
-  var crOEM=parseInt(document.getElementById('po').value)||0;
-  var crTeilweise=parseInt(document.getElementById('pt').value)||0;
-  var crYes=parseInt(document.getElementById('pyes').value)||0;
-  var crSuperYes=parseInt(document.getElementById('psy').value)||0;
-  var crMegaYes=parseInt(document.getElementById('pmy').value)||0;
-  var optPerH=parseFloat(document.getElementById('pop').value)||0;
-  var note=document.getElementById('pn').value.trim();
-  var calls=20;
-  var margin=Math.round(calls*(crOEM/100)*13);
-  if(!performance[selectedEmp])performance[selectedEmp]=[];
-  performance[selectedEmp].unshift({id:Date.now(),date:date,calls:calls,crOEM:crOEM,crTeilweise:crTeilweise,crYes:crYes,crSuperYes:crSuperYes,crMegaYes:crMegaYes,optPerH:optPerH,margin:margin,note:note});
-  renderTab();
-}
 
 function saveSRSim(){
   var name=document.getElementById('srName').value.trim();
@@ -3203,23 +3084,6 @@ function saveSRSim(){
   renderTab();
 }
 
-function toggleOB(i){
-  if(!onboarding[selectedEmp])onboarding[selectedEmp]=obSteps.map(function(){return false;});
-  onboarding[selectedEmp][i]=!onboarding[selectedEmp][i];
-  renderTab();
-}
-function toggleOBDetail(i){
-  var d=document.getElementById('ob-d-'+i);
-  var ch=document.getElementById('chev-'+i);
-  if(!d)return;
-  var open=d.classList.toggle('open');
-  if(ch)ch.classList.toggle('open',open);
-}
-function saveVideoUrl(i){
-  var url=document.getElementById('vid-'+i).value.trim();
-  obSteps[i].videoUrl=url;
-  renderTab();
-}
 function saveOBStep(){
   var label=document.getElementById('obLabelInput').value.trim();
   var day=parseInt(document.getElementById('obDayInput').value)||1;
@@ -3269,15 +3133,6 @@ function saveNewTask(){
   var tsrc=document.getElementById('taskQuelle');if(tsrc)tsrc.value='';
   closeModal('addTaskModal');
   renderTab();
-}
-function addTaskFromCurrentProtocol(){
-  var focus=document.getElementById('nf');
-  var date=document.getElementById('nd');
-  var text=(focus&&focus.value.trim())?focus.value.trim():'Nachbereitung Session';
-  var src='Session '+(date?fd(date.value):'');
-  if(!tasks[selectedEmp])tasks[selectedEmp]=[];
-  tasks[selectedEmp].unshift({id:Date.now(),text:text,description:'',done:false,priority:'medium',dueDate:'',source:src});
-  alert('Aufgabe hinzugefügt. Zum Aufgaben-Tab wechseln.');
 }
 function saveNewEmp(){
   var name=document.getElementById('newName').value.trim();
@@ -3401,13 +3256,6 @@ function importCSV(file){
 }
 
 function saveFTP(){settings.ftpUrl=document.getElementById('ftpInput').value.trim();alert('FTP-URL gespeichert.');}
-function saveTargets(){
-  KPI_TARGETS.crOEM.val=parseFloat(document.getElementById('tOEM').value)||55;
-  KPI_TARGETS.crSuperYes.val=parseFloat(document.getElementById('tSY').value)||12;
-  KPI_TARGETS.crMegaYes.val=parseFloat(document.getElementById('tMY').value)||8;
-  KPI_TARGETS.optPerH.val=parseFloat(document.getElementById('tOpt').value)||2;
-  renderSettings();
-}
 function saveSRKey(){
   var key=document.getElementById('srKeyInput').value.trim();
   var org=document.getElementById('srOrgInput').value.trim();
@@ -3547,12 +3395,6 @@ function toggleCallForm(){
   }
 }
 
-function switchToCallForm(){
-  var body=document.getElementById('cbFormBody');
-  if(body&&body.style.display==='none') toggleCallForm();
-  var el=document.getElementById('callFormSection');
-  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-}
 
 function setCbScore(key,val){
   _cbScores[key]=val;
@@ -3652,29 +3494,7 @@ if(!hasData){
 
 
 // ── REVIEW ACTIONS ──
-function completeReview(id){
-  if(!reviews[selectedEmp])reviews[selectedEmp]=[];
-  var rev=reviews[selectedEmp].find(function(r){return r.id===id;});
-  if(!rev)return;
-  var ne=document.getElementById('rnotes-'+id);
-  var ge=document.getElementById('rgoals-'+id);
-  var re=document.getElementById('rrating-'+id);
-  var rdate=document.getElementById('rdate-'+id);
-  rev.notes=ne?ne.value.trim():'';
-  rev.goals=ge?ge.value.trim():'';
-  rev.rating=re&&re.value?re.value:null;
-  rev.date=rdate?rdate.value:rev.date;
-  rev.status='completed';
-  rev.auto=false;
-  rev.kpis={};
-  ['crOEM','crSuperYes','crMegaYes','optPerH'].forEach(function(k){
-    var el=document.getElementById('rkpi-'+k+'-'+id);
-    if(el&&el.value)rev.kpis[k]=parseFloat(el.value);
-  });
-  renderTab();
-}
 
-function addReviewDialog(){return addReview();}
 function addReview(){
   var type=prompt('Gesprächstyp:\nOnboarding-Gespräch / Performance-Gespräch / Jahresgespräch','Performance-Gespräch');
   if(!type||!type.trim())return;
@@ -3686,22 +3506,6 @@ function addReview(){
 }
 
 // ── EMP SETTINGS ACTIONS ──
-function saveEmpSettings(){
-  var emp=employees.find(function(e){return e.id===selectedEmp;});
-  if(!emp)return;
-  var teamEl=document.getElementById('es-team');
-  var teamVal=teamEl?teamEl.value:'';
-  if(teamVal==='__new__'){teamVal=prompt('Neuer Team-Name:','')||emp.team;}
-  emp.name=document.getElementById('es-name').value.trim()||emp.name;
-  emp.role=document.getElementById('es-role').value;
-  emp.phase=document.getElementById('es-phase').value;
-  emp.team=teamVal||emp.team;
-  emp.startDate=document.getElementById('es-start').value;
-  emp.contract=document.getElementById('es-contract').value;
-  emp.hours=parseInt(document.getElementById('es-hours').value)||40;
-  renderSidebar();
-  renderEmpDetail();
-}
 
 function setEmpColor(colorIdx){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
@@ -3710,27 +3514,7 @@ function setEmpColor(colorIdx){
   renderTab();
 }
 
-function saveEmpTargets(){
-  var emp=employees.find(function(e){return e.id===selectedEmp;});
-  if(!emp)return;
-  if(!emp.targets)emp.targets={};
-  emp.targets.crOEM=parseFloat(document.getElementById('es-crOEM').value)||55;
-  emp.targets.crSuperYes=parseFloat(document.getElementById('es-crSY').value)||12;
-  emp.targets.crMegaYes=parseFloat(document.getElementById('es-crMY').value)||8;
-  emp.targets.optPerH=parseFloat(document.getElementById('es-opt').value)||2.0;
-  alert('Ziele gespeichert für '+emp.name+'. Die Teamübersicht verwendet ab jetzt die individuellen Zielwerte.');
-  renderTab();
-}
 
-function deactivateEmp(){
-  var emp=employees.find(function(e){return e.id===selectedEmp;});
-  if(!emp)return;
-  if(!confirm('Mitarbeiter deaktivieren: '+emp.name+'\nMitarbeiter wird ausgeblendet. Alle Daten bleiben erhalten.'))return;
-  emp.active=false;
-  view='team';
-  renderSidebar();
-  renderTeam();
-}
 
 function scorecardSpeichern(){
   var pr=protocols[selectedEmp];
