@@ -1060,17 +1060,6 @@ function aufmerksamkeitFarbe(tage){
 }
 
 
-function toggleTeamGrp(key){
-  var CK='sfp_team_col';
-  var col={};try{col=JSON.parse(localStorage.getItem(CK)||'{}');}catch(ex){}
-  col[key]=!col[key];
-  try{localStorage.setItem(CK,JSON.stringify(col));}catch(ex){}
-  var body=document.getElementById('tgbody-'+key);
-  var arrow=document.getElementById('tgarr-'+key);
-  if(body)body.style.display=col[key]?'none':'grid';
-  if(arrow)arrow.style.transform=col[key]?'rotate(-90deg)':'rotate(0deg)';
-}
-
 
 
 function setTeamFilter(k){teamFilter=k;renderMain();}
@@ -3602,17 +3591,6 @@ function mitarbeiterDeaktivieren(){
 var _cbScores={};
 
 
-function toggleCallForm(){
-  var body=document.getElementById('cbFormBody');
-  var btn=document.getElementById('cbToggleBtn');
-  if(!body)return;
-  var open=body.style.display==='none';
-  body.style.display=open?'block':'none';
-  if(btn){
-    btn.innerHTML=open?'<i class="ti ti-x"></i> Schließen':'<i class="ti ti-plus"></i> Call bewerten';
-    btn.style.background=open?'var(--text2)':'var(--purple)';
-  }
-}
 
 
 function setCbScore(key,val){
