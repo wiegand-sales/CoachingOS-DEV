@@ -1007,9 +1007,10 @@ function renderSidebar(){
   if(view==='settings')document.getElementById('nav-settings').classList.add('active');
   var HIDDEN=['SDM','SC'];
   var visible=employees.filter(function(e){return e.active!==false&&HIDDEN.indexOf(e.role)<0;});
-  // Mitarbeiter in Onboarding-Phase kommen alle in eine Gruppe
-  var onboardingEmps=visible.filter(function(e){return e.phase==='Onboarding';});
-  var aktivEmps=visible.filter(function(e){return e.phase!=='Onboarding';});
+  // Mitarbeiter in Onboarding-Phase kommen alle in eine Gruppe -- AUSSER VLC (Valencia):
+  // VLC wird immer als eigener Standort gefuehrt, unabhaengig vom Onboarding-Status
+  var onboardingEmps=visible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
+  var aktivEmps=visible.filter(function(e){return e.phase!=='Onboarding'||e.role==='VLC';});
   // Gruppen dynamisch nach Position (role), feste Reihenfolge
   var order=['SE','SR','VLC','SDM','SC'];
   var positions=[];
@@ -1143,7 +1144,7 @@ function renderTeam(){
   var HIDDEN=['SDM','SC'];
   var allVisible=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0;});
   var inactiveAll=employees.filter(function(e){return e.active===false&&HIDDEN.indexOf(e.role)<0;});
-  var list=teamFilter==='INAKTIV'?inactiveAll:teamFilter==='ALL'?allVisible:teamFilter==='OB'?allVisible.filter(function(e){return e.phase==='Onboarding';}):allVisible.filter(function(e){return e.role===teamFilter&&e.phase!=='Onboarding';});
+  var list=teamFilter==='INAKTIV'?inactiveAll:teamFilter==='ALL'?allVisible:teamFilter==='OB'?allVisible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';}):teamFilter==='VLC'?allVisible.filter(function(e){return e.role==='VLC';}):allVisible.filter(function(e){return e.role===teamFilter&&e.phase!=='Onboarding';});
   var allP=list.map(function(e){return getPerf(e.id,days);}).reduce(function(a,b){return a.concat(b);},[]);
   function tAvg(key){if(!allP.length)return null;return allP.reduce(function(a,x){return a+x[key];},0)/allP.length;}
   var totalAlerts=list.reduce(function(a,e){return a+checkAlerts(e.id).length;},0);
@@ -1435,12 +1436,12 @@ function renderTeam(){
     +(totalAlerts>0?'<div class="alert alert-warn" style="margin-bottom:18px"><i class="ti ti-alert-triangle" style="font-size:18px;color:var(--amber);flex-shrink:0"></i><div><div style="font-size:13px;font-weight:600;color:var(--amber-dark)">'+totalAlerts+' Performance-Alert'+(totalAlerts!==1?'s':'')+' im Team</div><div style="font-size:12px;color:var(--amber-dark)">'+list.filter(function(e){return checkAlerts(e.id).length>0;}).map(function(e){return e.name;}).join(', ')+'</div></div></div>':'')
     // CR Tabelle
     +(function(){
-      var onboardingEmpsT=allVisible.filter(function(e){return e.phase==='Onboarding';});
+      var onboardingEmpsT=allVisible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
       var FDEFS=[
         {key:'ALL',    label:'Alle',       n:allVisible.length},
         {key:'SE',     label:'SE',         n:allVisible.filter(function(e){return e.role==='SE'&&e.phase!=='Onboarding';}).length},
         {key:'SR',     label:'SR',         n:allVisible.filter(function(e){return e.role==='SR'&&e.phase!=='Onboarding';}).length},
-        {key:'VLC',    label:'VLC',        n:allVisible.filter(function(e){return e.role==='VLC'&&e.phase!=='Onboarding';}).length},
+        {key:'VLC',    label:'VLC',        n:allVisible.filter(function(e){return e.role==='VLC';}).length},
         {key:'OB',     label:'Onboarding', n:onboardingEmpsT.length},
         {key:'INAKTIV',label:'Inaktiv',    n:inactiveAll.length},
       ];
