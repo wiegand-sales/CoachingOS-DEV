@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>SFP Coaching – Wiegand &amp; Partner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -476,7 +479,7 @@ function initAppAfterLogin(){
   if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
   _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
-  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase()]).then(function(){
+  Promise.all([loadEmployeesFromSupabase(), loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase()]).then(function(){
     lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
     runAppInit();
   });
@@ -687,10 +690,6 @@ function lsSave(){
       employees:employees,
       protocols:protocols,
       solidroadData:solidroadData,
-      KPI_TARGETS:KPI_TARGETS,
-      settings:settings,
-      ratingCriteria:ratingCriteria,
-      callRatings:callRatings,
       savedAt:new Date().toISOString()
     }));
   }catch(e){console.warn('lsSave failed:',e);}
@@ -705,10 +704,6 @@ function lsLoad(){
     // aus dem localStorage-Cache ueberschreiben, sonst gewinnt der alte Demo-Stand.
     if(d.protocols)protocols=d.protocols;
     if(d.solidroadData)solidroadData=d.solidroadData;
-    if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
-    if(d.settings)settings=d.settings;
-    if(d.ratingCriteria)ratingCriteria=d.ratingCriteria;
-    if(d.callRatings)callRatings=d.callRatings;
     return true;
   }catch(e){console.warn('lsLoad failed:',e);return false;}
 }
@@ -731,12 +726,10 @@ function importDaten(file){
   reader.onload=function(e){
     try{
       var d=JSON.parse(e.target.result);
-      // employees wird bewusst NICHT mehr aus dem Backup uebernommen -- lebt jetzt in Supabase
+      // employees, KPI_TARGETS, settings, ratingCriteria werden bewusst NICHT mehr aus dem
+      // Backup uebernommen -- leben jetzt in Supabase
       if(d.protocols)protocols=d.protocols;
       if(d.solidroadData)solidroadData=d.solidroadData;
-      if(d.KPI_TARGETS){KPI_TARGETS=d.KPI_TARGETS;CR_GOOD=KPI_TARGETS.crOEM.val;}
-      if(d.settings)settings=d.settings;
-      if(d.ratingCriteria)ratingCriteria=d.ratingCriteria;
       lsSave();renderSidebar();renderMain();
       alert('Backup importiert.');
     }catch(ex){alert('Fehler: '+ex.message);}
@@ -3053,9 +3046,15 @@ function saveRatingCriterion(){
   var target=parseInt(document.getElementById('rcTarget').value)||80;
   var desc=document.getElementById('rcDesc').value.trim();
   if(!name)return;
-  ratingCriteria.push({id:Date.now(),name:name,cat:cat,target:target,desc:desc});
-  closeModal('ratingModal');
-  renderTab();
+  sb.from('rating_criteria').insert({name:name,category:cat,target:target,description:desc,sort_order:ratingCriteria.length}).select().single().then(function(res){
+    if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    var r=res.data;
+    ratingCriteria.push({id:r.id,name:r.name,cat:r.category,target:r.target,desc:r.description||''});
+    closeModal('ratingModal');
+    renderTab();
+  }).catch(function(err){
+    alert('Unerwarteter Fehler: '+err.message);
+  });
 }
 function toggleTask(id){
   var t=(tasks[selectedEmp]||[]).find(function(x){return x.id===id;});
@@ -3194,6 +3193,48 @@ function loadProtocolsFromSupabase(){
     });
     Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
     protocols=byEmp;
+    return true;
+  });
+}
+
+function loadKpiTargetsFromSupabase(){
+  return sb.from('kpi_targets').select('*').then(function(res){
+    if(res.error){console.warn('kpi_targets load failed:',res.error);return false;}
+    res.data.forEach(function(r){
+      KPI_TARGETS[r.metric_key]={val:r.val,dir:r.dir,label:r.label};
+    });
+    if(KPI_TARGETS.crOEM)CR_GOOD=KPI_TARGETS.crOEM.val;
+    return true;
+  });
+}
+
+function loadRatingCriteriaFromSupabase(){
+  return sb.from('rating_criteria').select('*').order('sort_order').then(function(res){
+    if(res.error){console.warn('rating_criteria load failed:',res.error);return false;}
+    ratingCriteria=res.data.map(function(r){
+      return {id:r.id,name:r.name,cat:r.category,target:r.target,desc:r.description||''};
+    });
+    return true;
+  });
+}
+
+function loadSettingsFromSupabase(){
+  return sb.from('settings').select('*').then(function(res){
+    if(res.error){console.warn('settings load failed:',res.error);return false;}
+    res.data.forEach(function(r){
+      if(r.key==='ftpUrl')settings.ftpUrl=r.value||'';
+    });
+    return true;
+  });
+}
+
+function loadAdminSecretsFromSupabase(){
+  return sb.from('admin_secrets').select('*').then(function(res){
+    if(res.error){console.warn('admin_secrets load failed (normal fuer Nicht-Admins):',res.error);return false;}
+    (res.data||[]).forEach(function(r){
+      if(r.key==='srApiKey')settings.srApiKey=r.value||'';
+      if(r.key==='srOrgId')settings.srOrgId=r.value||'';
+    });
     return true;
   });
 }
@@ -3360,13 +3401,23 @@ function importCSV(file){
   reader.readAsText(file);
 }
 
-function saveFTP(){settings.ftpUrl=document.getElementById('ftpInput').value.trim();alert('FTP-URL gespeichert.');}
+function saveFTP(){
+  var url=document.getElementById('ftpInput').value.trim();
+  settings.ftpUrl=url;
+  sb.from('settings').upsert({key:'ftpUrl',value:url},{onConflict:'key'}).then(function(res){
+    if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    alert('FTP-URL gespeichert.');
+  });
+}
 function saveSRKey(){
   var key=document.getElementById('srKeyInput').value.trim();
   var org=document.getElementById('srOrgInput').value.trim();
   if(!key)return;
   settings.srApiKey=key;settings.srOrgId=org;
-  closeModal('srModal');renderSettings();
+  sb.from('admin_secrets').upsert([{key:'srApiKey',value:key},{key:'srOrgId',value:org}],{onConflict:'key'}).then(function(res){
+    if(res.error){alert('Fehler beim Speichern (nur Admin darf das): '+res.error.message);return;}
+    closeModal('srModal');renderSettings();
+  });
 }
 
 
@@ -3649,26 +3700,33 @@ function setEmpColor(colorIdx){
 
 function zieleSpeichern(){
   var keys=['crOEM','crTeilweise','crSuperYes','crMegaYes','optPerH'];
+  var updates=[];
   keys.forEach(function(k){
     var dirEl=document.getElementById('dir-'+k);
     var valEl=document.getElementById('val-'+k);
     if(dirEl&&valEl&&KPI_TARGETS[k]){
       KPI_TARGETS[k].dir=dirEl.value;
       KPI_TARGETS[k].val=parseFloat(valEl.value)||KPI_TARGETS[k].val;
+      updates.push({metric_key:k,label:KPI_TARGETS[k].label,val:KPI_TARGETS[k].val,dir:KPI_TARGETS[k].dir});
     }
   });
   CR_GOOD=KPI_TARGETS.crOEM.val;
   renderEinstellungen();
-  var zs=document.getElementById('ziele-status');if(zs){zs.textContent='✓ Gespeichert';setTimeout(function(){zs.textContent='';},3000);}
-  var btn=document.querySelector('[onclick="zieleSpeichern()"]');
-  if(btn){
-    btn.innerHTML='<i class="ti ti-check"></i> Gespeichert!';
-    btn.style.background='var(--teal)';
-    setTimeout(function(){
+  sb.from('kpi_targets').upsert(updates,{onConflict:'metric_key'}).then(function(res){
+    if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    var zs=document.getElementById('ziele-status');if(zs){zs.textContent='✓ Gespeichert';setTimeout(function(){zs.textContent='';},3000);}
+    var btn=document.querySelector('[onclick="zieleSpeichern()"]');
+    if(btn){
+      btn.innerHTML='<i class="ti ti-check"></i> Gespeichert!';
+      btn.style.background='var(--teal)';
+      setTimeout(function(){
       btn.innerHTML='<i class="ti ti-check"></i> Zielwerte speichern';
       btn.style.background='';
     },2000);
   }
+  }).catch(function(err){
+    alert('Unerwarteter Fehler: '+err.message);
+  });
 }
 </script>
 </body>
