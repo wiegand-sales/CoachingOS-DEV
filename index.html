@@ -473,7 +473,8 @@ function loadEmployeesFromSupabase(){
       return {
         id: e.id, name: e.name, role: e.role, phase: e.phase,
         color: e.color_index, startDate: e.start_date, endDate: e.end_date || null,
-        team: e.team, contract: e.contract, hours: e.hours, active: e.active
+        team: e.team, contract: e.contract, hours: e.hours, active: e.active,
+        auth_user_id: e.auth_user_id || null
       };
     });
     return true;
@@ -481,11 +482,24 @@ function loadEmployeesFromSupabase(){
 }
 
 var _appInitStarted = false;
+var currentCoach = null;      // {id,name,role} falls eingeloggter User ein Coach (SDM/SC) ist, sonst null (Admin/Overview)
+var coachFilterView = 'overview'; // 'overview' | employee-id des Coaches
+function resolveCurrentCoach(){
+  return sb.auth.getUser().then(function(res){
+    var uid = res.data && res.data.user ? res.data.user.id : null;
+    if(!uid){currentCoach=null;return;}
+    var match = employees.find(function(e){return e.auth_user_id===uid;});
+    currentCoach = match || null;
+    coachFilterView = currentCoach ? currentCoach.id : 'overview';
+  }).catch(function(){currentCoach=null;});
+}
 function initAppAfterLogin(){
   if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
   _appInitStarted = true;
   document.getElementById('auth-gate').style.display = 'none';
   loadEmployeesFromSupabase().then(function(){
+    return resolveCurrentCoach();
+  }).then(function(){
     Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase()]).then(function(){
       lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
       runAppInit();
@@ -503,6 +517,7 @@ sb.auth.onAuthStateChange(function(event, session){
   if(session){ initAppAfterLogin(); }
 });
 
+function setCoachFilterView(v){coachFilterView=v;renderCoachingAnsicht();}
 function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
@@ -510,10 +525,14 @@ function renderCoachingAnsicht(){
   var all=[];
   liste.forEach(function(emp){
     (protocols[emp.id]||[]).forEach(function(p){
-      all.push({eid:emp.id,en:emp.name,d:p.date,r:p.rating,f:p.focus||'',s:p.status||'abgeschlossen',t:p.type||p.typ||'',sid:p.id,uhrzeit:p.uhrzeit||''});
+      all.push({eid:emp.id,en:emp.name,d:p.date,r:p.rating,f:p.focus||'',s:p.status||'abgeschlossen',t:p.type||p.typ||'',sid:p.id,uhrzeit:p.uhrzeit||'',coachId:p.coachId||null});
     });
   });
   all.sort(function(a,b){return b.d.localeCompare(a.d);});
+  var coachList=employees.filter(function(e){return (e.role==='SDM'||e.role==='SC')&&e.active!==false;});
+  if(coachFilterView!=='overview'){
+    all=all.filter(function(x){return x.coachId===coachFilterView;});
+  }
   var gep=all.filter(function(x){return x.d>=heute&&x.s==='geplant';}).sort(function(a,b){return a.d.localeCompare(b.d);});
   var abg=all.filter(function(x){return x.s==='abgeschlossen';});
   function ec(id){var e=employees.find(function(x){return x.id===id;});return e?COLORS[e.color%COLORS.length]:{bg:'#EEEDFE',text:'#3C3489'};}
@@ -624,7 +643,16 @@ function renderCoachingAnsicht(){
     '<div style="width:40px;height:40px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:17px"><i class="ti ti-calendar-event"></i></div>'+
     '<div><div class="tb-name">SFP Coaching</div><div class="tb-meta">'+liste.length+' Mitarbeiter · '+gep.length+' geplant · '+abg.length+' abgeschlossen</div></div></div>'+
     '<button class="btn btn-primary" onclick="openSessionModal(0)"><i class="ti ti-plus"></i> Session planen</button>'+
-    '</div><div class="content">';
+    '</div>';
+  if(coachList.length){
+    h+='<div class="tab-bar">';
+    h+='<div class="tab'+(coachFilterView==='overview'?' active':'')+'" onclick="setCoachFilterView(\'overview\')">Overview</div>';
+    coachList.forEach(function(c){
+      h+='<div class="tab'+(coachFilterView===c.id?' active':'')+'" onclick="setCoachFilterView(\''+c.id+'\')">'+c.name.split(' ')[0]+'</div>';
+    });
+    h+='</div>';
+  }
+  h+='<div class="content">';
 
   // ══ ZEILE 1: 3 Stat-Kacheln + Linien-Chart (volle Breite) ══
   h+='<div style="display:grid;grid-template-columns:repeat(3,140px) 1fr;gap:12px;margin-bottom:16px;align-items:stretch">';
@@ -3166,14 +3194,16 @@ function saveSession(empId){
   var payload={
     employee_id:empId,date:date,uhrzeit:uhrzeit||null,art:type,rating:null,
     note:notes,focus:focus,status:'abgeschlossen',
-    start_note:start,stop_note:stop,continue_note:cont
+    start_note:start,stop_note:stop,continue_note:cont,
+    coach_id:currentCoach?currentCoach.id:null
   };
   sb.from('protocols').insert(payload).select().single().then(function(res){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
     var r=res.data;
     var entry={
       id:r.id,date:r.date,uhrzeit:uhrzeit,type:type,rating:null,
-      topics:topics,start:start,stop:stop,cont:cont,notes:notes,note:notes,focus:focus,status:'abgeschlossen'
+      topics:topics,start:start,stop:stop,cont:cont,notes:notes,note:notes,focus:focus,status:'abgeschlossen',
+      coachId:r.coach_id||null
     };
     if(!protocols[empId])protocols[empId]=[];
     protocols[empId].unshift(entry);
@@ -3364,7 +3394,7 @@ function loadProtocolsFromSupabase(){
         id:r.id,date:r.date,uhrzeit:r.uhrzeit?r.uhrzeit.slice(0,5):'',type:r.art,rating:r.rating,
         note:r.note,notes:r.note,focus:r.focus,status:r.status,
         start:r.start_note||'',stop:r.stop_note||'',cont:r.continue_note||'',
-        topics:r.focus?[r.focus]:[]
+        topics:r.focus?[r.focus]:[],coachId:r.coach_id||null
       });
     });
     Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
