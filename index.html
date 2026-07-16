@@ -1875,6 +1875,52 @@ function renderTabBar(){
 
 function switchTab(t){activeTab=t;renderTabBar();renderTab();}
 
+var CALL_CATS=[
+  {key:'opener',        label:'Einstieg',            short:'Einstieg',   weight:0.05, col:'#534AB7', fill:'rgba(83,74,183,0.12)',  bg:'#EEEDFE', items:['intro','ziel']},
+  {key:'einwand',       label:'Einwandsentkräftung', short:'Einwand',    weight:0.35, col:'#C47A1E', fill:'rgba(196,122,30,0.12)', bg:'#FBEAE0', items:['qualifizieren','solidarisierung','umgang','entkraeftung','testabschluss','vertrauen']},
+  {key:'loop',          label:'Loop',                short:'Loop',       weight:0.10, col:'#1D9E75', fill:'rgba(29,158,117,0.12)', bg:'#E1F5EE', items:['dranbleiben']},
+  {key:'bedarf',        label:'Bedarfserweiterung',  short:'Bedarf',     weight:0.15, col:'#0A6B55', fill:'rgba(10,107,85,0.12)',  bg:'#E8F5EE', items:['erweitern','quantifizieren','potenzial']},
+  {key:'abschluss',     label:'Abschluss',           short:'Abschluss',  weight:0.20, col:'#BA7517', fill:'rgba(186,117,23,0.12)', bg:'#FEF3E2', items:['abschlussversuch','angebotsqualitaet','kaufsignale']},
+  {key:'gespraech',     label:'Gesprächsführung',    short:'Gespräch',   weight:0.10, col:'#535350', fill:'rgba(83,83,80,0.10)',   bg:'#F2F2F0', items:['struktur','kontrolle','klarheit','fragequalitaet']},
+  {key:'zusammenfassung',label:'Zusammenfassung',    short:'Zusammenf.', weight:0.05, col:'#2776d2', fill:'rgba(39,118,210,0.10)', bg:'#EBF2FD', items:['naechsteschritte']},
+];
+var ITEM_LABELS={
+  intro:'Intro / Einstieg',ziel:'Ziel des Calls',
+  qualifizieren:'Einwand qualifizieren',solidarisierung:'Solidarisierung',umgang:'Umgang mit Einwand',
+  entkraeftung:'Entkräftung',testabschluss:'Testabschluss',vertrauen:'Vertrauen aufbauen',
+  dranbleiben:'Re-Opening / Dranbleiben',
+  erweitern:'Bedarf erweitern',quantifizieren:'Bedarf quantifizieren',potenzial:'Potenzial erkennen',
+  abschlussversuch:'Abschlussversuch',angebotsqualitaet:'Angebotsqualität',kaufsignale:'Kaufsignale nutzen',
+  struktur:'Struktur',kontrolle:'Gesprächskontrolle',klarheit:'Klarheit',fragequalitaet:'Fragequalität',
+  naechsteschritte:'Zusammenfassung & nächste Schritte'
+};
+function catAvg(rat,cat){
+  var vals=cat.items.map(function(k){return rat.scores&&rat.scores[k]?rat.scores[k]:0;}).filter(function(v){return v>0;});
+  if(!vals.length)return 0;
+  return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+}
+function totalScore(rat){
+  var sum=0;CALL_CATS.forEach(function(cat){sum+=catAvg(rat,cat)*cat.weight*25;});return sum;
+}
+// ── Bedarfserkennung: welche QA-Kategorie ist über mehrere Calls hinweg konstant schwach? ──
+// Schwelle: Ø unter 2.0 von 4 (=unter 50%) UND mind. 60% der letzten Calls einzeln unter 2.0
+function qaWeakSpots(empId,n){
+  n=n||5;
+  var callRat=(callRatings[empId]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,n);
+  if(callRat.length<3)return [];
+  var weak=[];
+  CALL_CATS.forEach(function(cat){
+    var vals=callRat.map(function(r){return catAvg(r,cat);}).filter(function(v){return v>0;});
+    if(vals.length<3)return;
+    var avg=vals.reduce(function(a,b){return a+b;},0)/vals.length;
+    var belowCount=vals.filter(function(v){return v<2;}).length;
+    if(avg<2&&belowCount>=Math.ceil(vals.length*0.6)){
+      weak.push({key:cat.key,label:cat.label,avg:avg,n:vals.length,col:cat.col});
+    }
+  });
+  return weak;
+}
+
 // ── RENDER TAB ──
 function renderTab(){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
@@ -2074,51 +2120,6 @@ function renderTab(){
 
 
 
-var CALL_CATS=[
-  {key:'opener',        label:'Einstieg',            short:'Einstieg',   weight:0.05, col:'#534AB7', fill:'rgba(83,74,183,0.12)',  bg:'#EEEDFE', items:['intro','ziel']},
-  {key:'einwand',       label:'Einwandsentkräftung', short:'Einwand',    weight:0.35, col:'#C47A1E', fill:'rgba(196,122,30,0.12)', bg:'#FBEAE0', items:['qualifizieren','solidarisierung','umgang','entkraeftung','testabschluss','vertrauen']},
-  {key:'loop',          label:'Loop',                short:'Loop',       weight:0.10, col:'#1D9E75', fill:'rgba(29,158,117,0.12)', bg:'#E1F5EE', items:['dranbleiben']},
-  {key:'bedarf',        label:'Bedarfserweiterung',  short:'Bedarf',     weight:0.15, col:'#0A6B55', fill:'rgba(10,107,85,0.12)',  bg:'#E8F5EE', items:['erweitern','quantifizieren','potenzial']},
-  {key:'abschluss',     label:'Abschluss',           short:'Abschluss',  weight:0.20, col:'#BA7517', fill:'rgba(186,117,23,0.12)', bg:'#FEF3E2', items:['abschlussversuch','angebotsqualitaet','kaufsignale']},
-  {key:'gespraech',     label:'Gesprächsführung',    short:'Gespräch',   weight:0.10, col:'#535350', fill:'rgba(83,83,80,0.10)',   bg:'#F2F2F0', items:['struktur','kontrolle','klarheit','fragequalitaet']},
-  {key:'zusammenfassung',label:'Zusammenfassung',    short:'Zusammenf.', weight:0.05, col:'#2776d2', fill:'rgba(39,118,210,0.10)', bg:'#EBF2FD', items:['naechsteschritte']},
-];
-var ITEM_LABELS={
-  intro:'Intro / Einstieg',ziel:'Ziel des Calls',
-  qualifizieren:'Einwand qualifizieren',solidarisierung:'Solidarisierung',umgang:'Umgang mit Einwand',
-  entkraeftung:'Entkräftung',testabschluss:'Testabschluss',vertrauen:'Vertrauen aufbauen',
-  dranbleiben:'Re-Opening / Dranbleiben',
-  erweitern:'Bedarf erweitern',quantifizieren:'Bedarf quantifizieren',potenzial:'Potenzial erkennen',
-  abschlussversuch:'Abschlussversuch',angebotsqualitaet:'Angebotsqualität',kaufsignale:'Kaufsignale nutzen',
-  struktur:'Struktur',kontrolle:'Gesprächskontrolle',klarheit:'Klarheit',fragequalitaet:'Fragequalität',
-  naechsteschritte:'Zusammenfassung & nächste Schritte'
-};
-function catAvg(rat,cat){
-  var vals=cat.items.map(function(k){return rat.scores&&rat.scores[k]?rat.scores[k]:0;}).filter(function(v){return v>0;});
-  if(!vals.length)return 0;
-  return vals.reduce(function(a,b){return a+b;},0)/vals.length;
-}
-function totalScore(rat){
-  var sum=0;CALL_CATS.forEach(function(cat){sum+=catAvg(rat,cat)*cat.weight*25;});return sum;
-}
-// ── Bedarfserkennung: welche QA-Kategorie ist über mehrere Calls hinweg konstant schwach? ──
-// Schwelle: Ø unter 2.0 von 4 (=unter 50%) UND mind. 60% der letzten Calls einzeln unter 2.0
-function qaWeakSpots(empId,n){
-  n=n||5;
-  var callRat=(callRatings[empId]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,n);
-  if(callRat.length<3)return [];
-  var weak=[];
-  CALL_CATS.forEach(function(cat){
-    var vals=callRat.map(function(r){return catAvg(r,cat);}).filter(function(v){return v>0;});
-    if(vals.length<3)return;
-    var avg=vals.reduce(function(a,b){return a+b;},0)/vals.length;
-    var belowCount=vals.filter(function(v){return v<2;}).length;
-    if(avg<2&&belowCount>=Math.ceil(vals.length*0.6)){
-      weak.push({key:cat.key,label:cat.label,avg:avg,n:vals.length,col:cat.col});
-    }
-  });
-  return weak;
-}
 
   // ── CALL PERFORMANCE TAB ──
   if(activeTab==='call-performance'){
