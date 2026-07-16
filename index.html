@@ -357,6 +357,11 @@ tr:hover td{background:var(--bg2);}
       <option>Sonstiges</option>
     </select></div>
   </div>
+  <div style="margin-bottom:10px"><label>Ziel-KPI <span style="font-weight:400;color:var(--text3);font-size:11px">(worauf soll dieses Coaching einzahlen?)</span></label>
+    <select id="sessionFocusMetric">
+      <option value="">— Kein spezifisches KPI —</option>
+    </select>
+  </div>
   <div style="margin-bottom:14px"><label>Anlass / Notiz für den Coach</label><textarea id="sessionNotiz" placeholder="Warum wird diese Session eingeplant? Was soll der Coach beachten..."></textarea></div>
   <div class="modal-actions">
     <button class="btn" onclick="closeModal('sessionPlanenModal')">Abbrechen</button>
@@ -484,6 +489,18 @@ function loadEmployeesFromSupabase(){
 var _appInitStarted = false;
 var currentCoach = null;      // {id,name,role} falls eingeloggter User ein Coach (SDM/SC) ist, sonst null (Admin/Overview)
 var coachFilterView = 'overview'; // 'overview' | employee-id des Coaches
+var FOCUS_METRICS=[
+  {key:'aktivitaeten',label:'Aktivitäten'},
+  {key:'convOEM',label:'Conv. OEM'},
+  {key:'optGesamt',label:'Opt. Gesamt'},
+  {key:'crOEM',label:'CR OEM %'},
+  {key:'crTeilweise',label:'CR Teilweise %'},
+  {key:'crYes',label:'CR Yes %'},
+  {key:'crSuperYes',label:'CR Super Yes %'},
+  {key:'crMegaYes',label:'CR Mega Yes %'},
+  {key:'margeGesamt',label:'Marge Gesamt €'}
+];
+function focusMetricLabel(key){var m=FOCUS_METRICS.find(function(x){return x.key===key;});return m?m.label:key;}
 function resolveCurrentCoach(){
   return sb.auth.getUser().then(function(res){
     var uid = res.data && res.data.user ? res.data.user.id : null;
@@ -1774,7 +1791,7 @@ function renderTab(){
     });
     html+='</div><div class="chart-toggle">';
     [7,30,90].forEach(function(d){html+='<button class="'+(perfRange===d?'active':'')+'" data-d="'+d+'" onclick="setRange(parseInt(this.dataset.d))">'+d+'d</button>';});
-    html+='</div></div></div><canvas id="perfChart" height="80"></canvas></div>';
+    html+='</div></div></div><canvas id="perfChart" height="80"></canvas><div id="coachImpactPanel"></div></div>';
     // Tabelle
     html+='<div class="sec-title" style="margin-bottom:10px">Tagesübersicht</div>';
     if(!perfAll.length){
@@ -2415,6 +2432,11 @@ function renderTab(){
     html+='<option value="">— Bitte wählen —</option>';
     SESSION_TOPICS.forEach(function(t){html+='<option value="'+t+'">'+t+'</option>';});
     html+='</select></div></div>';
+    html+='<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Ziel-KPI <span style="font-weight:400;color:var(--text3)">(worauf soll dieses Coaching einzahlen?)</span></label>';
+    html+='<select id="sess-focus-metric" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">';
+    html+='<option value="">— Kein spezifisches KPI —</option>';
+    FOCUS_METRICS.forEach(function(m){html+='<option value="'+m.key+'">'+m.label+'</option>';});
+    html+='</select></div>';
     [{id:'sess-start',label:'START',    sub:'Was soll neu begonnen werden?',  col:'#2D7A4F',bg:'#E8F5EE'},
      {id:'sess-stop', label:'STOP',     sub:'Was soll aufgehört werden?',     col:'#C0392B',bg:'#FDECEA'},
      {id:'sess-cont', label:'CONTINUE', sub:'Was soll beibehalten werden?',   col:'#B8860B',bg:'#FEF9E7'},
@@ -2852,6 +2874,50 @@ function renderTab(){
         });
       }
 
+      // ── Coaching-Marker: welche Sessions fanden an welchem Tag statt? ──
+      var sessMap={};
+      (protocols[selectedEmp]||[]).forEach(function(s){
+        if(s.status==='geplant')return; // nur tatsächlich stattgefundene Coachings markieren
+        if(!sessMap[s.date])sessMap[s.date]=[];
+        sessMap[s.date].push(s);
+      });
+      var markMatch=data.map(function(row){
+        var hit=(sessMap[row.date]||[]).some(function(s){return s.focusMetric===perfMetric;});
+        return hit?(row[m.f]||0):null;
+      });
+      var markOther=data.map(function(row){
+        var hit=(sessMap[row.date]||[]).some(function(s){return s.focusMetric!==perfMetric;});
+        var matched=(sessMap[row.date]||[]).some(function(s){return s.focusMetric===perfMetric;});
+        return (hit&&!matched)?yMin:null;
+      });
+      if(markMatch.some(function(v){return v!==null;})){
+        datasets.push({
+          label:'Coaching (dieses KPI)',
+          data:markMatch,
+          showLine:false,
+          pointStyle:'rectRot',
+          pointRadius:8,
+          pointHoverRadius:10,
+          backgroundColor:'#206A72',
+          borderColor:'#fff',
+          borderWidth:2,
+          order:0
+        });
+      }
+      if(markOther.some(function(v){return v!==null;})){
+        datasets.push({
+          label:'Anderes Coaching',
+          data:markOther,
+          showLine:false,
+          pointStyle:'triangle',
+          pointRadius:5,
+          pointHoverRadius:7,
+          backgroundColor:'rgba(140,140,140,0.55)',
+          borderColor:'rgba(140,140,140,0.55)',
+          order:4
+        });
+      }
+
       activeChart=new Chart(canvas,{
         type:'line',
         data:{labels:labels,datasets:datasets},
@@ -2859,9 +2925,22 @@ function renderTab(){
           responsive:true,
           plugins:{
             legend:{
-              display:hasTeamAvg||target!==null,
+              display:hasTeamAvg||target!==null||markMatch.some(function(v){return v!==null;})||markOther.some(function(v){return v!==null;}),
               position:'top',
               labels:{font:{size:11},boxWidth:20,padding:12}
+            },
+            tooltip:{
+              callbacks:{
+                label:function(ctx){
+                  if(ctx.dataset.label==='Coaching (dieses KPI)'||ctx.dataset.label==='Anderes Coaching'){
+                    var row=data[ctx.dataIndex];
+                    var sess=sessMap[row.date]||[];
+                    if(!sess.length)return ctx.dataset.label;
+                    return sess.map(function(s){return (s.type||'Coaching')+(s.focus?' – '+s.focus:'');});
+                  }
+                  return ctx.dataset.label+': '+ctx.formattedValue;
+                }
+              }
             }
           },
           scales:{
@@ -2874,6 +2953,42 @@ function renderTab(){
           }
         }
       });
+
+      // ── Vorher/Nachher-Vergleich fürs aktuell gewählte KPI ──
+      (function(){
+        var panel=document.getElementById('coachImpactPanel');
+        if(!panel)return;
+        var relevant=(protocols[selectedEmp]||[]).filter(function(s){return s.status!=='geplant'&&s.focusMetric===perfMetric;});
+        if(!relevant.length){panel.innerHTML='';return;}
+        var fullPerf=(performance[selectedEmp]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+        function avgWindow(centerDate,daysBefore,daysAfter){
+          var c=new Date(centerDate+'T00:00:00');
+          var from=new Date(c);from.setDate(from.getDate()-daysBefore);
+          var to=new Date(c);to.setDate(to.getDate()+daysAfter);
+          var fromS=from.toISOString().slice(0,10),toS=to.toISOString().slice(0,10);
+          var rows=fullPerf.filter(function(p){return p.date>=fromS&&p.date<toS;});
+          var vals=rows.map(function(p){return p[m.f];}).filter(function(v){return v!==undefined&&v!==null;});
+          return vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
+        }
+        var rowsHtml=relevant.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,5).map(function(s){
+          var before=avgWindow(s.date,14,0);
+          var after=avgWindow(s.date,0,14);
+          var delta=(before!==null&&after!==null)?(after-before):null;
+          var good=delta!==null&&(target===null?delta>0:(tk&&empT[tk]&&empT[tk].dir==='lte'?delta<0:delta>0));
+          var deltaTxt=delta===null?'—':(delta>0?'+':'')+delta.toFixed(1);
+          var arrow=delta===null?'':(delta>0?'↑':delta<0?'↓':'→');
+          return '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border)">'
+            +'<div style="width:80px;font-size:12px;font-weight:600;flex-shrink:0">'+fd(s.date)+'</div>'
+            +'<div style="flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.type||'Coaching')+(s.focus?' · '+s.focus:'')+'</div>'
+            +'<div style="font-size:12px;color:var(--text3);width:70px;text-align:right">Ø vorher<br><b style="color:var(--text)">'+(before!==null?before.toFixed(1):'—')+'</b></div>'
+            +'<div style="font-size:12px;color:var(--text3);width:70px;text-align:right">Ø nachher<br><b style="color:var(--text)">'+(after!==null?after.toFixed(1):'—')+'</b></div>'
+            +'<div style="width:70px;text-align:right;font-size:13px;font-weight:700;color:'+(delta===null?'var(--text3)':good?'var(--teal-dark)':'var(--red)')+'">'+arrow+' '+deltaTxt+'</div>'
+            +'</div>';
+        }).join('');
+        panel.innerHTML='<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
+          +'<div class="sec-title" style="margin-bottom:4px">Vorher/Nachher – '+m.l+' <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(Ø 14 Tage vor vs. nach dem Coaching)</span></div>'
+          +rowsHtml+'</div>';
+      })();
     },50);
   }
 }
@@ -3191,11 +3306,14 @@ function saveSession(empId){
   var sel=document.getElementById('sess-topic-sel');
   if(sel&&sel.value)topics.push(sel.value);
   var focus=topics.join(', ');
+  var fmEl=document.getElementById('sess-focus-metric');
+  var focusMetric=fmEl?fmEl.value:'';
   var payload={
     employee_id:empId,date:date,uhrzeit:uhrzeit||null,art:type,rating:null,
     note:notes,focus:focus,status:'abgeschlossen',
     start_note:start,stop_note:stop,continue_note:cont,
-    coach_id:currentCoach?currentCoach.id:null
+    coach_id:currentCoach?currentCoach.id:null,
+    focus_metric:focusMetric||null
   };
   sb.from('protocols').insert(payload).select().single().then(function(res){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
@@ -3203,7 +3321,7 @@ function saveSession(empId){
     var entry={
       id:r.id,date:r.date,uhrzeit:uhrzeit,type:type,rating:null,
       topics:topics,start:start,stop:stop,cont:cont,notes:notes,note:notes,focus:focus,status:'abgeschlossen',
-      coachId:r.coach_id||null
+      coachId:r.coach_id||null,focusMetric:r.focus_metric||null
     };
     if(!protocols[empId])protocols[empId]=[];
     protocols[empId].unshift(entry);
@@ -3212,6 +3330,8 @@ function saveSession(empId){
     });
     var tsel=document.getElementById('sess-topic-sel');
     if(tsel)tsel.value='';
+    var fmsel=document.getElementById('sess-focus-metric');
+    if(fmsel)fmsel.value='';
     var tel=document.getElementById('sess-time');
     if(tel)tel.value='';
     renderTab();
@@ -3394,7 +3514,7 @@ function loadProtocolsFromSupabase(){
         id:r.id,date:r.date,uhrzeit:r.uhrzeit?r.uhrzeit.slice(0,5):'',type:r.art,rating:r.rating,
         note:r.note,notes:r.note,focus:r.focus,status:r.status,
         start:r.start_note||'',stop:r.stop_note||'',cont:r.continue_note||'',
-        topics:r.focus?[r.focus]:[],coachId:r.coach_id||null
+        topics:r.focus?[r.focus]:[],coachId:r.coach_id||null,focusMetric:r.focus_metric||null
       });
     });
     Object.keys(byEmp).forEach(function(k){byEmp[k].sort(function(a,b){return b.date.localeCompare(a.date);});});
@@ -3696,11 +3816,15 @@ function sessionSpeichernNeu(){
   var uhrzeit=document.getElementById('sessionUhrzeit').value||'';
   var typ=document.getElementById('sessionTyp').value;
   var thema=document.getElementById('sessionThema').value||'';
+  var fmEl=document.getElementById('sessionFocusMetric');
+  var focusMetric=fmEl?fmEl.value:'';
   var notiz=document.getElementById('sessionNotiz').value.trim();
   if(!empId||!datum)return alert('Bitte Mitarbeiter und Datum auswählen.');
   var payload={
     employee_id:empId,date:datum,uhrzeit:uhrzeit||null,art:typ,rating:null,
-    note:notiz||'',focus:thema,status:'geplant'
+    note:notiz||'',focus:thema,status:'geplant',
+    coach_id:currentCoach?currentCoach.id:null,
+    focus_metric:focusMetric||null
   };
   sb.from('protocols').insert(payload).select().single().then(function(res){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
@@ -3709,9 +3833,11 @@ function sessionSpeichernNeu(){
     protocols[empId].unshift({
       id:r.id,date:datum,uhrzeit:uhrzeit,rating:null,
       note:notiz||'',notes:notiz||'',focus:thema,type:typ,
-      status:'geplant',topics:thema?[thema]:[]
+      status:'geplant',topics:thema?[thema]:[],
+      coachId:r.coach_id||null,focusMetric:r.focus_metric||null
     });
     document.getElementById('sessionThema').value='';
+    if(fmEl)fmEl.value='';
     document.getElementById('sessionNotiz').value='';
     document.getElementById('sessionDatum').value='';
     document.getElementById('sessionUhrzeit').value='09:00';
@@ -3881,6 +4007,12 @@ function openSessionModal(empId){
     sel.innerHTML=employees.filter(function(e){return e.active!==false;}).map(function(e){
       return '<option value="'+e.id+'"'+(e.id===selectedEmp?' selected':'')+'>'+e.name+'</option>';
     }).join('');
+  }
+  var fmSel=document.getElementById('sessionFocusMetric');
+  if(fmSel&&fmSel.options.length<=1){
+    FOCUS_METRICS.forEach(function(m){
+      var o=document.createElement('option');o.value=m.key;o.textContent=m.label;fmSel.appendChild(o);
+    });
   }
   var datumEl=document.getElementById('sessionDatum');
   if(datumEl&&!datumEl.value)datumEl.value=today();
