@@ -518,7 +518,7 @@ function initAppAfterLogin(){
   loadEmployeesFromSupabase().then(function(){
     return resolveCurrentCoach();
   }).then(function(){
-    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase(), loadEmployeeHistoryFromSupabase(), loadEmployeeDocumentsFromSupabase()]).then(function(){
+    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase(), loadEmployeeHistoryFromSupabase(), loadEmployeeDocumentsFromSupabase(), loadGoalsFromSupabase(), loadAdminAuditLogFromSupabase()]).then(function(){
       lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
       runAppInit();
     });
@@ -861,6 +861,10 @@ function exportEmpSummary(empId){
   }).join('');
 
   var milestones=kpiMilestones(emp.id);
+  var empGoalsExp=(goals[emp.id]||[]).slice().sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  var goalsExpHtml=empGoalsExp.length?empGoalsExp.map(function(g){
+    return '<tr><td>'+g.description+'</td><td>'+(g.metricKey?focusMetricLabel(g.metricKey)+' ≥ '+g.targetValue+'%':'—')+'</td><td>'+(g.targetDate?fd(g.targetDate):'—')+'</td><td>'+g.status+'</td></tr>';
+  }).join(''):'';
   var milestonesHtml=milestones.length?milestones.map(function(m){return '<li>'+fd(m.date)+' – '+m.label+'</li>';}).join(''):'<li>Noch keine Meilensteine erreicht</li>';
 
   var html='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Zusammenfassung – '+emp.name+'</title>'
@@ -886,6 +890,8 @@ function exportEmpSummary(empId){
     +'<h2>Coaching-Historie</h2>'
     +'<div style="margin-bottom:6px">'+abgeschlossen.length+' abgeschlossene Sessions insgesamt. Letzte 5:</div>'
     +'<table><tr><th>Datum</th><th>Art</th><th>Thema</th><th>Continue (letzter Stand)</th></tr>'+(lastSessions||'<tr><td colspan="4">Keine Sessions vorhanden</td></tr>')+'</table>'
+    +(empGoalsExp.length?('<h2>Zielvereinbarungen</h2>'
+      +'<table><tr><th>Ziel</th><th>KPI-Ziel</th><th>Zieldatum</th><th>Status</th></tr>'+goalsExpHtml+'</table>'):'')
     +'<h2>Entwicklung & Meilensteine</h2>'
     +'<ul>'+milestonesHtml+'</ul>'
     +'<h2>Notizen</h2>'
@@ -1338,6 +1344,8 @@ var reviews={
 
 var callRatings={}; // {empId: [{id, date, auftragsnr, status, b2b, bewertetVon, scores:{...}, einwand, hinweis}]}
 var employeeHistory={}; // {empId: [{id, changedAt, field, oldValue, newValue, changedBy}]}
+var goals={}; // {empId: [{id, description, metricKey, targetValue, targetDate, status, createdAt, createdBy}]}
+var adminAuditLog=[]; // [{id, changedAt, changedBy, action, details}]
 var employeeDocuments={}; // {empId: [{id, filename, storagePath, description, uploadedBy, uploadedAt}]}
 
 // ── HELPERS ──
@@ -2212,6 +2220,10 @@ function renderTab(){
       tlEvents.push({date:h.changedAt?h.changedAt.slice(0,10):'',kind:'history',icon:'ti-arrows-exchange',col:'var(--text2)',bg:'var(--bg2)',
         title:fieldLabel+'-Wechsel',sub:(h.oldValue||'—')+' → '+(h.newValue||'—')});
     });
+    (goals[emp.id]||[]).forEach(function(g){
+      tlEvents.push({date:g.createdAt?g.createdAt.slice(0,10):'',kind:'goal',icon:'ti-flag',col:'var(--purple)',bg:'rgba(32,106,114,0.10)',
+        title:'Ziel vereinbart',sub:g.description+(g.targetDate?' (bis '+fd(g.targetDate)+')':'')});
+    });
     tlEvents.sort(function(a,b){return b.date.localeCompare(a.date);});
 
     html+='<div class="sec-title" style="margin-bottom:10px">Timeline <span style="font-weight:400;text-transform:none;letter-spacing:0">· Sessions, Reviews & Meilensteine in einer Ansicht</span></div>';
@@ -2622,6 +2634,51 @@ function renderTab(){
 
   // ── COACHING EVAL TAB ──
   if(activeTab==='coaching-eval'){
+    // ── Ziele (strukturierte Zielvereinbarungen) ──
+    (function(){
+      var empGoals=(goals[emp.id]||[]).slice().sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+      html+='<div class="card" style="margin-bottom:20px">';
+      html+='<div class="card-title"><i class="ti ti-flag"></i> Zielvereinbarungen</div>';
+      if(!empGoals.length){
+        html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:14px">Noch keine Ziele vereinbart</div>';
+      } else {
+        html+='<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">';
+        empGoals.forEach(function(g){
+          var statusCol={offen:'var(--text2)','in Arbeit':'var(--amber-dark)',erreicht:'var(--teal-dark)',verfehlt:'var(--red)'}[g.status]||'var(--text2)';
+          var statusBg={offen:'var(--bg2)','in Arbeit':'var(--amber-bg)',erreicht:'var(--teal-bg)',verfehlt:'var(--red-bg)'}[g.status]||'var(--bg2)';
+          var currentTxt='';
+          if(g.metricKey){
+            var recentP=getPerf(emp.id,30);
+            var curVal=recentP.length?recentP.reduce(function(a,x){return a+(x[g.metricKey]||0);},0)/recentP.length:null;
+            currentTxt='<div style="font-size:11px;color:var(--text3);margin-top:2px">Aktuell (Ø 30 Tage): '+(curVal!==null?Math.round(curVal)+'%':'—')+' · Ziel: '+g.targetValue+'%'+' ('+focusMetricLabel(g.metricKey)+')</div>';
+          }
+          html+='<div style="background:var(--bg2);border-radius:var(--r-md);padding:10px 12px">'
+            +'<div style="display:flex;align-items:flex-start;gap:10px">'
+            +'<div style="flex:1"><div style="font-size:13px;font-weight:500">'+g.description+'</div>'
+            +(g.targetDate?'<div style="font-size:11px;color:var(--text3);margin-top:2px">Ziel-Datum: '+fd(g.targetDate)+'</div>':'')
+            +currentTxt
+            +'</div>'
+            +'<select data-id="'+g.id+'" onchange="updateGoalStatus(this.dataset.id,this.value)" style="font-size:11px;font-weight:600;padding:4px 8px;border:none;border-radius:20px;background:'+statusBg+';color:'+statusCol+'">'
+            +['offen','in Arbeit','erreicht','verfehlt'].map(function(s){return '<option'+(g.status===s?' selected':'')+'>'+s+'</option>';}).join('')
+            +'</select>'
+            +'<button class="btn btn-sm" data-id="'+g.id+'" onclick="deleteGoal(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button>'
+            +'</div></div>';
+        });
+        html+='</div>';
+      }
+      html+='<div style="border-top:1px solid var(--border);padding-top:12px">';
+      html+='<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">Neues Ziel</div>';
+      html+='<textarea id="goal-desc" rows="2" placeholder="z. B. Super Yes Rate auf 18% steigern bis Jahresende" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical;margin-bottom:8px"></textarea>';
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">';
+      html+='<select id="goal-metric" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)"><option value="">— Kein KPI (qualitativ) —</option>'
+        +FOCUS_METRICS.map(function(m){return '<option value="'+m.key+'">'+m.label+'</option>';}).join('')+'</select>';
+      html+='<input type="number" id="goal-target" placeholder="Zielwert (%)" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">';
+      html+='<input type="date" id="goal-date" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">';
+      html+='</div>';
+      html+='<button class="btn btn-primary btn-sm" style="width:auto" data-eid="'+emp.id+'" onclick="saveNewGoal(this.dataset.eid)"><i class="ti ti-check"></i> Ziel speichern</button>';
+      html+='</div></div>';
+    })();
+
     var DIMS=[
       {key:'einwand',   label:'Einwandsbehandlung', short:'Einwandsb.', cat:'skill'},
       {key:'bedarf',    label:'Bedarfsanalyse',      short:'Bedarfsana.',cat:'skill'},
@@ -3678,6 +3735,26 @@ function renderEinstellungen(){
     +'<span id="ziele-status" style="font-size:12px;color:var(--teal)"></span>'
     +'</div></div>'
 
+    // ══ ZEILE 4: Änderungsprotokoll ══
+    +'<div class="sec-title" style="margin:24px 0 12px">Änderungsprotokoll</div>'
+    +'<div class="card">'
+    +'<div class="card-title"><i class="ti ti-history"></i> Zuletzt geänderte KPI-Ziele & Admin-Aktionen</div>'
+    +(function(){
+      if(!adminAuditLog.length)return '<div style="font-size:12px;color:var(--text3);text-align:center;padding:14px">Noch keine Änderungen protokolliert</div>';
+      var actionLabels={kpi_target_global:'Globale KPI-Ziele',kpi_target_employee:'Individuelle KPI-Ziele',employee_deactivated:'Mitarbeiter deaktiviert'};
+      return '<div style="display:flex;flex-direction:column;gap:6px">'
+        +adminAuditLog.slice(0,20).map(function(a){
+          var who=a.changedBy?(employees.find(function(e){return e.id===a.changedBy;})||{}).name:null;
+          return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:var(--r-md);font-size:12px">'
+            +'<span style="font-weight:600;width:150px;flex-shrink:0">'+(actionLabels[a.action]||a.action)+'</span>'
+            +'<span style="color:var(--text2);flex:1">'+(a.details||'')+'</span>'
+            +'<span style="color:var(--text3);flex-shrink:0">'+(who?who+' · ':'')+fd(a.changedAt?a.changedAt.slice(0,10):'')+'</span>'
+            +'</div>';
+        }).join('')
+        +'</div>';
+    })()
+    +'</div>'
+
     // ══ ÜBER ══
     +'<div style="margin-top:24px;padding:16px 20px;background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);display:flex;align-items:center;gap:16px">'
     +'<div style="width:44px;height:44px;border-radius:50%;background:var(--purple-bg);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--purple);flex-shrink:0"><i class="ti ti-chart-dots"></i></div>'
@@ -4233,6 +4310,32 @@ function loadEmployeeHistoryFromSupabase(){
     return true;
   });
 }
+function loadGoalsFromSupabase(){
+  return sb.from('goals').select('*').order('created_at',{ascending:false}).then(function(res){
+    if(res.error){console.warn('goals load failed:',res.error);return false;}
+    var byEmp={};
+    (res.data||[]).forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
+      byEmp[r.employee_id].push({id:r.id,description:r.description,metricKey:r.metric_key,targetValue:r.target_value,targetDate:r.target_date,status:r.status,createdAt:r.created_at,createdBy:r.created_by});
+    });
+    goals=byEmp;
+    return true;
+  });
+}
+function logAdminAction(action,details){
+  return sb.from('admin_audit_log').insert({
+    changed_by:currentCoach?currentCoach.id:null,action:action,details:details
+  }).then(function(res){
+    if(res.error)console.warn('admin_audit_log konnte nicht gespeichert werden:',res.error);
+  });
+}
+function loadAdminAuditLogFromSupabase(){
+  return sb.from('admin_audit_log').select('*').order('changed_at',{ascending:false}).limit(200).then(function(res){
+    if(res.error){console.warn('admin_audit_log load failed:',res.error);return false;}
+    adminAuditLog=(res.data||[]).map(function(r){return {id:r.id,changedAt:r.changed_at,changedBy:r.changed_by,action:r.action,details:r.details};});
+    return true;
+  });
+}
 function loadEmployeeDocumentsFromSupabase(){
   return sb.from('employee_documents').select('*').order('uploaded_at',{ascending:false}).then(function(res){
     if(res.error){console.warn('employee_documents load failed:',res.error);return false;}
@@ -4456,6 +4559,49 @@ function sessionSpeichernNeu(){
 }
 
 
+function saveNewGoal(empId){
+  var desc=document.getElementById('goal-desc').value.trim();
+  if(!desc){alert('Bitte eine Zielbeschreibung eingeben.');return;}
+  var metricEl=document.getElementById('goal-metric');
+  var metricKey=metricEl?metricEl.value:'';
+  var targetEl=document.getElementById('goal-target');
+  var targetValue=targetEl&&targetEl.value!==''?parseFloat(targetEl.value):null;
+  var dateEl=document.getElementById('goal-date');
+  var targetDate=dateEl?dateEl.value||null:null;
+  if(metricKey&&targetValue===null){alert('Bitte einen Zielwert angeben, wenn ein KPI ausgewählt ist.');return;}
+  var payload={
+    employee_id:empId,description:desc,metric_key:metricKey||null,target_value:targetValue,
+    target_date:targetDate,status:'offen',created_by:currentCoach?currentCoach.id:null
+  };
+  sb.from('goals').insert(payload).select().single().then(function(res){
+    if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    var r=res.data;
+    if(!goals[empId])goals[empId]=[];
+    goals[empId].unshift({id:r.id,description:r.description,metricKey:r.metric_key,targetValue:r.target_value,targetDate:r.target_date,status:r.status,createdAt:r.created_at,createdBy:r.created_by});
+    renderTab();
+  }).catch(function(err){alert('Unerwarteter Fehler: '+err.message);});
+}
+function updateGoalStatus(goalId,newStatus){
+  var emp=employees.find(function(e){return e.id===selectedEmp;});
+  if(!emp)return;
+  var g=(goals[emp.id]||[]).find(function(x){return String(x.id)===String(goalId);});
+  if(!g)return;
+  g.status=newStatus;
+  sb.from('goals').update({status:newStatus}).eq('id',goalId).then(function(res){
+    if(res.error)alert('Fehler beim Speichern: '+res.error.message);
+  });
+  renderTab();
+}
+function deleteGoal(goalId){
+  var emp=employees.find(function(e){return e.id===selectedEmp;});
+  if(!emp)return;
+  if(!confirm('Ziel wirklich löschen?'))return;
+  sb.from('goals').delete().eq('id',goalId).then(function(res){
+    if(res.error){alert('Fehler beim Löschen: '+res.error.message);return;}
+    goals[emp.id]=(goals[emp.id]||[]).filter(function(g){return String(g.id)!==String(goalId);});
+    renderTab();
+  }).catch(function(err){alert('Unerwarteter Fehler: '+err.message);});
+}
 function uploadEmpDocument(file){
   if(!file)return;
   var emp=employees.find(function(e){return e.id===selectedEmp;});
@@ -4550,14 +4696,18 @@ function saveEmpZiele(){
   if(!emp)return;
   if(!emp.targets)emp.targets={};
   var fields=[{id:'crOEM',rk:'crOEM',dk:'crOEMDir'},{id:'crTW',rk:'crTW',dk:'crTWDir'},{id:'crYes',rk:'crYes',dk:'crYesDir'},{id:'crSY',rk:'crSuperYes',dk:'crSYDir'},{id:'crMY',rk:'crMegaYes',dk:'crMYDir'},{id:'convOEM',rk:'convOEM',dk:'convOEMDir'},{id:'opt',rk:'optPerH',dk:'optPerHDir'},{id:'optDay',rk:'optGesamt',dk:'optGesamtDir'},{id:'aktiv',rk:'aktivitaeten',dk:'aktivDir'},{id:'marge',rk:'margeGesamt',dk:'margeDir'}];
-  var upserts=[],deletes=[];
+  var upserts=[],deletes=[],changes=[];
   fields.forEach(function(f){
     var el=document.getElementById('es-'+f.id);
     var dl=document.getElementById('es-d-'+f.id);
+    var oldVal=emp.targets[f.rk];
     if(el&&el.value!==''){
-      emp.targets[f.rk]=parseFloat(el.value);
+      var newVal=parseFloat(el.value);
+      if(oldVal!==newVal)changes.push(f.rk+': '+(oldVal!==undefined&&oldVal!==null?oldVal:'—')+' → '+newVal);
+      emp.targets[f.rk]=newVal;
       upserts.push({employee_id:emp.id,metric_key:f.rk,val:emp.targets[f.rk],dir:dl?dl.value:'gte'});
     } else {
+      if(oldVal!==undefined&&oldVal!==null)changes.push(f.rk+': '+oldVal+' → entfernt');
       delete emp.targets[f.rk];
       deletes.push(f.rk);
     }
@@ -4576,6 +4726,7 @@ function saveEmpZiele(){
   }
   chain.then(function(res){
     if(res&&res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    if(changes.length)logAdminAction('kpi_target_employee','Mitarbeiter: '+emp.name+' · '+changes.join(' · '));
     alert('Ziele gespeichert für '+emp.name+'.');
     renderTab();
   }).catch(function(err){
@@ -4591,7 +4742,8 @@ function mitarbeiterDeaktivieren(){
   renderSidebar();
   renderMain();
   sb.from('employees').update({active:false}).eq('id',emp.id).then(function(res){
-    if(res.error)alert('Fehler beim Deaktivieren: '+res.error.message+'\n\nDer Mitarbeiter ist lokal ausgeblendet, aber die Änderung wurde NICHT gespeichert.');
+    if(res.error){alert('Fehler beim Deaktivieren: '+res.error.message+'\n\nDer Mitarbeiter ist lokal ausgeblendet, aber die Änderung wurde NICHT gespeichert.');return;}
+    logAdminAction('employee_deactivated','Mitarbeiter: '+emp.name);
   });
 }
 
@@ -4768,12 +4920,19 @@ function setEmpColor(colorIdx){
 function zieleSpeichern(){
   var keys=['crOEM','crTeilweise','crSuperYes','crMegaYes','optPerH'];
   var updates=[];
+  var changes=[];
   keys.forEach(function(k){
     var dirEl=document.getElementById('dir-'+k);
     var valEl=document.getElementById('val-'+k);
     if(dirEl&&valEl&&KPI_TARGETS[k]){
-      KPI_TARGETS[k].dir=dirEl.value;
-      KPI_TARGETS[k].val=parseFloat(valEl.value)||KPI_TARGETS[k].val;
+      var oldVal=KPI_TARGETS[k].val,oldDir=KPI_TARGETS[k].dir;
+      var newVal=parseFloat(valEl.value)||KPI_TARGETS[k].val;
+      var newDir=dirEl.value;
+      if(oldVal!==newVal||oldDir!==newDir){
+        changes.push(KPI_TARGETS[k].label+': '+oldDir+' '+oldVal+' → '+newDir+' '+newVal);
+      }
+      KPI_TARGETS[k].dir=newDir;
+      KPI_TARGETS[k].val=newVal;
       updates.push({metric_key:k,label:KPI_TARGETS[k].label,val:KPI_TARGETS[k].val,dir:KPI_TARGETS[k].dir});
     }
   });
@@ -4781,6 +4940,7 @@ function zieleSpeichern(){
   renderEinstellungen();
   sb.from('kpi_targets').upsert(updates,{onConflict:'metric_key'}).then(function(res){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
+    if(changes.length)logAdminAction('kpi_target_global',changes.join(' · '));
     var zs=document.getElementById('ziele-status');if(zs){zs.textContent='✓ Gespeichert';setTimeout(function(){zs.textContent='';},3000);}
     var btn=document.querySelector('[onclick="zieleSpeichern()"]');
     if(btn){
