@@ -480,7 +480,7 @@ function loadEmployeesFromSupabase(){
         id: e.id, name: e.name, role: e.role, phase: e.phase,
         color: e.color_index, startDate: e.start_date, endDate: e.end_date || null,
         team: e.team, contract: e.contract, hours: e.hours, active: e.active,
-        auth_user_id: e.auth_user_id || null
+        auth_user_id: e.auth_user_id || null, notes: e.notes || ''
       };
     });
     return true;
@@ -518,7 +518,7 @@ function initAppAfterLogin(){
   loadEmployeesFromSupabase().then(function(){
     return resolveCurrentCoach();
   }).then(function(){
-    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase()]).then(function(){
+    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase(), loadEmployeeHistoryFromSupabase(), loadEmployeeDocumentsFromSupabase()]).then(function(){
       lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
       runAppInit();
     });
@@ -1110,6 +1110,8 @@ var reviews={
 };
 
 var callRatings={}; // {empId: [{id, date, auftragsnr, status, b2b, bewertetVon, scores:{...}, einwand, hinweis}]}
+var employeeHistory={}; // {empId: [{id, changedAt, field, oldValue, newValue, changedBy}]}
+var employeeDocuments={}; // {empId: [{id, filename, storagePath, description, uploadedBy, uploadedAt}]}
 
 // ── HELPERS ──
 function ini(n){return n.split(' ').map(function(x){return x[0];}).join('').toUpperCase().slice(0,2);}
@@ -1974,6 +1976,11 @@ function renderTab(){
     });
     kpiMilestones(emp.id).forEach(function(m){
       tlEvents.push({date:m.date,kind:'milestone',icon:'ti-trophy',col:'var(--amber-dark)',bg:'rgba(217,65,9,0.10)',title:m.label,sub:''});
+    });
+    (employeeHistory[emp.id]||[]).forEach(function(h){
+      var fieldLabel=h.field==='team'?'Team':'Rolle';
+      tlEvents.push({date:h.changedAt?h.changedAt.slice(0,10):'',kind:'history',icon:'ti-arrows-exchange',col:'var(--text2)',bg:'var(--bg2)',
+        title:fieldLabel+'-Wechsel',sub:(h.oldValue||'—')+' → '+(h.newValue||'—')});
     });
     tlEvents.sort(function(a,b){return b.date.localeCompare(a.date);});
 
@@ -2976,6 +2983,8 @@ function renderTab(){
       html+='<div><label>Vertragsende</label><input type="date" id="es-end" value="'+(emp.endDate||'')+'"></div>'
       html+='</div>'
       html+='<div style="margin-bottom:16px"><label>Avatar-Farbe</label><div style="margin-top:8px">'+swatches+'</div></div>'
+      html+='<div style="margin-bottom:16px"><label>Notizen <span style="font-weight:400;color:var(--text3);font-size:11px">(Stärken, Motivation, Karriereziele – nicht Teil der QA-Bewertung)</span></label>'
+      html+='<textarea id="es-notes" rows="4" style="width:100%;box-sizing:border-box;padding:8px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical" placeholder="z. B. sehr motiviert, will perspektivisch ins Teamlead-Track, hat Stärken im Erstgespräch...">'+(emp.notes||'')+'</textarea></div>'
       html+='<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveEmpEinstellungen()"><i class="ti ti-check"></i> Änderungen speichern</button>'
       html+='</div>'
 
@@ -3039,6 +3048,50 @@ function renderTab(){
 
       html+='<button class="btn btn-primary btn-sm" style="width:auto;margin-top:12px" onclick="saveEmpZiele()"><i class="ti ti-check"></i> Ziele speichern</button>';
       html+='</div>'; // close KPI card
+
+      // ── Dokumente / Anhänge ──
+      html+='<div class="card"><div class="card-title"><i class="ti ti-paperclip"></i> Dokumente</div>'
+        +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Zielvereinbarungen, Zertifikate oder sonstige Unterlagen zu '+emp.name+'.</p>'
+        +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">'
+        +'<label class="btn btn-sm btn-primary" style="cursor:pointer"><i class="ti ti-upload"></i> Datei hochladen<input type="file" id="doc-upload-input" style="display:none" onchange="uploadEmpDocument(this.files[0])"></label>'
+        +'<span id="doc-upload-status" style="font-size:12px;color:var(--text2)"></span>'
+        +'</div>';
+      var docs=(employeeDocuments[emp.id]||[]);
+      if(!docs.length){
+        html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px"><i class="ti ti-file-off" style="font-size:20px;display:block;margin-bottom:6px"></i>Noch keine Dokumente hochgeladen</div>';
+      } else {
+        html+='<div style="display:flex;flex-direction:column;gap:6px">';
+        docs.forEach(function(d){
+          html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:var(--r-md)">'
+            +'<i class="ti ti-file-text" style="font-size:16px;color:var(--purple);flex-shrink:0"></i>'
+            +'<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+d.filename+'</div>'
+            +'<div style="font-size:10.5px;color:var(--text3)">'+fd(d.uploadedAt?d.uploadedAt.slice(0,10):'')+(d.description?' · '+d.description:'')+'</div></div>'
+            +'<button class="btn btn-sm" data-id="'+d.id+'" onclick="downloadEmpDocument(this.dataset.id)"><i class="ti ti-download"></i></button>'
+            +'<button class="btn btn-sm" data-id="'+d.id+'" style="color:var(--red)" onclick="deleteEmpDocument(this.dataset.id)"><i class="ti ti-trash"></i></button>'
+            +'</div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
+
+      // ── Team-/Rollenwechsel-Historie ──
+      var hist=(employeeHistory[emp.id]||[]);
+      html+='<div class="card"><div class="card-title"><i class="ti ti-history"></i> Team-/Rollenwechsel-Historie</div>';
+      if(!hist.length){
+        html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Noch keine Wechsel protokolliert</div>';
+      } else {
+        html+='<div style="display:flex;flex-direction:column;gap:6px">';
+        hist.forEach(function(h){
+          var fieldLabel=h.field==='team'?'Team':'Rolle';
+          html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:var(--r-md);font-size:12.5px">'
+            +'<span style="font-weight:600;width:60px;flex-shrink:0">'+fieldLabel+'</span>'
+            +'<span style="color:var(--text2)">'+(h.oldValue||'—')+' → '+(h.newValue||'—')+'</span>'
+            +'<span style="margin-left:auto;font-size:11px;color:var(--text3)">'+fd(h.changedAt?h.changedAt.slice(0,10):'')+'</span>'
+            +'</div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
 
       html+='<div class="card" style="border-top:2px solid var(--amber)">'
       html+='<div class="card-title" style="color:var(--amber-dark)"><i class="ti ti-user-off"></i> Mitarbeiter deaktivieren</div>'
@@ -3938,6 +3991,30 @@ function loadTasksFromSupabase(){
   });
 }
 
+function loadEmployeeHistoryFromSupabase(){
+  return sb.from('employee_history').select('*').order('changed_at',{ascending:false}).then(function(res){
+    if(res.error){console.warn('employee_history load failed:',res.error);return false;}
+    var byEmp={};
+    (res.data||[]).forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
+      byEmp[r.employee_id].push({id:r.id,changedAt:r.changed_at,field:r.field,oldValue:r.old_value,newValue:r.new_value,changedBy:r.changed_by});
+    });
+    employeeHistory=byEmp;
+    return true;
+  });
+}
+function loadEmployeeDocumentsFromSupabase(){
+  return sb.from('employee_documents').select('*').order('uploaded_at',{ascending:false}).then(function(res){
+    if(res.error){console.warn('employee_documents load failed:',res.error);return false;}
+    var byEmp={};
+    (res.data||[]).forEach(function(r){
+      if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
+      byEmp[r.employee_id].push({id:r.id,filename:r.filename,storagePath:r.storage_path,description:r.description,uploadedBy:r.uploaded_by,uploadedAt:r.uploaded_at});
+    });
+    employeeDocuments=byEmp;
+    return true;
+  });
+}
 function loadCallRatingsFromSupabase(){
   return Promise.all([
     sb.from('call_ratings').select('*'),
@@ -4149,12 +4226,64 @@ function sessionSpeichernNeu(){
 }
 
 
+function uploadEmpDocument(file){
+  if(!file)return;
+  var emp=employees.find(function(e){return e.id===selectedEmp;});
+  if(!emp)return;
+  var statusEl=document.getElementById('doc-upload-status');
+  if(statusEl)statusEl.textContent='Lade hoch...';
+  var path=emp.id+'/'+Date.now()+'_'+file.name;
+  sb.storage.from('employee-documents').upload(path,file).then(function(res){
+    if(res.error){
+      if(statusEl)statusEl.textContent='';
+      alert('Fehler beim Hochladen: '+res.error.message);
+      return;
+    }
+    var payload={employee_id:emp.id,filename:file.name,storage_path:path,description:'',uploaded_by:currentCoach?currentCoach.id:null};
+    return sb.from('employee_documents').insert(payload).select().single().then(function(res2){
+      if(res2.error){alert('Datei hochgeladen, aber Metadaten konnten nicht gespeichert werden: '+res2.error.message);return;}
+      var r=res2.data;
+      if(!employeeDocuments[emp.id])employeeDocuments[emp.id]=[];
+      employeeDocuments[emp.id].unshift({id:r.id,filename:r.filename,storagePath:r.storage_path,description:r.description,uploadedBy:r.uploaded_by,uploadedAt:r.uploaded_at});
+      if(statusEl)statusEl.textContent='';
+      renderTab();
+    });
+  }).catch(function(err){
+    if(statusEl)statusEl.textContent='';
+    alert('Unerwarteter Fehler: '+err.message);
+  });
+}
+function downloadEmpDocument(docId){
+  var emp=employees.find(function(e){return e.id===selectedEmp;});
+  if(!emp)return;
+  var doc=(employeeDocuments[emp.id]||[]).find(function(d){return String(d.id)===String(docId);});
+  if(!doc)return;
+  sb.storage.from('employee-documents').createSignedUrl(doc.storagePath,60).then(function(res){
+    if(res.error){alert('Fehler beim Erstellen des Download-Links: '+res.error.message);return;}
+    window.open(res.data.signedUrl,'_blank');
+  });
+}
+function deleteEmpDocument(docId){
+  var emp=employees.find(function(e){return e.id===selectedEmp;});
+  if(!emp)return;
+  var doc=(employeeDocuments[emp.id]||[]).find(function(d){return String(d.id)===String(docId);});
+  if(!doc)return;
+  if(!confirm('Dokument "'+doc.filename+'" wirklich löschen?'))return;
+  sb.storage.from('employee-documents').remove([doc.storagePath]).then(function(){
+    return sb.from('employee_documents').delete().eq('id',docId);
+  }).then(function(res){
+    if(res&&res.error){alert('Fehler beim Löschen: '+res.error.message);return;}
+    employeeDocuments[emp.id]=(employeeDocuments[emp.id]||[]).filter(function(d){return String(d.id)!==String(docId);});
+    renderTab();
+  }).catch(function(err){alert('Unerwarteter Fehler: '+err.message);});
+}
 function saveEmpEinstellungen(){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
   if(!emp)return;
   var teamEl=document.getElementById('es-team');
   var teamVal=teamEl?teamEl.value:'';
   if(teamVal==='__new__'){teamVal=prompt('Neuer Team-Name:','')||emp.team;}
+  var oldTeam=emp.team, oldRole=emp.role;
   emp.name=document.getElementById('es-name').value.trim()||emp.name;
   emp.role=document.getElementById('es-role').value;
   emp.phase=document.getElementById('es-phase').value;
@@ -4165,14 +4294,25 @@ function saveEmpEinstellungen(){
   emp.endDate=document.getElementById('es-end').value||null;
   emp.contract=document.getElementById('es-contract').value;
   emp.hours=parseInt(document.getElementById('es-hours').value)||40;
+  var notesEl=document.getElementById('es-notes');
+  if(notesEl)emp.notes=notesEl.value;
   renderSidebar();renderEmpDetail();  lsSave();
   sb.from('employees').update({
     name:emp.name,role:emp.role,phase:emp.phase,team:emp.team,
     start_date:emp.startDate||null,end_date:emp.endDate||null,
-    contract:emp.contract,hours:emp.hours
+    contract:emp.contract,hours:emp.hours,notes:emp.notes||null
   }).eq('id',emp.id).then(function(res){
     if(res.error)alert('Fehler beim Speichern in Supabase: '+res.error.message+'\n\nDie Änderung ist lokal sichtbar, aber NICHT gespeichert -- bitte nochmal versuchen.');
   });
+  // Team-/Rollenwechsel-Historie protokollieren
+  var histRows=[];
+  if(oldTeam!==emp.team)histRows.push({employee_id:emp.id,field:'team',old_value:oldTeam||null,new_value:emp.team||null,changed_by:currentCoach?currentCoach.id:null});
+  if(oldRole!==emp.role)histRows.push({employee_id:emp.id,field:'role',old_value:oldRole||null,new_value:emp.role||null,changed_by:currentCoach?currentCoach.id:null});
+  if(histRows.length){
+    sb.from('employee_history').insert(histRows).then(function(res){
+      if(res.error)console.warn('Historie konnte nicht gespeichert werden:',res.error);
+    });
+  }
   // Hinweis: "location" wird aktuell nur lokal gehalten (kein Feld in employees-Tabelle)
 }
 function saveEmpZiele(){
