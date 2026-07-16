@@ -1005,6 +1005,14 @@ var settings={srApiKey:'',srOrgId:'',ftpUrl:''};
 var view='team', selectedEmp=null, activeTab='performance';
 var teamFilter='ALL';
 var perfMetric='crOEM', perfRange=7;
+var perfCustomFrom=null, perfCustomTo=null;
+function empGetPerf(id){
+  if(perfCustomFrom&&perfCustomTo){
+    var p=performance[id]||[];
+    return p.filter(function(x){return x.date>=perfCustomFrom&&x.date<=perfCustomTo;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);});
+  }
+  return getPerf(id,perfRange);
+}
 var activeChart=null;
 
 // ── DATA ──
@@ -1819,7 +1827,7 @@ function renderTab(){
     var empT=empTargets(emp);
     var perf7=getPerf(emp.id,7);
     var perfAll=(performance[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-    var perfRangeData=getPerf(emp.id,perfRange);
+    var perfRangeData=empGetPerf(emp.id);
     function avgRange(key){if(!perfRangeData.length)return null;return perfRangeData.reduce(function(a,x){return a+(x[key]||0);},0)/perfRangeData.length;}
     function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
     var kpis=[
@@ -1860,16 +1868,26 @@ function renderTab(){
       crOEM:{f:'crOEM',l:'CR OEM %',c:'#BA7517'}
     };
     html+='<div class="card" style="margin-bottom:16px">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">'
       +'<div class="card-title" style="margin:0">Performance Trend</div>'
-      +'<div style="display:flex;gap:8px">'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
       +'<div class="chart-toggle">';
     [{k:'aktivitaeten',l:'Aktivitäten'},{k:'convOEM',l:'Conv. OEM'},{k:'optGesamt',l:'Opt. Ges.'},{k:'crOEM',l:'CR OEM'},{k:'crTeilweise',l:'CR TW'},{k:'crYes',l:'CR Yes'},{k:'crSuperYes',l:'CR SY'},{k:'crMegaYes',l:'CR MY'},{k:'margeGesamt',l:'Marge'}].forEach(function(it){
       html+='<button class="'+(perfMetric===it.k?'active':'')+'" data-m="'+it.k+'" onclick="setMetric(this.dataset.m)">'+it.l+'</button>';
     });
     html+='</div><div class="chart-toggle">';
-    [7,30,90].forEach(function(d){html+='<button class="'+(perfRange===d?'active':'')+'" data-d="'+d+'" onclick="setRange(parseInt(this.dataset.d))">'+d+'d</button>';});
-    html+='</div></div></div><canvas id="perfChart" height="80"></canvas>'
+    var perfCustomActive=!!(perfCustomFrom&&perfCustomTo);
+    [7,30,90].forEach(function(d){html+='<button class="'+(!perfCustomActive&&perfRange===d?'active':'')+'" data-d="'+d+'" onclick="setRange(parseInt(this.dataset.d))">'+d+'d</button>';});
+    html+='</div>'
+      +'<div style="display:flex;align-items:center;gap:5px;padding:3px 6px;border:1px solid '+(perfCustomActive?'var(--purple)':'var(--border2)')+';border-radius:var(--r-md);background:'+(perfCustomActive?'var(--purple-bg)':'transparent')+'">'
+      +'<span style="font-size:10.5px;color:var(--text2);padding-left:3px">Von</span>'
+      +'<input type="date" id="perfFromDate" value="'+(perfCustomFrom||'')+'" style="border:none;background:transparent;font-size:11.5px;font-family:inherit;color:var(--text);padding:2px;width:126px">'
+      +'<span style="font-size:10.5px;color:var(--text2)">Bis</span>'
+      +'<input type="date" id="perfToDate" value="'+(perfCustomTo||'')+'" style="border:none;background:transparent;font-size:11.5px;font-family:inherit;color:var(--text);padding:2px;width:126px">'
+      +'<button class="btn btn-sm'+(perfCustomActive?' btn-primary':'')+'" style="padding:3px 8px" onclick="applyPerfCustomRange()"><i class="ti ti-check"></i></button>'
+      +(perfCustomActive?'<button class="btn btn-sm" style="padding:3px 7px" onclick="clearPerfCustomRange()" title="Custom-Zeitraum zurücksetzen"><i class="ti ti-x"></i></button>':'')
+      +'</div>'
+      +'</div></div><canvas id="perfChart" height="80"></canvas>'
       +'<div style="display:flex;gap:16px;margin-top:8px;font-size:10.5px;color:var(--text2)">'
       +'<span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:1.5px dashed rgba(32,106,114,0.7);display:inline-block"></span>Coaching zu diesem KPI (Kürzel = Coach)</span>'
       +'<span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:1.5px dashed rgba(140,140,140,0.6);display:inline-block"></span>Coaching zu anderem Thema</span>'
@@ -2867,7 +2885,7 @@ function renderTab(){
       var canvas=document.getElementById('perfChart');
       if(!canvas)return;
       if(activeChart){activeChart.destroy();activeChart=null;}
-      var data=getPerf(selectedEmp,perfRange);
+      var data=empGetPerf(selectedEmp);
       var labels=data.map(function(d){return fd(d.date);});
       var mMap={
         aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',    c:'#534AB7'},
@@ -2922,7 +2940,7 @@ function renderTab(){
         backgroundColor:m.c+'22',
         fill:true,
         tension:0.35,
-        pointRadius:perfRange<=7?4:2,
+        pointRadius:data.length<=10?4:2,
         pointBackgroundColor:m.c,
         borderWidth:2,
         order:1
@@ -3444,7 +3462,16 @@ function saveSession(empId){
 }
 
 function setMetric(m){perfMetric=m;renderTab();}
-function setRange(r){perfRange=r;renderTab();}
+function setRange(r){perfRange=r;perfCustomFrom=null;perfCustomTo=null;renderTab();}
+function applyPerfCustomRange(){
+  var f=document.getElementById('perfFromDate').value;
+  var t=document.getElementById('perfToDate').value;
+  if(!f||!t){alert('Bitte Von- und Bis-Datum auswählen.');return;}
+  if(f>t){alert('Das Von-Datum muss vor dem Bis-Datum liegen.');return;}
+  perfCustomFrom=f;perfCustomTo=t;
+  renderTab();
+}
+function clearPerfCustomRange(){perfCustomFrom=null;perfCustomTo=null;renderTab();}
 
 
 
