@@ -1791,7 +1791,11 @@ function renderTab(){
     });
     html+='</div><div class="chart-toggle">';
     [7,30,90].forEach(function(d){html+='<button class="'+(perfRange===d?'active':'')+'" data-d="'+d+'" onclick="setRange(parseInt(this.dataset.d))">'+d+'d</button>';});
-    html+='</div></div></div><canvas id="perfChart" height="80"></canvas><div id="coachImpactPanel"></div></div>';
+    html+='</div></div></div><canvas id="perfChart" height="80"></canvas>'
+      +'<div style="display:flex;gap:16px;margin-top:8px;font-size:10.5px;color:var(--text2)">'
+      +'<span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:1.5px dashed rgba(32,106,114,0.7);display:inline-block"></span>Coaching zu diesem KPI (Kürzel = Coach)</span>'
+      +'<span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:1.5px dashed rgba(140,140,140,0.6);display:inline-block"></span>Coaching zu anderem Thema</span>'
+      +'</div><div id="coachImpactPanel"></div></div>';
     // Tabelle
     html+='<div class="sec-title" style="margin-bottom:10px">Tagesübersicht</div>';
     if(!perfAll.length){
@@ -2881,51 +2885,69 @@ function renderTab(){
         if(!sessMap[s.date])sessMap[s.date]=[];
         sessMap[s.date].push(s);
       });
+      function coachInitial(coachId){
+        if(!coachId)return null;
+        var c=employees.find(function(e){return e.id===coachId;});
+        return c?c.name.split(' ')[0].charAt(0).toUpperCase():null;
+      }
+      // unsichtbare Hover-Ziele oben im Chart, damit Tooltip trotz reinem Linien-Plugin funktioniert
       var markMatch=data.map(function(row){
-        var hit=(sessMap[row.date]||[]).some(function(s){return s.focusMetric===perfMetric;});
-        return hit?(row[m.f]||0):null;
+        return (sessMap[row.date]||[]).some(function(s){return s.focusMetric===perfMetric;})?yMax:null;
       });
       var markOther=data.map(function(row){
-        var hit=(sessMap[row.date]||[]).some(function(s){return s.focusMetric!==perfMetric;});
         var matched=(sessMap[row.date]||[]).some(function(s){return s.focusMetric===perfMetric;});
-        return (hit&&!matched)?yMin:null;
+        var other=(sessMap[row.date]||[]).some(function(s){return s.focusMetric!==perfMetric;});
+        return (other&&!matched)?yMax:null;
       });
       if(markMatch.some(function(v){return v!==null;})){
-        datasets.push({
-          label:'Coaching (dieses KPI)',
-          data:markMatch,
-          showLine:false,
-          pointStyle:'rectRot',
-          pointRadius:8,
-          pointHoverRadius:10,
-          backgroundColor:'#206A72',
-          borderColor:'#fff',
-          borderWidth:2,
-          order:0
-        });
+        datasets.push({label:'Coaching (dieses KPI)',data:markMatch,showLine:false,pointRadius:7,pointHoverRadius:9,backgroundColor:'transparent',borderColor:'transparent',order:0});
       }
       if(markOther.some(function(v){return v!==null;})){
-        datasets.push({
-          label:'Anderes Coaching',
-          data:markOther,
-          showLine:false,
-          pointStyle:'triangle',
-          pointRadius:5,
-          pointHoverRadius:7,
-          backgroundColor:'rgba(140,140,140,0.55)',
-          borderColor:'rgba(140,140,140,0.55)',
-          order:4
-        });
+        datasets.push({label:'Anderes Coaching',data:markOther,showLine:false,pointRadius:7,pointHoverRadius:9,backgroundColor:'transparent',borderColor:'transparent',order:4});
       }
+
+      // ── Plugin: zeichnet dünne gestrichelte Vertikallinie + Coach-Kürzel je Coaching-Termin ──
+      var coachLinePlugin={
+        id:'coachLines',
+        afterDraw:function(chart){
+          var ctx=chart.ctx,xScale=chart.scales.x,ya=chart.scales.y;
+          if(!xScale||!ya)return;
+          var top=ya.top,bottom=ya.bottom;
+          data.forEach(function(row,i){
+            var sess=sessMap[row.date];
+            if(!sess||!sess.length)return;
+            var matched=sess.some(function(s){return s.focusMetric===perfMetric;});
+            var x=xScale.getPixelForValue(i);
+            ctx.save();
+            ctx.setLineDash([3,3]);
+            ctx.lineWidth=1;
+            ctx.strokeStyle=matched?'rgba(32,106,114,0.55)':'rgba(140,140,140,0.4)';
+            ctx.beginPath();
+            ctx.moveTo(x,top);
+            ctx.lineTo(x,bottom);
+            ctx.stroke();
+            var initials=sess.map(function(s){return coachInitial(s.coachId);}).filter(Boolean);
+            var label=initials.length?initials.join('/'):'·';
+            ctx.setLineDash([]);
+            ctx.font='9px Inter, sans-serif';
+            ctx.fillStyle=matched?'#174C52':'rgba(90,90,90,0.8)';
+            ctx.textAlign='center';
+            ctx.fillText(label,x,top-4);
+            ctx.restore();
+          });
+        }
+      };
 
       activeChart=new Chart(canvas,{
         type:'line',
         data:{labels:labels,datasets:datasets},
+        plugins:[coachLinePlugin],
         options:{
           responsive:true,
+          layout:{padding:{top:14}},
           plugins:{
             legend:{
-              display:hasTeamAvg||target!==null||markMatch.some(function(v){return v!==null;})||markOther.some(function(v){return v!==null;}),
+              display:hasTeamAvg||target!==null,
               position:'top',
               labels:{font:{size:11},boxWidth:20,padding:12}
             },
@@ -2936,7 +2958,10 @@ function renderTab(){
                     var row=data[ctx.dataIndex];
                     var sess=sessMap[row.date]||[];
                     if(!sess.length)return ctx.dataset.label;
-                    return sess.map(function(s){return (s.type||'Coaching')+(s.focus?' – '+s.focus:'');});
+                    return sess.map(function(s){
+                      var c=s.coachId?employees.find(function(e){return e.id===s.coachId;}):null;
+                      return (s.type||'Coaching')+(s.focus?' – '+s.focus:'')+(c?' ('+c.name+')':'');
+                    });
                   }
                   return ctx.dataset.label+': '+ctx.formattedValue;
                 }
