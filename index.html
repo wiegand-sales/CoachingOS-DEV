@@ -757,6 +757,162 @@ function lsLoad(){
   }catch(e){console.warn('lsLoad failed:',e);return false;}
 }
 
+function exportEmpSummary(empId){
+  var emp=employees.find(function(e){return e.id===empId;});
+  if(!emp)return;
+  var t=empTargets(emp);
+  var perf30=getPerf(emp.id,30);
+  function avg(key){if(!perf30.length)return null;return perf30.reduce(function(a,x){return a+(x[key]||0);},0)/perf30.length;}
+  var kpiRows=[
+    {l:'CR OEM',v:avg('crOEM'),tgt:t.crOEM},
+    {l:'CR Teilweise',v:avg('crTeilweise'),tgt:t.crTeilweise},
+    {l:'CR Super Yes',v:avg('crSuperYes'),tgt:t.crSuperYes},
+    {l:'CR Mega Yes',v:avg('crMegaYes'),tgt:t.crMegaYes}
+  ];
+  var kpiHtml=kpiRows.map(function(r){
+    var bench=roleBenchmark(emp.id,{'CR OEM':'crOEM','CR Teilweise':'crTeilweise','CR Super Yes':'crSuperYes','CR Mega Yes':'crMegaYes'}[r.l],30);
+    var vTxt=r.v!==null?Math.round(r.v)+'%':'—';
+    var tgtTxt=r.tgt?(r.tgt.dir==='lte'?'≤':'≥')+r.tgt.val+'%':'—';
+    var benchTxt=bench!==null?Math.round(bench)+'%':'—';
+    var ok=r.v!==null&&r.tgt?(r.tgt.dir==='lte'?r.v<=r.tgt.val:r.v>=r.tgt.val):null;
+    return '<tr><td>'+r.l+'</td><td>'+vTxt+'</td><td>'+tgtTxt+'</td><td>'+benchTxt+'</td><td>'+(ok===null?'—':ok?'✓ im Ziel':'unter Ziel')+'</td></tr>';
+  }).join('');
+
+  var callRat=(callRatings[emp.id]||[]);
+  var qaAvg=callRat.length?Math.round(callRat.reduce(function(a,r){return a+totalScore(r);},0)/callRat.length):null;
+  var weak=qaWeakSpots(emp.id,5);
+  var weakHtml=weak.length?weak.map(function(w){return '<li>'+w.label+' (Ø '+w.avg.toFixed(1)+'/4 über die letzten '+w.n+' Calls)</li>';}).join(''):'<li>Keine auffälligen Muster</li>';
+
+  var sessions=(protocols[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var abgeschlossen=sessions.filter(function(s){return s.status!=='geplant';});
+  var lastSessions=abgeschlossen.slice(0,5).map(function(s){
+    return '<tr><td>'+fd(s.date)+'</td><td>'+(s.type||'—')+'</td><td>'+(s.topics&&s.topics.length?s.topics.join(', '):(s.focus||'—'))+'</td><td>'+(s.cont||'—')+'</td></tr>';
+  }).join('');
+
+  var milestones=kpiMilestones(emp.id);
+  var milestonesHtml=milestones.length?milestones.map(function(m){return '<li>'+fd(m.date)+' – '+m.label+'</li>';}).join(''):'<li>Noch keine Meilensteine erreicht</li>';
+
+  var html='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Zusammenfassung – '+emp.name+'</title>'
+    +'<style>'
+    +'body{font-family:Arial,Helvetica,sans-serif;color:#1a1a18;margin:0;padding:32px;font-size:13px;line-height:1.5}'
+    +'h1{font-size:20px;margin:0 0 4px}'
+    +'h2{font-size:14px;margin:24px 0 8px;border-bottom:2px solid #206A72;padding-bottom:4px;color:#174C52}'
+    +'.meta{color:#666;font-size:12px;margin-bottom:16px}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:8px}'
+    +'th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;font-size:12.5px}'
+    +'th{background:#f2f3f0;font-weight:700}'
+    +'ul{margin:4px 0;padding-left:20px}'
+    +'.notes-box{background:#f7f7f5;border:1px solid #ddd;border-radius:6px;padding:12px;white-space:pre-wrap}'
+    +'@media print{body{padding:16px}}'
+    +'</style></head><body>'
+    +'<h1>Coaching-Zusammenfassung: '+emp.name+'</h1>'
+    +'<div class="meta">'+emp.role+' · '+(emp.team||'')+' · '+emp.phase+(emp.startDate?' · Start '+fd(emp.startDate):'')+' · erstellt am '+fd(today())+'</div>'
+    +'<h2>KPI-Übersicht (Ø letzte 30 Tage)</h2>'
+    +'<table><tr><th>KPI</th><th>Aktuell</th><th>Ziel</th><th>Ø Rolle ('+emp.role+')</th><th>Status</th></tr>'+kpiHtml+'</table>'
+    +'<h2>QA-Performance</h2>'
+    +'<div>Durchschnittlicher QA-Score: <strong>'+(qaAvg!==null?qaAvg+'%':'—')+'</strong> ('+callRat.length+' bewertete Calls)</div>'
+    +'<div style="margin-top:6px">Auffällige Muster:</div><ul>'+weakHtml+'</ul>'
+    +'<h2>Coaching-Historie</h2>'
+    +'<div style="margin-bottom:6px">'+abgeschlossen.length+' abgeschlossene Sessions insgesamt. Letzte 5:</div>'
+    +'<table><tr><th>Datum</th><th>Art</th><th>Thema</th><th>Continue (letzter Stand)</th></tr>'+(lastSessions||'<tr><td colspan="4">Keine Sessions vorhanden</td></tr>')+'</table>'
+    +'<h2>Entwicklung & Meilensteine</h2>'
+    +'<ul>'+milestonesHtml+'</ul>'
+    +'<h2>Notizen</h2>'
+    +'<div class="notes-box">'+(emp.notes?emp.notes.replace(/</g,'&lt;'):'Keine Notizen vorhanden.')+'</div>'
+    +'</body></html>';
+
+  var w=window.open('','_blank');
+  if(!w){alert('Popup wurde vom Browser blockiert. Bitte Popups für diese Seite erlauben.');return;}
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){w.print();},350);
+}
+function exportTeamReport(){
+  var HIDDEN=['SDM','SC'];
+  var list=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0;});
+  var customActive=!!(teamCustomFrom&&teamCustomTo);
+  var days=teamRange||7;
+  var fromBound,toBound;
+  if(customActive){fromBound=teamCustomFrom;toBound=teamCustomTo;}
+  else{var _fd=new Date(today()+'T00:00:00');_fd.setDate(_fd.getDate()-days);fromBound=_fd.toISOString().slice(0,10);toBound=today();}
+  var periodLabel=customActive?(fd(fromBound)+' – '+fd(toBound)):(days+' Tage');
+
+  function perfInRange(id){
+    var p=performance[id]||[];
+    return p.filter(function(x){return x.date>=fromBound&&x.date<=toBound;});
+  }
+  var allP=list.map(function(e){return perfInRange(e.id);}).reduce(function(a,b){return a.concat(b);},[]);
+  function tAvg(key){if(!allP.length)return null;return allP.reduce(function(a,x){return a+(x[key]||0);},0)/allP.length;}
+  var teamOem=tAvg('crOEM'),teamSy=tAvg('crSuperYes'),teamMy=tAvg('crMegaYes');
+  var totalAlerts=list.reduce(function(a,e){return a+checkAlerts(e.id).length;},0);
+
+  var ueberfaellig=list.filter(function(e){var t=tageSeitLetzterSession(e.id);return t===null||t>30;});
+  var coachCounts={},noCoachCount=0;
+  list.forEach(function(e){
+    (protocols[e.id]||[]).forEach(function(p){
+      if(p.status==='geplant')return;
+      if(p.date<fromBound||p.date>toBound)return;
+      if(p.coachId)coachCounts[p.coachId]=(coachCounts[p.coachId]||0)+1;else noCoachCount++;
+    });
+  });
+  var coachEmps=employees.filter(function(e){return e.role==='SDM'||e.role==='SC';});
+  var coachDistTxt=coachEmps.map(function(c){return c.name+': '+(coachCounts[c.id]||0);}).concat(noCoachCount?['Ohne Zuordnung: '+noCoachCount]:[]).join(' · ')||'Keine Coachings im Zeitraum';
+
+  var empRows=list.map(function(e){
+    var ep=perfInRange(e.id);
+    function ea(key){return ep.length?ep.reduce(function(a,x){return a+(x[key]||0);},0)/ep.length:null;}
+    var sCount=(protocols[e.id]||[]).filter(function(p){return p.status!=='geplant';}).length;
+    var tage=tageSeitLetzterSession(e.id);
+    var al=checkAlerts(e.id).length;
+    return '<tr><td>'+e.name+'</td><td>'+e.role+'</td><td>'+(ea('crOEM')!==null?Math.round(ea('crOEM'))+'%':'—')+'</td>'
+      +'<td>'+(ea('crSuperYes')!==null?Math.round(ea('crSuperYes'))+'%':'—')+'</td>'
+      +'<td>'+sCount+'</td><td>'+(tage===null?'nie':tage+'d')+'</td><td>'+(al>0?al+' ⚠':'✓')+'</td></tr>';
+  }).join('');
+
+  var totQA=0,totSess=0,totSim=0;
+  list.forEach(function(e){
+    totQA+=(callRatings[e.id]||[]).length;
+    totSess+=(protocols[e.id]||[]).filter(function(p){return p.status!=='geplant';}).length;
+    totSim+=(solidroadData[e.id]&&solidroadData[e.id].simulations)?solidroadData[e.id].simulations.length:0;
+  });
+
+  var html='<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Team-Report – Wiegand & Partner</title>'
+    +'<style>'
+    +'body{font-family:Arial,Helvetica,sans-serif;color:#1a1a18;margin:0;padding:32px;font-size:13px;line-height:1.5}'
+    +'h1{font-size:20px;margin:0 0 4px}'
+    +'h2{font-size:14px;margin:24px 0 8px;border-bottom:2px solid #206A72;padding-bottom:4px;color:#174C52}'
+    +'.meta{color:#666;font-size:12px;margin-bottom:16px}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:8px}'
+    +'th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;font-size:12.5px}'
+    +'th{background:#f2f3f0;font-weight:700}'
+    +'.kpi-grid{display:flex;gap:16px;margin-bottom:8px}'
+    +'.kpi-box{border:1px solid #ddd;border-radius:6px;padding:10px 14px;flex:1}'
+    +'.kpi-box .val{font-size:22px;font-weight:700;color:#174C52}'
+    +'.kpi-box .lbl{font-size:11px;color:#666;text-transform:uppercase}'
+    +'@media print{body{padding:16px}}'
+    +'</style></head><body>'
+    +'<h1>Team-Report – SFP Vertrieb</h1>'
+    +'<div class="meta">Wiegand & Partner · Zeitraum: '+periodLabel+' · erstellt am '+fd(today())+'</div>'
+    +'<div class="kpi-grid">'
+    +'<div class="kpi-box"><div class="lbl">CR OEM</div><div class="val">'+(teamOem!==null?Math.round(teamOem)+'%':'—')+'</div></div>'
+    +'<div class="kpi-box"><div class="lbl">CR Super Yes</div><div class="val">'+(teamSy!==null?Math.round(teamSy)+'%':'—')+'</div></div>'
+    +'<div class="kpi-box"><div class="lbl">CR Mega Yes</div><div class="val">'+(teamMy!==null?Math.round(teamMy)+'%':'—')+'</div></div>'
+    +'<div class="kpi-box"><div class="lbl">Offene Alerts</div><div class="val">'+totalAlerts+'</div></div>'
+    +'</div>'
+    +'<h2>Coaching-Abdeckung</h2>'
+    +'<div style="margin-bottom:6px"><strong>Überfällig (>30 Tage kein Coaching):</strong> '+(ueberfaellig.length?ueberfaellig.map(function(e){return e.name;}).join(', '):'Niemand')+'</div>'
+    +'<div style="margin-bottom:6px"><strong>Verteilung über Coaches:</strong> '+coachDistTxt+'</div>'
+    +'<div><strong>QA-Calls · Sessions · Simulationen (gesamt):</strong> '+totQA+' · '+totSess+' · '+totSim+'</div>'
+    +'<h2>Mitarbeiter-Übersicht</h2>'
+    +'<table><tr><th>Name</th><th>Rolle</th><th>CR OEM</th><th>CR SY</th><th>Sessions</th><th>Letztes Coaching</th><th>Alerts</th></tr>'+empRows+'</table>'
+    +'</body></html>';
+
+  var w=window.open('','_blank');
+  if(!w){alert('Popup wurde vom Browser blockiert. Bitte Popups für diese Seite erlauben.');return;}
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){w.print();},350);
+}
 function exportDaten(){
   var d={exportiert:new Date().toISOString(),version:'sfp-v1',employees:employees,protocols:protocols,performance:performance,solidroadData:solidroadData,tasks:tasks,reviews:reviews,KPI_TARGETS:KPI_TARGETS,settings:settings,ratingCriteria:ratingCriteria};
   var a=document.createElement('a');
@@ -1662,6 +1818,7 @@ function renderTeam(){
     +'<button class="btn btn-sm'+(customActive?' btn-primary':'')+'" style="padding:4px 10px" onclick="applyTeamCustomRange()"><i class="ti ti-check"></i></button>'
     +(customActive?'<button class="btn btn-sm" style="padding:4px 8px" onclick="clearTeamCustomRange()" title="Custom-Zeitraum zurücksetzen"><i class="ti ti-x"></i></button>':'')
     +'</div>'
+    +'<button class="btn btn-primary" onclick="exportTeamReport()"><i class="ti ti-file-description"></i> Team-Report (PDF)</button>'
     +'</div></div>'
     +'<div class="content">'
     // KPI Kacheln
@@ -1851,7 +2008,9 @@ function renderEmpDetail(){
     '<div class="topbar"><div class="tb-left">'
     +'<div class="av" style="width:42px;height:42px;font-size:14px;background:'+c.bg+';color:'+c.text+'">'+ini(emp.name)+'</div>'
     +'<div><div class="tb-name">'+emp.name+'</div><div class="tb-meta">'+emp.role+' · '+emp.phase+(emp.startDate?' · Start '+fd(emp.startDate):'')+' · '+p.length+' Session'+(p.length!==1?'s':'')+'</div></div>'
-    +'</div><div style="display:flex;gap:8px"><button class="btn" onclick="window.print()"><i class="ti ti-printer"></i> Print</button></div></div>'
+    +'</div><div style="display:flex;gap:8px">'
+    +'<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="exportEmpSummary(this.dataset.eid)"><i class="ti ti-file-description"></i> Zusammenfassung (PDF)</button>'
+    +'<button class="btn" onclick="window.print()"><i class="ti ti-printer"></i> Print</button></div></div>'
     +'<div class="tab-bar" id="empTabBar">'
     +'<div class="tab" data-tab="timeline" onclick="switchTab(\'timeline\')">Timeline</div>'
     +'<div class="tab" data-tab="performance" onclick="switchTab(\'performance\')">KPI Performance</div>'
