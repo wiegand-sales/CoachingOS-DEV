@@ -536,6 +536,48 @@ sb.auth.onAuthStateChange(function(event, session){
 });
 
 function setCoachFilterView(v){coachFilterView=v;renderCoachingAnsicht();}
+// Coach-Wirksamkeit: für jede abgeschlossene Session mit Coach + Ziel-KPI wird die
+// Ø-Veränderung 14 Tage vor vs. nach der Session berechnet (in Zielrichtung normalisiert:
+// positiv = Bewegung Richtung Ziel, unabhängig davon ob das KPI "mind." oder "max." ist).
+function computeCoachEffectiveness(){
+  var byCoach={};
+  employees.forEach(function(emp){
+    var empT=empTargets(emp);
+    var fullPerf=(performance[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+    if(!fullPerf.length)return;
+    function avgWindow(centerDate,daysBefore,daysAfter,metricKey){
+      var c=new Date(centerDate+'T00:00:00');
+      var from=new Date(c);from.setDate(from.getDate()-daysBefore);
+      var to=new Date(c);to.setDate(to.getDate()+daysAfter);
+      var fromS=from.toISOString().slice(0,10),toS=to.toISOString().slice(0,10);
+      var rows=fullPerf.filter(function(p){return p.date>=fromS&&p.date<toS;});
+      var vals=rows.map(function(p){return p[metricKey];}).filter(function(v){return v!==undefined&&v!==null;});
+      return vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
+    }
+    (protocols[emp.id]||[]).forEach(function(s){
+      if(s.status==='geplant'||!s.coachId||!s.focusMetric)return;
+      var before=avgWindow(s.date,14,0,s.focusMetric);
+      var after=avgWindow(s.date,0,14,s.focusMetric);
+      if(before===null||after===null)return;
+      var dir=(empT[s.focusMetric]&&empT[s.focusMetric].dir)||'gte';
+      var signedDelta=(after-before)*(dir==='lte'?-1:1);
+      if(!byCoach[s.coachId])byCoach[s.coachId]={deltas:[],n:0,positive:0};
+      byCoach[s.coachId].deltas.push(signedDelta);
+      byCoach[s.coachId].n++;
+      if(signedDelta>0)byCoach[s.coachId].positive++;
+    });
+  });
+  var result=[];
+  Object.keys(byCoach).forEach(function(coachId){
+    var c=employees.find(function(e){return e.id===coachId;});
+    if(!c)return;
+    var d=byCoach[coachId];
+    var avgDelta=d.deltas.reduce(function(a,b){return a+b;},0)/d.deltas.length;
+    result.push({coachId:coachId,name:c.name,n:d.n,avgDelta:avgDelta,positivePct:Math.round(d.positive/d.n*100)});
+  });
+  result.sort(function(a,b){return b.avgDelta-a.avgDelta;});
+  return result;
+}
 function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
@@ -679,6 +721,35 @@ function renderCoachingAnsicht(){
   h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:var(--r-lg);padding:14px 16px"><div style="font-size:10px;font-weight:600;color:var(--blue);letter-spacing:.05em;margin-bottom:4px">30 TAGE</div><div style="font-size:32px;font-weight:700;color:var(--blue);line-height:1">'+s30+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">Sessions</div></div>';
   h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:14px 16px"><div style="font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.05em;margin-bottom:8px">SESSION-VERLAUF – LETZTE 30 TAGE</div>'+buildChart()+'</div>';
   h+='</div>';
+
+  // ══ Coach-Wirksamkeit (nur Overview, ab 2 Coaches sinnvoll) ══
+  if(coachFilterView==='overview'&&coachList.length>=2){
+    var eff=computeCoachEffectiveness();
+    h+='<div class="card" style="margin-bottom:16px">';
+    h+='<div class="card-title">Coach-Wirksamkeit <span style="font-weight:400;color:var(--text3);font-size:11px">· Ø KPI-Veränderung 14 Tage vor vs. nach Coachings mit Ziel-KPI</span></div>';
+    if(!eff.length){
+      h+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Noch nicht genug Coachings mit Ziel-KPI vorhanden, um das zu berechnen.</div>';
+    } else {
+      var maxAbs=Math.max.apply(null,eff.map(function(x){return Math.abs(x.avgDelta);}).concat([1]));
+      h+='<div style="display:flex;flex-direction:column;gap:12px">';
+      eff.forEach(function(x){
+        var pct=Math.min(Math.abs(x.avgDelta)/maxAbs*100,100);
+        var good=x.avgDelta>0;
+        var col=good?'var(--teal-dark)':'var(--red)';
+        h+='<div>'
+          +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">'
+          +'<span style="font-size:13px;font-weight:600">'+x.name+'</span>'
+          +'<span style="font-size:13px;font-weight:700;color:'+col+'">'+(x.avgDelta>=0?'+':'')+x.avgDelta.toFixed(1)+' Ø-Punkte</span>'
+          +'</div>'
+          +'<div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:4px"></div></div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:3px">'+x.n+' Coachings mit Ziel-KPI · '+x.positivePct+'% davon Richtung Ziel bewegt</div>'
+          +'</div>';
+      });
+      h+='</div>';
+      h+='<div style="font-size:11px;color:var(--text3);margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">Basiert nur auf Sessions, bei denen ein Ziel-KPI hinterlegt wurde. Kleine Fallzahlen bitte mit Vorsicht interpretieren.</div>';
+    }
+    h+='</div>';
+  }
 
   // ══ ZEILE 2: Kalender volle Breite ══
   h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:16px 18px;margin-bottom:16px">';
