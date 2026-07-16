@@ -1280,6 +1280,51 @@ function naechsteGeplanteSession(id){
   return p[0].date;
 }
 
+function kpiMilestones(empId){
+  var perf=(performance[empId]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var emp=employees.find(function(e){return e.id===empId;});
+  if(!emp)return [];
+  var t=empTargets(emp);
+  var defs=[{k:'crOEM',l:'CR OEM'},{k:'crSuperYes',l:'CR Super Yes'},{k:'crMegaYes',l:'CR Mega Yes'}];
+  var out=[];
+  defs.forEach(function(d){
+    var tgt=t[d.k];
+    if(!tgt||tgt.val==null)return;
+    var hit=perf.find(function(p){
+      var v=p[d.k];
+      if(v===undefined||v===null)return false;
+      return tgt.dir==='lte'?v<=tgt.val:v>=tgt.val;
+    });
+    if(hit)out.push({date:hit.date,label:d.l+'-Ziel erstmals erreicht ('+Math.round(hit[d.k])+'%)'});
+  });
+  return out;
+}
+// Team-/Rollen-Benchmark: Ø der letzten 30 Tage für alle aktiven Kollegen der gleichen Rolle
+function roleBenchmark(empId,metricKey,days){
+  days=days||30;
+  var emp=employees.find(function(e){return e.id===empId;});
+  if(!emp)return null;
+  var peers=employees.filter(function(e){return e.role===emp.role&&e.active!==false;});
+  var vals=[];
+  peers.forEach(function(e){
+    var p=getPerf(e.id,days);
+    if(!p.length)return;
+    var avg=p.reduce(function(a,x){return a+(x[metricKey]||0);},0)/p.length;
+    vals.push(avg);
+  });
+  if(!vals.length)return null;
+  return vals.reduce(function(a,b){return a+b;},0)/vals.length;
+}
+function monthAvg(empId,metricKey,monthsAgo){
+  var now=new Date(today()+'T00:00:00');
+  var m=new Date(now.getFullYear(),now.getMonth()-monthsAgo,1);
+  var from=new Date(m.getFullYear(),m.getMonth(),1).toISOString().slice(0,10);
+  var to=new Date(m.getFullYear(),m.getMonth()+1,0).toISOString().slice(0,10);
+  var p=(performance[empId]||[]).filter(function(x){return x.date>=from&&x.date<=to;});
+  if(!p.length)return null;
+  return p.reduce(function(a,x){return a+(x[metricKey]||0);},0)/p.length;
+}
+
 function tageSeitLetzterSession(id){
   var ls=letzteSessionMA(id);
   if(!ls)return null;
@@ -1806,6 +1851,7 @@ function renderEmpDetail(){
     +'<div><div class="tb-name">'+emp.name+'</div><div class="tb-meta">'+emp.role+' · '+emp.phase+(emp.startDate?' · Start '+fd(emp.startDate):'')+' · '+p.length+' Session'+(p.length!==1?'s':'')+'</div></div>'
     +'</div><div style="display:flex;gap:8px"><button class="btn" onclick="window.print()"><i class="ti ti-printer"></i> Print</button></div></div>'
     +'<div class="tab-bar" id="empTabBar">'
+    +'<div class="tab" data-tab="timeline" onclick="switchTab(\'timeline\')">Timeline</div>'
     +'<div class="tab" data-tab="performance" onclick="switchTab(\'performance\')">KPI Performance</div>'
     +'<div class="tab" data-tab="call-performance" onclick="switchTab(\'call-performance\')">QA Performance</div>'
     +'<div class="tab" data-tab="coaching-eval" onclick="switchTab(\'coaching-eval\')">Coaching</div>'
@@ -1839,6 +1885,73 @@ function renderTab(){
   var sr=solidroadData[emp.id]||{simulations:[]};
   var alerts=checkAlerts(emp.id);
   var html='';
+
+  // ── TIMELINE TAB ──
+  if(activeTab==='timeline'){
+    // KPI-Snapshot: Trend vs. Vormonat + Rollen-Benchmark
+    html+='<div class="sec-title" style="margin-bottom:10px">KPI-Snapshot <span style="font-weight:400;text-transform:none;letter-spacing:0">· dieser Monat vs. Vormonat · vs. Ø '+emp.role+'</span></div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">';
+    [{k:'crOEM',l:'CR OEM'},{k:'crTeilweise',l:'CR Teilweise'},{k:'crSuperYes',l:'CR Super Yes'},{k:'crMegaYes',l:'CR Mega Yes'}].forEach(function(d){
+      var cur=monthAvg(emp.id,d.k,0);
+      var prev=monthAvg(emp.id,d.k,1);
+      var bench=roleBenchmark(emp.id,d.k,30);
+      var trend=(cur!==null&&prev!==null)?cur-prev:null;
+      var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
+      var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
+      var vsRole=(cur!==null&&bench!==null)?cur-bench:null;
+      var vsRoleTxt=vsRole===null?'—':(vsRole>=0?'+':'')+vsRole.toFixed(1)+'% vs. Ø Rolle';
+      var vsRoleCol=vsRole===null?'var(--text3)':(vsRole>=0?'var(--teal-dark)':'var(--red)');
+      html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+        +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">'+d.l.toUpperCase()+'</div>'
+        +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">'
+        +'<div style="font-size:20px;font-weight:700">'+(cur!==null?Math.round(cur)+'%':'—')+'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
+        +'</div>'
+        +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+'%':'—')+'</div>'
+        +'<div style="font-size:10.5px;color:'+vsRoleCol+';margin-top:2px;font-weight:600">'+vsRoleTxt+'</div>'
+        +'</div>';
+    });
+    html+='</div>';
+
+    // Kombinierte Timeline: Sessions + Reviews + KPI-Meilensteine
+    var tlEvents=[];
+    (protocols[emp.id]||[]).forEach(function(s){
+      tlEvents.push({date:s.date,kind:'session',icon:'ti-message-circle',col:'var(--purple)',bg:'rgba(32,106,114,0.10)',
+        title:(s.type||'Session')+(s.status==='geplant'?' (geplant)':''),
+        sub:(s.topics&&s.topics.length?s.topics.join(', '):(s.focus||''))});
+    });
+    (reviews[emp.id]||[]).forEach(function(r){
+      var isEval=r.einwand!==undefined;
+      tlEvents.push({date:r.date,kind:'review',icon:isEval?'ti-clipboard-check':'ti-calendar-event',col:'var(--blue)',bg:'rgba(126,210,219,0.16)',
+        title:isEval?'Mitarbeiterentwicklung bewertet':(r.type||'Review')+(r.status==='geplant'?' (geplant)':''),
+        sub:isEval?(r.note||''):(r.rating||r.notes||'')});
+    });
+    kpiMilestones(emp.id).forEach(function(m){
+      tlEvents.push({date:m.date,kind:'milestone',icon:'ti-trophy',col:'var(--amber-dark)',bg:'rgba(217,65,9,0.10)',title:m.label,sub:''});
+    });
+    tlEvents.sort(function(a,b){return b.date.localeCompare(a.date);});
+
+    html+='<div class="sec-title" style="margin-bottom:10px">Timeline <span style="font-weight:400;text-transform:none;letter-spacing:0">· Sessions, Reviews & Meilensteine in einer Ansicht</span></div>';
+    if(!tlEvents.length){
+      html+='<div class="card" style="text-align:center;color:var(--text3);padding:32px"><i class="ti ti-timeline" style="font-size:28px;display:block;margin-bottom:8px"></i>Noch keine Ereignisse vorhanden</div>';
+    } else {
+      html+='<div style="position:relative;padding-left:20px">';
+      html+='<div style="position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--border)"></div>';
+      tlEvents.forEach(function(ev){
+        html+='<div style="position:relative;margin-bottom:14px">';
+        html+='<div style="position:absolute;left:-20px;top:3px;width:12px;height:12px;border-radius:50%;background:'+ev.col+';border:2px solid var(--bg-solid)"></div>';
+        html+='<div class="card" style="padding:10px 14px;margin-bottom:0">';
+        html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">';
+        html+='<i class="ti '+ev.icon+'" style="font-size:14px;color:'+ev.col+'"></i>';
+        html+='<span style="font-size:12px;font-weight:700">'+fd(ev.date)+'</span>';
+        html+='<span style="font-size:11px;color:var(--text2)">· '+ev.title+'</span>';
+        html+='</div>';
+        if(ev.sub)html+='<div style="font-size:11.5px;color:var(--text2);padding-left:22px">'+ev.sub+'</div>';
+        html+='</div></div>';
+      });
+      html+='</div>';
+    }
+  }
 
   // ── PERFORMANCE TAB ──
   if(activeTab==='performance'){
