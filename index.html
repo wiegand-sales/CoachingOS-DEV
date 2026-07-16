@@ -1469,36 +1469,82 @@ function renderTeam(){
       +'</div>';
   });
 
-  // ── Coaching-Aufmerksamkeit Tabelle ──
-  var coachRows='';
+  // ── Coaching-Abdeckung: überfällig, Verteilung über Coaches, QA/Session/Sim-Verhältnis ──
+  var ueberfaellig=list.filter(function(e){var t=tageSeitLetzterSession(e.id);return t===null||t>30;});
+  var coachCounts={}; // coachId -> Anzahl abgeschlossener Sessions im Zeitraum
+  var noCoachCount=0;
+  var cutoffDate=(function(){var d=new Date(today()+'T00:00:00');d.setDate(d.getDate()-days);return d.toISOString().slice(0,10);})();
   list.forEach(function(e){
-    var c=COLORS[e.color%COLORS.length];
-    var r=lastRating(e.id); var rs=r?RS[r]:null;
-    var sCount=(protocols[e.id]||[]).length;
-    var tage=tageSeitLetzterSession(e.id);
-    var aFarbe=aufmerksamkeitFarbe(tage);
-    var al=checkAlerts(e.id);
-    var _ss=(protocols[e.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-    var _ls=_ss[0]||null;
-    var lsType=_ls?(_ls.type||'—'):'—';
-    var lsTopics=_ls&&_ls.topics&&_ls.topics.length?_ls.topics.slice(0,2).join(', '):'—';
-    coachRows+='<tr style="cursor:pointer" onclick="selectEmp(\''+e.id+'\')">'
-      +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)">'
-      +'<div style="display:flex;align-items:center;gap:9px">'
-      +'<div class="av" style="width:30px;height:30px;font-size:11px;background:'+c.bg+';color:'+c.text+'">'+ini(e.name)+'</div>'
-      +'<div><div style="font-weight:500">'+e.name+(al.length?'<i class="ti ti-alert-triangle" style="font-size:12px;color:var(--amber);margin-left:4px"></i>':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--text2)">'+e.phase+(e.team?' · '+e.team:'')+'</div></div></div></td>'
-      +(function(){
-        var naechste=naechsteGeplanteSession(e.id);
-        return '<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;color:var(--purple)">'+sCount+'</td>'
-          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;color:'+aFarbe+'">'+(tage===null?'Keine':tage===0?'Heute':tage+'d')+'</td>'
-          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">'+lsType+'</td>'
-          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">'+lsTopics+'</td>'
-          +(al.length?'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><span style="color:var(--amber);font-weight:600;font-size:12px">⚠ '+al.length+'</span></td>':'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><span style="color:var(--teal)">✓</span></td>')
-          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border)"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSessionModal(\''+e.id+'\')"><i class="ti ti-calendar-plus"></i> Planen</button></td>';
-      })()
-      +'</tr>';
+    (protocols[e.id]||[]).forEach(function(p){
+      if(p.status==='geplant')return;
+      if(p.date<cutoffDate)return;
+      if(p.coachId){coachCounts[p.coachId]=(coachCounts[p.coachId]||0)+1;}
+      else{noCoachCount++;}
+    });
   });
+  var coachEmps=employees.filter(function(e){return (e.role==='SDM'||e.role==='SC');});
+  var coachDistRows=coachEmps.map(function(c){return {name:c.name,n:coachCounts[c.id]||0};});
+  if(noCoachCount>0)coachDistRows.push({name:'Ohne Zuordnung (Altdaten)',n:noCoachCount});
+  var maxCoachN=Math.max.apply(null,coachDistRows.map(function(x){return x.n;}).concat([1]));
+
+  var coverageHtml='<div class="card" style="margin-bottom:20px">'
+    +'<div class="card-title">Coaching-Abdeckung <span style="font-weight:400;color:var(--text3);font-size:11px">· letzte '+days+' Tage</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">';
+
+  // Spalte 1: Überfällig
+  coverageHtml+='<div>'
+    +'<div class="sec-title" style="margin-bottom:8px">Überfällig <span style="font-weight:400;text-transform:none;letter-spacing:0">(>30 Tage kein Coaching)</span></div>';
+  if(!ueberfaellig.length){
+    coverageHtml+='<div style="font-size:12px;color:var(--teal-dark);display:flex;align-items:center;gap:6px"><i class="ti ti-check"></i> Niemand überfällig</div>';
+  } else {
+    coverageHtml+='<div style="display:flex;flex-direction:column;gap:6px">';
+    ueberfaellig.slice(0,6).forEach(function(e){
+      var t=tageSeitLetzterSession(e.id);
+      coverageHtml+='<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">'
+        +'<span style="cursor:pointer" onclick="selectEmp(\''+e.id+'\')">'+e.name+'</span>'
+        +'<span style="font-weight:700;color:var(--red)">'+(t===null?'nie':t+'d')+'</span></div>';
+    });
+    if(ueberfaellig.length>6)coverageHtml+='<div style="font-size:11px;color:var(--text3)">+'+(ueberfaellig.length-6)+' weitere</div>';
+    coverageHtml+='</div>';
+  }
+  coverageHtml+='</div>';
+
+  // Spalte 2: Verteilung über Coaches
+  coverageHtml+='<div><div class="sec-title" style="margin-bottom:8px">Verteilung über Coaches</div>';
+  if(!coachDistRows.some(function(x){return x.n>0;})){
+    coverageHtml+='<div style="font-size:12px;color:var(--text3)">Noch keine zugeordneten Coachings im Zeitraum</div>';
+  } else {
+    coverageHtml+='<div style="display:flex;flex-direction:column;gap:8px">';
+    coachDistRows.forEach(function(r){
+      var pct=maxCoachN?Math.round(r.n/maxCoachN*100):0;
+      coverageHtml+='<div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>'+r.name+'</span><span style="font-weight:700">'+r.n+'</span></div>'
+        +'<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--purple);border-radius:3px"></div></div>'
+        +'</div>';
+    });
+    coverageHtml+='</div>';
+  }
+  coverageHtml+='</div>';
+
+  // Spalte 3: QA-Calls vs Sessions vs Simulationen (gesamt, nicht nur Zeitraum)
+  var totQA=0,totSess=0,totSim=0;
+  list.forEach(function(e){
+    totQA+=(callRatings[e.id]||[]).length;
+    totSess+=(protocols[e.id]||[]).filter(function(p){return p.status!=='geplant';}).length;
+    totSim+=(solidroadData[e.id]&&solidroadData[e.id].simulations)?solidroadData[e.id].simulations.length:0;
+  });
+  var maxRatio=Math.max(totQA,totSess,totSim,1);
+  coverageHtml+='<div><div class="sec-title" style="margin-bottom:8px">QA-Calls · Sessions · Simulationen <span style="font-weight:400;text-transform:none;letter-spacing:0">(gesamt, Team)</span></div>';
+  [{l:'QA-Calls',n:totQA,c:'var(--blue)'},{l:'Sessions',n:totSess,c:'var(--purple)'},{l:'Simulationen',n:totSim,c:'var(--teal)'}].forEach(function(r){
+    var pct=Math.round(r.n/maxRatio*100);
+    coverageHtml+='<div style="margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span>'+r.l+'</span><span style="font-weight:700">'+r.n+'</span></div>'
+      +'<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+r.c+';border-radius:3px"></div></div>'
+      +'</div>';
+  });
+  coverageHtml+='</div>';
+
+  coverageHtml+='</div></div>';
 
   // ── RENDER ──
   ma.innerHTML='<div class="topbar">'
@@ -1592,6 +1638,7 @@ function renderTeam(){
       });
       return fbar+'</div>';
     })()
+    +coverageHtml
     +'<div class="sec-title" style="margin-bottom:10px">SFP Performance <span style="font-weight:400;color:var(--text3)">· CR als % aller Gespräche · Gut ≥ '+CR_GOOD+'%'+(days!==7?' · Pfeil = Trend vs. 7-Tage-Ø':'')+'</span></div>'
     +'<div class="tbl" style="margin-bottom:24px"><table><thead><tr>'
     +'<th style="min-width:160px">Mitarbeiter</th>'
