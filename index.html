@@ -448,6 +448,21 @@ tr:hover td{background:var(--bg2);}
   </div>
 </div></div>
 
+<!-- NEUES ZIEL -->
+<div class="modal-ov hidden" id="goalModal"><div class="modal" style="width:520px;max-width:95vw">
+  <div class="modal-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-flag" style="color:var(--purple)"></i> Neues Ziel</div>
+  <div style="margin-bottom:10px"><label>Zielbeschreibung</label><textarea id="goal-desc" rows="2" placeholder="z. B. Super Yes Rate auf 18% steigern bis Jahresende" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical"></textarea></div>
+  <div class="f2" style="margin-bottom:10px">
+    <div><label>KPI (optional)</label><select id="goal-metric"><option value="">— Kein KPI (qualitativ) —</option></select></div>
+    <div><label>Zielwert (%)</label><input type="number" id="goal-target" placeholder="z. B. 60"></div>
+  </div>
+  <div style="margin-bottom:14px"><label>Ziel-Datum</label><input type="date" id="goal-date"></div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal('goalModal')">Abbrechen</button>
+    <button class="btn btn-primary" id="goalSaveBtn" data-eid="" onclick="saveNewGoal(document.getElementById('goalSaveBtn').dataset.eid)"><i class="ti ti-check"></i> Ziel speichern</button>
+  </div>
+</div></div>
+
 
 
 <!-- SCORECARD MODAL -->
@@ -3048,45 +3063,38 @@ function renderTab(){
     (function(){
       var empGoals=(goals[emp.id]||[]).slice().sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
       html+='<div class="card" style="margin-bottom:22px">';
-      html+='<div class="card-title"><i class="ti ti-flag"></i> Zielvereinbarungen</div>';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
+      html+='<div class="card-title" style="margin:0"><i class="ti ti-flag"></i> Zielvereinbarungen</div>';
+      html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openGoalModal(this.dataset.eid)"><i class="ti ti-plus"></i> Neues Ziel</button>';
+      html+='</div>';
       if(!empGoals.length){
         html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:14px">Noch keine Ziele vereinbart</div>';
       } else {
-        html+='<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">';
+        html+='<div style="display:flex;flex-direction:column;gap:8px">';
         empGoals.forEach(function(g){
           var statusCol={offen:'var(--text2)','in Arbeit':'var(--amber-dark)',erreicht:'var(--teal-dark)',verfehlt:'var(--red)'}[g.status]||'var(--text2)';
           var statusBg={offen:'var(--bg2)','in Arbeit':'var(--amber-bg)',erreicht:'var(--teal-bg)',verfehlt:'var(--red-bg)'}[g.status]||'var(--bg2)';
-          var currentTxt='';
+          var metaParts=[];
+          if(g.targetDate)metaParts.push('Ziel-Datum: '+fd(g.targetDate));
           if(g.metricKey){
             var recentP=getPerf(emp.id,30);
             var curVal=recentP.length?recentP.reduce(function(a,x){return a+(x[g.metricKey]||0);},0)/recentP.length:null;
-            currentTxt='<div style="font-size:11px;color:var(--text3);margin-top:2px">Aktuell (Ø 30 Tage): '+(curVal!==null?Math.round(curVal)+'%':'—')+' · Ziel: '+g.targetValue+'%'+' ('+focusMetricLabel(g.metricKey)+')</div>';
+            metaParts.push('Aktuell (Ø 30 Tage): '+(curVal!==null?Math.round(curVal)+'%':'—')+' → Ziel: '+g.targetValue+'% ('+focusMetricLabel(g.metricKey)+')');
           }
-          html+='<div style="background:rgba(0,0,0,0.045);border:1px solid var(--border2);border-radius:var(--r-md);padding:10px 12px">'
-            +'<div style="display:flex;align-items:flex-start;gap:10px">'
-            +'<div style="flex:1"><div style="font-size:13px;font-weight:500">'+g.description+'</div>'
-            +(g.targetDate?'<div style="font-size:11px;color:var(--text3);margin-top:2px">Ziel-Datum: '+fd(g.targetDate)+'</div>':'')
-            +currentTxt
-            +'</div>'
-            +'<select data-id="'+g.id+'" onchange="updateGoalStatus(this.dataset.id,this.value)" style="font-size:11px;font-weight:600;padding:4px 8px;border:none;border-radius:20px;background:'+statusBg+';color:'+statusCol+'">'
+          html+='<div style="background:rgba(0,0,0,0.045);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px 14px">'
+            +'<div style="display:flex;align-items:center;gap:10px">'
+            +'<div style="flex:1;font-size:13px;font-weight:600">'+g.description+'</div>'
+            +'<select data-id="'+g.id+'" onchange="updateGoalStatus(this.dataset.id,this.value)" style="width:auto;flex-shrink:0;font-size:11px;font-weight:600;padding:4px 8px;border:none;border-radius:20px;background:'+statusBg+';color:'+statusCol+'">'
             +['offen','in Arbeit','erreicht','verfehlt'].map(function(s){return '<option'+(g.status===s?' selected':'')+'>'+s+'</option>';}).join('')
             +'</select>'
-            +'<button class="btn btn-sm" data-id="'+g.id+'" onclick="deleteGoal(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button>'
-            +'</div></div>';
+            +'<button class="btn btn-sm" data-id="'+g.id+'" onclick="deleteGoal(this.dataset.id)" style="color:var(--red);flex-shrink:0"><i class="ti ti-trash"></i></button>'
+            +'</div>'
+            +(metaParts.length?'<div style="font-size:11px;color:var(--text3);margin-top:6px">'+metaParts.join(' · ')+'</div>':'')
+            +'</div>';
         });
         html+='</div>';
       }
-      html+='<div style="border-top:1px solid var(--border);padding-top:12px">';
-      html+='<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">Neues Ziel</div>';
-      html+='<textarea id="goal-desc" rows="2" placeholder="z. B. Super Yes Rate auf 18% steigern bis Jahresende" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical;margin-bottom:8px"></textarea>';
-      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">';
-      html+='<select id="goal-metric" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)"><option value="">— Kein KPI (qualitativ) —</option>'
-        +FOCUS_METRICS.map(function(m){return '<option value="'+m.key+'">'+m.label+'</option>';}).join('')+'</select>';
-      html+='<input type="number" id="goal-target" placeholder="Zielwert (%)" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">';
-      html+='<input type="date" id="goal-date" style="padding:6px 8px;font-size:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)">';
       html+='</div>';
-      html+='<button class="btn btn-primary btn-sm" style="width:auto" data-eid="'+emp.id+'" onclick="saveNewGoal(this.dataset.eid)"><i class="ti ti-check"></i> Ziel speichern</button>';
-      html+='</div></div>';
     })();
 
     // ── Bewertungs-Historie (weiße Box, aufklappbare Zeilen) ──
@@ -4910,6 +4918,19 @@ function sessionSpeichernNeu(){
 }
 
 
+function openGoalModal(empId){
+  if(empId)selectedEmp=empId;
+  var descEl=document.getElementById('goal-desc');if(descEl)descEl.value='';
+  var metricEl=document.getElementById('goal-metric');
+  if(metricEl&&metricEl.options.length<=1){
+    FOCUS_METRICS.forEach(function(m){var o=document.createElement('option');o.value=m.key;o.textContent=m.label;metricEl.appendChild(o);});
+  }
+  if(metricEl)metricEl.value='';
+  var targetEl=document.getElementById('goal-target');if(targetEl)targetEl.value='';
+  var dateEl=document.getElementById('goal-date');if(dateEl)dateEl.value='';
+  var saveBtn=document.getElementById('goalSaveBtn');if(saveBtn)saveBtn.dataset.eid=selectedEmp;
+  openModal('goalModal');
+}
 function saveNewGoal(empId){
   var desc=document.getElementById('goal-desc').value.trim();
   if(!desc){alert('Bitte eine Zielbeschreibung eingeben.');return;}
@@ -4929,7 +4950,20 @@ function saveNewGoal(empId){
     var r=res.data;
     if(!goals[empId])goals[empId]=[];
     goals[empId].unshift({id:r.id,description:r.description,metricKey:r.metric_key,targetValue:r.target_value,targetDate:r.target_date,status:r.status,createdAt:r.created_at,createdBy:r.created_by});
-    renderTab();
+    // Zugehörige offene Aufgabe im Task-Tab anlegen
+    var taskPayload={
+      employee_id:empId,text:'Ziel: '+desc,description:(metricKey?focusMetricLabel(metricKey)+' auf '+targetValue+'% steigern':'')+(targetDate?' · bis '+fd(targetDate):''),
+      done:false,priority:'medium',due_date:targetDate,source:'Zielvereinbarung'
+    };
+    sb.from('tasks').insert(taskPayload).select().single().then(function(tres){
+      if(!tres.error){
+        var tr=tres.data;
+        if(!tasks[empId])tasks[empId]=[];
+        tasks[empId].unshift({id:tr.id,text:tr.text,description:tr.description||'',done:false,priority:tr.priority,dueDate:tr.due_date,source:tr.source||''});
+      }
+      closeModal('goalModal');
+      renderTab();
+    });
   }).catch(function(err){alert('Unerwarteter Fehler: '+err.message);});
 }
 function updateGoalStatus(goalId,newStatus){
