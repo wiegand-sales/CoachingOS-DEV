@@ -3071,22 +3071,23 @@ function renderTab(){
     html+='</div></div>';
 
     // ── Zone 4: Coaching-Historie (volle Breite, nur abgeschlossene) ──
-    html+='<div class="sec-title" style="margin-bottom:10px">Coaching-Historie <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">('+completedSessions.length+')</span></div>';
+    html+='<div class="card">';
+    html+='<div class="card-title"><i class="ti ti-history"></i> Coaching-Historie <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+completedSessions.length+')</span></div>';
     if(!completedSessions.length){
-      html+='<div class="card" style="text-align:center;color:var(--text3);padding:32px"><i class="ti ti-calendar-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Noch keine Coachings erfasst<div style="margin-top:10px"><button class="btn btn-sm btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-plus"></i> Jetzt erfassen</button></div></div>';
+      html+='<div style="text-align:center;color:var(--text3);padding:24px"><i class="ti ti-calendar-off" style="font-size:26px;display:block;margin-bottom:8px"></i>Noch keine Coachings erfasst<div style="margin-top:10px"><button class="btn btn-sm btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-plus"></i> Jetzt erfassen</button></div></div>';
     } else {
-      html+='<div style="display:flex;flex-direction:column;gap:8px">';
+      html+='<div style="display:flex;flex-direction:column;gap:6px">';
       completedSessions.forEach(function(s,idx){
         var eid='se'+emp.id+'x'+idx;
         var RM={Teilweise:{c:'var(--amber)'},Yes:{c:'var(--teal)'},'Super Yes':{c:'var(--purple)'},'Mega Yes':{c:'var(--blue)'}};
         var rm=s.rating?RM[s.rating]:null;
-        html+='<div class="card" style="margin-bottom:0;padding:0;overflow:hidden">';
+        html+='<div style="background:var(--bg2);border-radius:var(--r-md);overflow:hidden">';
         html+='<div class="sess-hdr" data-eid="'+eid+'" onclick="toggleSessCard(this.dataset.eid)" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none">';
         html+='<span style="font-size:12px;font-weight:700;white-space:nowrap">'+fd(s.date)+'</span>';
         if(s.uhrzeit)html+='<span style="font-size:11px;color:var(--text2);flex-shrink:0"><i class="ti ti-clock" style="font-size:10px"></i> '+s.uhrzeit+(s.endUhrzeit?'–'+s.endUhrzeit:'')+'</span>';
         var _dur=sessionDuration(s.uhrzeit,s.endUhrzeit);
         if(_dur)html+='<span style="font-size:10.5px;color:var(--text3);flex-shrink:0">('+formatDuration(_dur)+')</span>';
-        html+='<span style="font-size:11px;color:var(--text2);background:var(--bg2);padding:2px 8px;border-radius:20px;flex-shrink:0">'+(s.type||'Session')+'</span>';
+        html+='<span style="font-size:11px;color:var(--text2);background:var(--bg-solid);padding:2px 8px;border-radius:20px;flex-shrink:0">'+(s.type||'Session')+'</span>';
         if(s.topics&&s.topics.length){html+='<span style="font-size:11px;color:var(--purple);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+s.topics.join(' · ')+'</span>';}else{html+='<span style="flex:1"></span>';}
         if(rm)html+='<span style="font-size:11px;font-weight:700;color:'+rm.c+';flex-shrink:0">'+s.rating+'</span>';
         html+='<span id="arr-'+eid+'" style="color:var(--text3);font-size:12px;flex-shrink:0;transition:transform .2s">▾</span></div>';
@@ -3101,6 +3102,7 @@ function renderTab(){
       });
       html+='</div>';
     }
+    html+='</div>'; // Ende Historie-Karte
 
     // ── Chart.js init – EXAKT gleiche Optionen wie Coaching Tab ──
     (function(tc,dims,ccat,maxVal){
