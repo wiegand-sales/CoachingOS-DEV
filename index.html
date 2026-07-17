@@ -2547,14 +2547,6 @@ function renderTab(){
     html+='<div class="card" style="margin-bottom:20px">';
     html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
     html+='<div class="card-title" style="margin:0"><i class="ti ti-phone-calling"></i> QA-Übersicht <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+totalCalls+' bewertete Calls</span></div>';
-    if(callRat.length>1){
-      html+='<select onchange="window._selCallId=this.value;renderTab()" style="font-size:12px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
-      callRat.forEach(function(r,i){
-        var sel=(showCall&&r.id===showCall.id)?' selected':'';
-        html+='<option value="'+r.id+'"'+sel+'>'+r.date+(i===0?' ★':'')+'</option>';
-      });
-      html+='</select>';
-    }
     html+='</div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:flex-start;margin-top:12px">';
 
@@ -2583,7 +2575,15 @@ function renderTab(){
 
     html+='</div>'; // Ende 2-Spalten-Grid
 
-    html+='<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">';
+    html+='<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;align-items:center">';
+    if(callRat.length>1){
+      html+='<select onchange="window._selCallId=this.value;renderTab()" style="font-size:13px;font-weight:500;padding:7px 13px;border:1px solid var(--border2);border-radius:var(--r-md);background:rgba(255,255,255,0.5);color:var(--text);cursor:pointer;font-family:inherit">';
+      callRat.forEach(function(r,i){
+        var sel=(showCall&&r.id===showCall.id)?' selected':'';
+        html+='<option value="'+r.id+'"'+sel+'>'+r.date+(i===0?' ★':'')+'</option>';
+      });
+      html+='</select>';
+    }
     html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openQaBewertungModal(this.dataset.eid)"><i class="ti ti-phone-plus"></i> Neuen Call bewerten</button>';
     html+='</div>';
     html+='</div>'; // Ende Karte
