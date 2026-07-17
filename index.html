@@ -3626,39 +3626,39 @@ function renderTab(){
     var teamOpts=allTeams().map(function(tm){return '<option'+(tm===emp.team?' selected':'')+'>'+tm+'</option>';}).join('')+'<option value="__new__">+ Neues Team...</option>';
     var ROLLEN=['Vertriebsmitarbeiter','Senior Vertriebsmitarbeiter','Sales Coach'];
 
-    html+='<div class="card"><div class="card-title"><i class="ti ti-user"></i> Stammdaten</div>'
-      html+='<div class="f2" style="margin-bottom:12px">'
-      html+='<div><label>Vollständiger Name</label><input type="text" id="es-name" value="'+emp.name+'"></div>'
-      html+='<div><label>Position</label>'
-      html+='<select id="es-role" onchange="var cv=this.value;if(cv===\'__new__\'){var nv=prompt(\'Neue Position eingeben:\');if(nv&&nv.trim()){var opt=document.createElement(\'option\');opt.value=nv.trim();opt.text=nv.trim();this.add(opt);this.value=nv.trim();}}" >'
-      html+='<option'+(emp.role==='SR'?' selected':'')+'>SR</option>'
-      html+='<option'+(emp.role==='SE'?' selected':'')+'>SE</option>'
-      html+='<option'+(emp.role==='VLC'?' selected':'')+'>VLC</option>'
-      html+='<option'+(emp.role==='SDM'?' selected':'')+'>SDM</option>'
-      html+='<option'+(emp.role==='SC'?' selected':'')+'>SC</option>'
-      html+='<option value="__new__">+ Neue Position hinzufügen</option>'
-      html+='</select></div>'
-      html+='</div>'
-      html+='<div class="f3" style="margin-bottom:12px">'
-      html+='<div><label>Phase</label><select id="es-phase">'
-      html+='<option'+(emp.phase==='Onboarding'?' selected':'')+'>Onboarding</option>'
-      html+='<option'+(emp.phase==='Aktiv'?' selected':'')+'>Aktiv</option>'
-      html+='</select></div>'
-      html+='<div><label>Anstellung</label><select id="es-contract">'
-      html+='<option value="Vollzeit"'+(emp.contract==='Vollzeit'||emp.contract==='full'?' selected':'')+'>Vollzeit</option>'
-      html+='<option value="Teilzeit"'+(emp.contract==='Teilzeit'||emp.contract==='part'?' selected':'')+'>Teilzeit</option>'
-      html+='</select></div>'
-      html+='<div><label>Stunden / Woche</label><input type="number" id="es-hours" value="'+(emp.hours||40)+'" min="1" max="60"></div>'
-      html+='</div>'
-      html+='<div class="f2" style="margin-bottom:12px">'
-      html+='<div><label>Vertragsbeginn</label><input type="date" id="es-start" value="'+(emp.startDate||'')+'"></div>'
-      html+='<div><label>Vertragsende</label><input type="date" id="es-end" value="'+(emp.endDate||'')+'"></div>'
-      html+='</div>'
-      html+='<div style="margin-bottom:16px"><label>Avatar-Farbe</label><div style="margin-top:8px">'+swatches+'</div></div>'
-      html+='<div style="margin-bottom:16px"><label>Notizen <span style="font-weight:400;color:var(--text3);font-size:11px">(Stärken, Motivation, Karriereziele – nicht Teil der QA-Bewertung)</span></label>'
-      html+='<textarea id="es-notes" rows="4" style="width:100%;box-sizing:border-box;padding:8px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical" placeholder="z. B. sehr motiviert, will perspektivisch ins Teamlead-Track, hat Stärken im Erstgespräch...">'+(emp.notes||'')+'</textarea></div>'
-      html+='<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveEmpEinstellungen()"><i class="ti ti-check"></i> Änderungen speichern</button>'
-      html+='</div>'
+    var fcard='background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-md);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:10px 12px';
+    var flbl='font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block';
+    var finp='width:100%;box-sizing:border-box;padding:5px 8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:13px;font-weight:600';
+
+    html+='<div class="card"><div class="card-title"><i class="ti ti-user"></i> Stammdaten</div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">';
+    html+='<div style="'+fcard+';grid-column:span 2"><label style="'+flbl+'">Vollständiger Name</label><input type="text" id="es-name" value="'+emp.name+'" style="'+finp+'"></div>';
+    html+='<div style="'+fcard+'"><label style="'+flbl+'">Position</label>'
+      +'<select id="es-role" style="'+finp+'" onchange="var cv=this.value;if(cv===\'__new__\'){var nv=prompt(\'Neue Position eingeben:\');if(nv&&nv.trim()){var opt=document.createElement(\'option\');opt.value=nv.trim();opt.text=nv.trim();this.add(opt);this.value=nv.trim();}}">'
+      +'<option'+(emp.role==='SR'?' selected':'')+'>SR</option>'
+      +'<option'+(emp.role==='SE'?' selected':'')+'>SE</option>'
+      +'<option'+(emp.role==='VLC'?' selected':'')+'>VLC</option>'
+      +'<option'+(emp.role==='SDM'?' selected':'')+'>SDM</option>'
+      +'<option'+(emp.role==='SC'?' selected':'')+'>SC</option>'
+      +'<option value="__new__">+ Neue Position hinzufügen</option>'
+      +'</select></div>';
+    html+='<div style="'+fcard+'"><label style="'+flbl+'">Phase</label><select id="es-phase" style="'+finp+'">'
+      +'<option'+(emp.phase==='Onboarding'?' selected':'')+'>Onboarding</option>'
+      +'<option'+(emp.phase==='Aktiv'?' selected':'')+'>Aktiv</option>'
+      +'</select></div>';
+    html+='<div style="'+fcard+'"><label style="'+flbl+'">Anstellung</label><select id="es-contract" style="'+finp+'">'
+      +'<option value="Vollzeit"'+(emp.contract==='Vollzeit'||emp.contract==='full'?' selected':'')+'>Vollzeit</option>'
+      +'<option value="Teilzeit"'+(emp.contract==='Teilzeit'||emp.contract==='part'?' selected':'')+'>Teilzeit</option>'
+      +'</select></div>';
+    html+='<div style="'+fcard+'"><label style="'+flbl+'">Stunden / Woche</label><input type="number" id="es-hours" value="'+(emp.hours||40)+'" min="1" max="60" style="'+finp+'"></div>';
+    html+='<div style="'+fcard+'"><label style="'+flbl+'">Vertragsbeginn</label><input type="date" id="es-start" value="'+(emp.startDate||'')+'" style="'+finp+'"></div>';
+    html+='<div style="'+fcard+'"><label style="'+flbl+'">Vertragsende</label><input type="date" id="es-end" value="'+(emp.endDate||'')+'" style="'+finp+'"></div>';
+    html+='</div>';
+    html+='<div style="'+fcard+';margin-bottom:12px"><label style="'+flbl+'">Avatar-Farbe</label><div>'+swatches+'</div></div>';
+    html+='<div style="'+fcard+';margin-bottom:16px"><label style="'+flbl+'">Notizen <span style="font-weight:400;color:var(--text3);font-size:10.5px">(Stärken, Motivation, Karriereziele – nicht Teil der QA-Bewertung)</span></label>'
+      +'<textarea id="es-notes" rows="3" style="width:100%;box-sizing:border-box;padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical" placeholder="z. B. sehr motiviert, will perspektivisch ins Teamlead-Track, hat Stärken im Erstgespräch...">'+(emp.notes||'')+'</textarea></div>';
+    html+='<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveEmpEinstellungen()"><i class="ti ti-check"></i> Änderungen speichern</button>';
+    html+='</div>';
 
       html+='<div class="card"><div class="card-title"><i class="ti ti-target"></i> Individuelle KPI-Ziele</div>'
       html+='<p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Diese Werte überschreiben die globalen Standards für diesen Mitarbeiter und werden in allen Alerts und der Teamübersicht verwendet.</p>'
@@ -3721,6 +3721,25 @@ function renderTab(){
       html+='<button class="btn btn-primary btn-sm" style="width:auto;margin-top:12px" onclick="saveEmpZiele()"><i class="ti ti-check"></i> Ziele speichern</button>';
       html+='</div>'; // close KPI card
 
+      // ── Team-/Rollenwechsel-Historie ──
+      var hist=(employeeHistory[emp.id]||[]);
+      html+='<div class="card"><div class="card-title"><i class="ti ti-history"></i> Team-/Rollenwechsel-Historie</div>';
+      if(!hist.length){
+        html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Noch keine Wechsel protokolliert</div>';
+      } else {
+        html+='<div style="display:flex;flex-direction:column;gap:6px">';
+        hist.forEach(function(h){
+          var fieldLabel=h.field==='team'?'Team':'Rolle';
+          html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:var(--r-md);font-size:12.5px">'
+            +'<span style="font-weight:600;width:60px;flex-shrink:0">'+fieldLabel+'</span>'
+            +'<span style="color:var(--text2)">'+(h.oldValue||'—')+' → '+(h.newValue||'—')+'</span>'
+            +'<span style="margin-left:auto;font-size:11px;color:var(--text3)">'+fd(h.changedAt?h.changedAt.slice(0,10):'')+'</span>'
+            +'</div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
+
       // ── Dokumente / Anhänge ──
       html+='<div class="card"><div class="card-title"><i class="ti ti-paperclip"></i> Dokumente</div>'
         +'<p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Zielvereinbarungen, Zertifikate oder sonstige Unterlagen zu '+emp.name+'.</p>'
@@ -3740,25 +3759,6 @@ function renderTab(){
             +'<div style="font-size:10.5px;color:var(--text3)">'+fd(d.uploadedAt?d.uploadedAt.slice(0,10):'')+(d.description?' · '+d.description:'')+'</div></div>'
             +'<button class="btn btn-sm" data-id="'+d.id+'" onclick="downloadEmpDocument(this.dataset.id)"><i class="ti ti-download"></i></button>'
             +'<button class="btn btn-sm" data-id="'+d.id+'" style="color:var(--red)" onclick="deleteEmpDocument(this.dataset.id)"><i class="ti ti-trash"></i></button>'
-            +'</div>';
-        });
-        html+='</div>';
-      }
-      html+='</div>';
-
-      // ── Team-/Rollenwechsel-Historie ──
-      var hist=(employeeHistory[emp.id]||[]);
-      html+='<div class="card"><div class="card-title"><i class="ti ti-history"></i> Team-/Rollenwechsel-Historie</div>';
-      if(!hist.length){
-        html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Noch keine Wechsel protokolliert</div>';
-      } else {
-        html+='<div style="display:flex;flex-direction:column;gap:6px">';
-        hist.forEach(function(h){
-          var fieldLabel=h.field==='team'?'Team':'Rolle';
-          html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg2);border-radius:var(--r-md);font-size:12.5px">'
-            +'<span style="font-weight:600;width:60px;flex-shrink:0">'+fieldLabel+'</span>'
-            +'<span style="color:var(--text2)">'+(h.oldValue||'—')+' → '+(h.newValue||'—')+'</span>'
-            +'<span style="margin-left:auto;font-size:11px;color:var(--text3)">'+fd(h.changedAt?h.changedAt.slice(0,10):'')+'</span>'
             +'</div>';
         });
         html+='</div>';
