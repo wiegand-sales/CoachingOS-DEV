@@ -1352,6 +1352,7 @@ var teamFilter='ALL';
 var perfMetric='crOEM', perfRange=7;
 var perfTableGroup='day'; // 'day' | 'week' | 'month'
 var tlFilter='all'; // 'all' | 'session' | 'review' | 'milestone' | 'record'
+var _editingSessionId=null; // gesetzt, wenn eine geplante Session im Neue-Session-Modal bearbeitet wird (statt neu anzulegen)
 function setTlFilter(f){tlFilter=f;renderTab();}
 function setPerfTableGroup(g){perfTableGroup=g;renderTab();}
 function isoWeekOf(d){
@@ -4297,7 +4298,11 @@ function saveSession(empId){
     coach_id:currentCoach?currentCoach.id:null,
     focus_metric:focusMetric||null
   };
-  sb.from('protocols').insert(payload).select().single().then(function(res){
+  var editId=_editingSessionId;
+  var dbCall=editId
+    ? sb.from('protocols').update(payload).eq('id',editId).select().single()
+    : sb.from('protocols').insert(payload).select().single();
+  dbCall.then(function(res){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
     var r=res.data;
     var entry={
@@ -4306,7 +4311,13 @@ function saveSession(empId){
       coachId:r.coach_id||null,focusMetric:r.focus_metric||null
     };
     if(!protocols[empId])protocols[empId]=[];
-    protocols[empId].unshift(entry);
+    if(editId){
+      var idx=protocols[empId].findIndex(function(p){return String(p.id)===String(editId);});
+      if(idx>=0){protocols[empId][idx]=entry;}else{protocols[empId].unshift(entry);}
+    } else {
+      protocols[empId].unshift(entry);
+    }
+    _editingSessionId=null;
     ['sess-start','sess-stop','sess-cont','sess-note'].forEach(function(id){
       var el=document.getElementById(id);if(el)el.value='';
     });
@@ -4832,6 +4843,7 @@ function openPlannedSession(empId, sessionId, typ, fokus, datum, uhrzeit){
   renderEmpDetail();
   setTimeout(function(){
     openNeuesCoachingModal(empId);
+    _editingSessionId=sessionId||null;
     var dateEl=document.getElementById('sess-date');
     var timeEl=document.getElementById('sess-time');
     var endTimeEl=document.getElementById('sess-end-time');
@@ -5239,6 +5251,7 @@ function openQaBewertungModal(empId){
 }
 function openNeuesCoachingModal(empId){
   if(empId)selectedEmp=empId;
+  _editingSessionId=null;
   var typeEl=document.getElementById('sess-type');
   if(typeEl&&!typeEl.options.length){
     SESSION_TYPES.forEach(function(t){var o=document.createElement('option');o.textContent=t;typeEl.appendChild(o);});
