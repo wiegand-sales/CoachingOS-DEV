@@ -713,6 +713,169 @@ function computeCoachEffectiveness(){
   result.sort(function(a,b){return b.avgDelta-a.avgDelta;});
   return result;
 }
+// ── Coaching-Abdeckung: eigener, ausgebauter Tab mit mehr Informationen ──
+function buildCoachingAbdeckungTab(liste,hD,heute){
+  var HIDDEN=['SDM','SC'];
+  var visible=liste.filter(function(e){return HIDDEN.indexOf(e.role)<0;});
+  var coachEmps=employees.filter(function(e){return (e.role==='SDM'||e.role==='SC')&&e.active!==false;});
+
+  // ── Kennzahlen oben ──
+  var ueberfaellig=visible.filter(function(e){var t=tageSeitLetzterSession(e.id);return t===null||t>30;}).sort(function(a,b){
+    var ta=tageSeitLetzterSession(a.id),tb=tageSeitLetzterSession(b.id);
+    if(ta===null)return -1;if(tb===null)return 1;return tb-ta;
+  });
+  var avgTage=(function(){
+    var vals=visible.map(function(e){return tageSeitLetzterSession(e.id);}).filter(function(v){return v!==null;});
+    return vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
+  })();
+  var qaCutoff60=(function(){var d=new Date(heute+'T00:00:00');d.setDate(d.getDate()-60);return d.toISOString().slice(0,10);})();
+  var qaDueListe=visible.map(function(e){
+    var cnt=(callRatings[e.id]||[]).filter(function(r){return r.date>=qaCutoff60;}).length;
+    return {e:e,cnt:cnt};
+  }).filter(function(x){return x.cnt<5;}).sort(function(a,b){return a.cnt-b.cnt;});
+  var bedarfListe=visible.map(function(e){return {e:e,weak:qaWeakSpots(e.id,5)};}).filter(function(x){return x.weak.length>0;});
+
+  var h='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">'
+    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">MITARBEITER</div><div style="font-size:20px;font-weight:700">'+visible.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">aktiv, ohne Coaches</div></div>'
+    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">ÜBERFÄLLIG</div><div style="font-size:20px;font-weight:700;color:'+(ueberfaellig.length?'var(--red)':'var(--teal-dark)')+'">'+ueberfaellig.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">&gt;30 Tage kein Coaching</div></div>'
+    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">Ø TAGE SEIT LETZTEM</div><div style="font-size:20px;font-weight:700">'+(avgTage!==null?avgTage+'d':'—')+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">Team-Durchschnitt</div></div>'
+    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">QA FÄLLIG</div><div style="font-size:20px;font-weight:700;color:'+(qaDueListe.length?'var(--amber-dark)':'var(--teal-dark)')+'">'+qaDueListe.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">unter 5 Calls / 60 Tage</div></div>'
+    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">QA-BEDARF</div><div style="font-size:20px;font-weight:700;color:'+(bedarfListe.length?'var(--red)':'var(--teal-dark)')+'">'+bedarfListe.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">konstant schwache Kategorie</div></div>'
+    +'</div>';
+
+  // ── Überfällige Coachings: volle Liste ──
+  h+='<div class="card" style="margin-bottom:22px">';
+  h+='<div class="card-title"><i class="ti ti-alert-triangle" style="color:var(--red)"></i> Überfällige Coachings <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+ueberfaellig.length+') · &gt;30 Tage ohne Coaching</span></div>';
+  if(!ueberfaellig.length){
+    h+='<div style="text-align:center;color:var(--teal-dark);padding:20px"><i class="ti ti-check" style="font-size:24px;display:block;margin-bottom:6px"></i>Niemand überfällig</div>';
+  } else {
+    h+='<div style="display:flex;flex-direction:column;gap:6px">';
+    ueberfaellig.forEach(function(e){
+      var c=COLORS[e.color%COLORS.length];
+      var t=tageSeitLetzterSession(e.id);
+      var _ss=(protocols[e.id]||[]).filter(function(p){return p.status!=='geplant';}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+      var last=_ss[0];
+      h+='<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(189,45,41,0.06);border:1px solid var(--border2);border-radius:var(--r-md);cursor:pointer" onclick="selectEmp(\''+e.id+'\')">'
+        +'<div class="av" style="width:30px;height:30px;font-size:11px;background:'+c.bg+';color:'+c.text+';flex-shrink:0">'+ini(e.name)+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+e.name+'</div><div style="font-size:11px;color:var(--text2)">'+e.role+' · '+e.phase+'</div></div>'
+        +'<div style="text-align:right;flex-shrink:0"><div style="font-size:12px;color:var(--text3)">Letztes Coaching</div><div style="font-size:12px;font-weight:600">'+(last?fd(last.date):'nie')+'</div></div>'
+        +'<div style="width:70px;text-align:right;flex-shrink:0"><span style="font-size:14px;font-weight:700;color:var(--red)">'+(t===null?'nie':t+'d')+'</span></div>'
+        +'<button class="btn btn-sm btn-primary" data-eid="'+e.id+'" onclick="event.stopPropagation();openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Planen</button>'
+        +'</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  // ── Verteilung über Coaches: ausführlich ──
+  var coachCounts={},noCoachCount=0,totalCoached=0;
+  visible.forEach(function(e){
+    (protocols[e.id]||[]).forEach(function(p){
+      if(p.status==='geplant')return;
+      totalCoached++;
+      if(p.coachId){coachCounts[p.coachId]=(coachCounts[p.coachId]||0)+1;}else{noCoachCount++;}
+    });
+  });
+  var coachDistRows=coachEmps.map(function(c){return {name:c.name,id:c.id,n:coachCounts[c.id]||0};});
+  if(noCoachCount>0)coachDistRows.push({name:'Ohne Zuordnung (Altdaten)',id:null,n:noCoachCount});
+  coachDistRows.sort(function(a,b){return b.n-a.n;});
+  var maxCoachN=Math.max.apply(null,coachDistRows.map(function(x){return x.n;}).concat([1]));
+  h+='<div class="card" style="margin-bottom:22px">';
+  h+='<div class="card-title"><i class="ti ti-users"></i> Verteilung über Coaches <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+totalCoached+' Coachings gesamt</span></div>';
+  if(!coachDistRows.some(function(x){return x.n>0;})){
+    h+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Noch keine zugeordneten Coachings</div>';
+  } else {
+    h+='<div style="display:flex;flex-direction:column;gap:12px">';
+    coachDistRows.forEach(function(r){
+      var pct=maxCoachN?Math.round(r.n/maxCoachN*100):0;
+      var share=totalCoached?Math.round(r.n/totalCoached*100):0;
+      h+='<div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="font-weight:600">'+r.name+'</span><span><strong>'+r.n+'</strong> <span style="color:var(--text3);font-weight:400">('+share+'%)</span></span></div>'
+        +'<div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:#206A72;border-radius:4px"></div></div>'
+        +'</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  // ── QA-Calls · Sessions · Simulationen: Kacheln + Tabelle je Mitarbeiter ──
+  var totQA=0,totSess=0,totSim=0;
+  visible.forEach(function(e){
+    totQA+=(callRatings[e.id]||[]).length;
+    totSess+=(protocols[e.id]||[]).filter(function(p){return p.status!=='geplant';}).length;
+    totSim+=(solidroadData[e.id]&&solidroadData[e.id].simulations)?solidroadData[e.id].simulations.length:0;
+  });
+  h+='<div class="card" style="margin-bottom:22px">';
+  h+='<div class="card-title"><i class="ti ti-chart-bar"></i> QA-Calls · Sessions · Simulationen <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">(gesamt, Team)</span></div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">'
+    +'<div style="background:rgba(126,210,219,0.18);border:1px solid #7ED2DB;border-radius:var(--r-lg);padding:12px 14px;text-align:center"><div style="font-size:10.5px;font-weight:700;color:#3f6c72">QA-CALLS</div><div style="font-size:22px;font-weight:700;color:#3f6c72;margin-top:4px">'+totQA+'</div></div>'
+    +'<div style="background:rgba(32,106,114,0.10);border:1px solid #206A72;border-radius:var(--r-lg);padding:12px 14px;text-align:center"><div style="font-size:10.5px;font-weight:700;color:#206A72">SESSIONS</div><div style="font-size:22px;font-weight:700;color:#206A72;margin-top:4px">'+totSess+'</div></div>'
+    +'<div style="background:rgba(50,168,180,0.12);border:1px solid #32A8B4;border-radius:var(--r-lg);padding:12px 14px;text-align:center"><div style="font-size:10.5px;font-weight:700;color:#206A72">SIMULATIONEN</div><div style="font-size:22px;font-weight:700;color:#206A72;margin-top:4px">'+totSim+'</div></div>'
+    +'</div>';
+  h+='<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;border-collapse:collapse"><thead><tr>'
+    +'<th style="background:var(--bg2);padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Mitarbeiter</th>'
+    +'<th style="background:var(--bg2);padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">QA-Calls</th>'
+    +'<th style="background:var(--bg2);padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Sessions</th>'
+    +'<th style="background:var(--bg2);padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Simulationen</th>'
+    +'</tr></thead><tbody>';
+  visible.slice().sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(e,idx){
+    var q=(callRatings[e.id]||[]).length;
+    var s=(protocols[e.id]||[]).filter(function(p){return p.status!=='geplant';}).length;
+    var sim=(solidroadData[e.id]&&solidroadData[e.id].simulations)?solidroadData[e.id].simulations.length:0;
+    h+='<tr style="'+(idx%2===1?'background:rgba(0,0,0,0.03);':'')+'cursor:pointer" onclick="selectEmp(\''+e.id+'\')">'
+      +'<td style="padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border);font-weight:500">'+e.name+'</td>'
+      +'<td style="padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border);text-align:right">'+q+'</td>'
+      +'<td style="padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border);text-align:right">'+s+'</td>'
+      +'<td style="padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border);text-align:right">'+sim+'</td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='</div>';
+
+  // ── QA-Bedarf: volle Liste mit Kategorien ──
+  h+='<div class="card" style="margin-bottom:22px">';
+  h+='<div class="card-title"><i class="ti ti-target-arrow"></i> QA-Bedarf <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+bedarfListe.length+') · konstant schwache Kategorie (Ø unter 2/4, letzte 5 Calls)</span></div>';
+  if(!bedarfListe.length){
+    h+='<div style="text-align:center;color:var(--teal-dark);padding:20px"><i class="ti ti-check" style="font-size:24px;display:block;margin-bottom:6px"></i>Keine auffälligen Muster</div>';
+  } else {
+    h+='<div style="display:flex;flex-direction:column;gap:6px">';
+    bedarfListe.forEach(function(x){
+      var c=COLORS[x.e.color%COLORS.length];
+      h+='<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(0,0,0,0.03);border:1px solid var(--border2);border-radius:var(--r-md);cursor:pointer" onclick="selectEmp(\''+x.e.id+'\')">'
+        +'<div class="av" style="width:28px;height:28px;font-size:10px;background:'+c.bg+';color:'+c.text+';flex-shrink:0">'+ini(x.e.name)+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+x.e.name+'</div>'
+        +'<div style="font-size:11px;color:var(--red)">'+x.weak.map(function(w){return w.label+' (Ø '+w.avg.toFixed(1)+'/4)';}).join(' · ')+'</div></div>'
+        +'<button class="btn btn-sm" data-eid="'+x.e.id+'" onclick="event.stopPropagation();selectEmp(this.dataset.eid)"><i class="ti ti-arrow-right"></i></button>'
+        +'</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  // ── QA-Bewertungen fällig: volle Liste ──
+  h+='<div class="card">';
+  h+='<div class="card-title"><i class="ti ti-phone-check"></i> QA-Bewertungen fällig <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+qaDueListe.length+') · Ziel: 5 Calls / 60 Tage</span></div>';
+  if(!qaDueListe.length){
+    h+='<div style="text-align:center;color:var(--teal-dark);padding:20px"><i class="ti ti-check" style="font-size:24px;display:block;margin-bottom:6px"></i>Alle im Ziel</div>';
+  } else {
+    h+='<div style="display:flex;flex-direction:column;gap:6px">';
+    qaDueListe.forEach(function(x){
+      var c=COLORS[x.e.color%COLORS.length];
+      var col=x.cnt===0?'var(--red)':'var(--amber-dark)';
+      h+='<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(0,0,0,0.03);border:1px solid var(--border2);border-radius:var(--r-md)">'
+        +'<div class="av" style="width:28px;height:28px;font-size:10px;background:'+c.bg+';color:'+c.text+';flex-shrink:0">'+ini(x.e.name)+'</div>'
+        +'<div style="flex:1;min-width:0;cursor:pointer" onclick="selectEmp(\''+x.e.id+'\')"><div style="font-weight:600;font-size:13px">'+x.e.name+'</div><div style="font-size:11px;color:var(--text2)">'+x.e.role+'</div></div>'
+        +'<span style="font-size:14px;font-weight:700;color:'+col+'">'+x.cnt+'/5</span>'
+        +'<button class="btn btn-sm btn-primary" data-eid="'+x.e.id+'" onclick="event.stopPropagation();selectEmp(this.dataset.eid);setTimeout(function(){switchTab(\'call-performance\');},50)"><i class="ti ti-phone-plus"></i> Bewerten</button>'
+        +'</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
+  return h;
+}
+
 function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
@@ -886,15 +1049,20 @@ function renderCoachingAnsicht(){
     '<div><div class="tb-name">SFP Coaching</div><div class="tb-meta">'+liste.length+' Mitarbeiter · '+gep.length+' geplant · '+abg.length+' abgeschlossen</div></div></div>'+
     '<button class="btn btn-primary" onclick="openSessionModal(0)"><i class="ti ti-plus"></i> Session planen</button>'+
     '</div>';
+  h+='<div class="tab-bar">';
+  h+='<div class="tab'+(coachFilterView==='overview'?' active':'')+'" onclick="setCoachFilterView(\'overview\')">Overview</div>';
+  h+='<div class="tab'+(coachFilterView==='coverage'?' active':'')+'" onclick="setCoachFilterView(\'coverage\')">Coaching-Abdeckung</div>';
   if(coachList.length){
-    h+='<div class="tab-bar">';
-    h+='<div class="tab'+(coachFilterView==='overview'?' active':'')+'" onclick="setCoachFilterView(\'overview\')">Overview</div>';
     coachList.forEach(function(c){
       h+='<div class="tab'+(coachFilterView===c.id?' active':'')+'" onclick="setCoachFilterView(\''+c.id+'\')">'+c.name.split(' ')[0]+'</div>';
     });
-    h+='</div>';
   }
+  h+='</div>';
   h+='<div class="content">';
+
+  if(coachFilterView==='coverage'){
+    h+=buildCoachingAbdeckungTab(liste,hD,heute);
+  } else {
 
   // ══ ZEILE 1: 3 Stat-Kacheln + Linien-Chart (volle Breite) ══
   h+='<div style="display:grid;grid-template-columns:repeat(3,140px) 1fr;gap:12px;margin-bottom:16px;align-items:stretch">';
@@ -999,6 +1167,8 @@ function renderCoachingAnsicht(){
     h+='</tbody></table></div>';
   }
   h+='</div>';
+
+  } // Ende else (nicht coverage)
 
   ma.innerHTML=h;
 
