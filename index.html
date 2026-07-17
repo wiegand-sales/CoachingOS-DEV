@@ -323,9 +323,10 @@ tr:hover td{background:var(--bg2);}
   <div class="modal-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-calendar-plus" style="color:var(--purple)"></i> Session planen</div>
   <div class="f2" style="margin-bottom:10px">
     <div><label>Mitarbeiter</label><select id="sessionEmpSel" onchange="renderLastContinueBox(this.value)"></select></div>
-    <div class="f2" style="gap:8px">
+    <div class="f3" style="gap:8px">
       <div><label>Datum</label><input type="date" id="sessionDatum"></div>
-      <div><label>Uhrzeit</label><input type="time" id="sessionUhrzeit" value="09:00"></div>
+      <div><label>Start</label><input type="time" id="sessionUhrzeit" value="09:00"></div>
+      <div><label>Ende</label><input type="time" id="sessionEndUhrzeit"></div>
     </div>
   </div>
   <div class="f2" style="margin-bottom:10px">
@@ -502,6 +503,21 @@ var FOCUS_METRICS=[
   {key:'margeGesamt',label:'Marge Gesamt €'}
 ];
 function focusMetricLabel(key){var m=FOCUS_METRICS.find(function(x){return x.key===key;});return m?m.label:key;}
+function sessionDuration(start,end){
+  if(!start||!end)return null;
+  var sp=start.split(':'),ep=end.split(':');
+  var startMin=parseInt(sp[0])*60+parseInt(sp[1]);
+  var endMin=parseInt(ep[0])*60+parseInt(ep[1]);
+  var diff=endMin-startMin;
+  if(diff<=0)return null;
+  return diff;
+}
+function formatDuration(min){
+  if(min===null||min===undefined)return '';
+  if(min<60)return min+' Min.';
+  var h=Math.floor(min/60),m=min%60;
+  return h+' Std'+(m?' '+m+' Min.':'');
+}
 function resolveCurrentCoach(){
   return sb.auth.getUser().then(function(res){
     var uid = res.data && res.data.user ? res.data.user.id : null;
@@ -857,7 +873,8 @@ function exportEmpSummary(empId){
   var sessions=(protocols[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
   var abgeschlossen=sessions.filter(function(s){return s.status!=='geplant';});
   var lastSessions=abgeschlossen.slice(0,5).map(function(s){
-    return '<tr><td>'+fd(s.date)+'</td><td>'+(s.type||'—')+'</td><td>'+(s.topics&&s.topics.length?s.topics.join(', '):(s.focus||'—'))+'</td><td>'+(s.cont||'—')+'</td></tr>';
+    var _dur=sessionDuration(s.uhrzeit,s.endUhrzeit);
+    return '<tr><td>'+fd(s.date)+'</td><td>'+(s.type||'—')+'</td><td>'+(_dur?formatDuration(_dur):'—')+'</td><td>'+(s.topics&&s.topics.length?s.topics.join(', '):(s.focus||'—'))+'</td><td>'+(s.cont||'—')+'</td></tr>';
   }).join('');
 
   var milestones=kpiMilestones(emp.id);
@@ -889,7 +906,7 @@ function exportEmpSummary(empId){
     +'<div style="margin-top:6px">Auffällige Muster:</div><ul>'+weakHtml+'</ul>'
     +'<h2>Coaching-Historie</h2>'
     +'<div style="margin-bottom:6px">'+abgeschlossen.length+' abgeschlossene Sessions insgesamt. Letzte 5:</div>'
-    +'<table><tr><th>Datum</th><th>Art</th><th>Thema</th><th>Continue (letzter Stand)</th></tr>'+(lastSessions||'<tr><td colspan="4">Keine Sessions vorhanden</td></tr>')+'</table>'
+    +'<table><tr><th>Datum</th><th>Art</th><th>Dauer</th><th>Thema</th><th>Continue (letzter Stand)</th></tr>'+(lastSessions||'<tr><td colspan="5">Keine Sessions vorhanden</td></tr>')+'</table>'
     +(empGoalsExp.length?('<h2>Zielvereinbarungen</h2>'
       +'<table><tr><th>Ziel</th><th>KPI-Ziel</th><th>Zieldatum</th><th>Status</th></tr>'+goalsExpHtml+'</table>'):'')
     +'<h2>Entwicklung & Meilensteine</h2>'
@@ -2202,8 +2219,9 @@ function renderTab(){
     // Kombinierte Timeline: Sessions + Reviews + KPI-Meilensteine
     var tlEvents=[];
     (protocols[emp.id]||[]).forEach(function(s){
+      var _dur=sessionDuration(s.uhrzeit,s.endUhrzeit);
       tlEvents.push({date:s.date,kind:'session',icon:'ti-message-circle',col:'var(--purple)',bg:'rgba(32,106,114,0.10)',
-        title:(s.type||'Session')+(s.status==='geplant'?' (geplant)':''),
+        title:(s.type||'Session')+(s.status==='geplant'?' (geplant)':'')+(_dur?' · '+formatDuration(_dur):''),
         sub:(s.topics&&s.topics.length?s.topics.join(', '):(s.focus||''))});
     });
     (reviews[emp.id]||[]).forEach(function(r){
@@ -2980,11 +2998,13 @@ function renderTab(){
       }
     })();
     html+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:20px;display:flex;flex-direction:column;gap:14px">';
-    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">';
     html+='<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Datum</label>';
     html+='<input type="date" id="sess-date" value="'+today()+'" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)"></div>';
-    html+='<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Uhrzeit</label>';
+    html+='<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Start</label>';
     html+='<input type="time" id="sess-time" value="" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)"></div>';
+    html+='<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Ende</label>';
+    html+='<input type="time" id="sess-end-time" value="" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text)"></div>';
     html+='</div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
     html+='<div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Art des Coachings</label>';
@@ -3026,7 +3046,9 @@ function renderTab(){
         html+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);overflow:hidden">';
         html+='<div class="sess-hdr" data-eid="'+eid+'" onclick="toggleSessCard(this.dataset.eid)" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none">';
         html+='<span style="font-size:12px;font-weight:700;white-space:nowrap">'+fd(s.date)+'</span>';
-        if(s.uhrzeit)html+='<span style="font-size:11px;color:var(--text2);flex-shrink:0"><i class="ti ti-clock" style="font-size:10px"></i> '+s.uhrzeit+'</span>';
+        if(s.uhrzeit)html+='<span style="font-size:11px;color:var(--text2);flex-shrink:0"><i class="ti ti-clock" style="font-size:10px"></i> '+s.uhrzeit+(s.endUhrzeit?'–'+s.endUhrzeit:'')+'</span>';
+        var _dur=sessionDuration(s.uhrzeit,s.endUhrzeit);
+        if(_dur)html+='<span style="font-size:10.5px;color:var(--text3);flex-shrink:0">('+formatDuration(_dur)+')</span>';
         html+='<span style="font-size:11px;color:var(--text2);background:var(--bg2);padding:2px 8px;border-radius:20px;flex-shrink:0">'+(s.type||'Session')+'</span>';
         if(s.topics&&s.topics.length){html+='<span style="font-size:11px;color:var(--purple);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+s.topics.join(' · ')+'</span>';}else{html+='<span style="flex:1"></span>';}
         if(rm)html+='<span style="font-size:11px;font-weight:700;color:'+rm.c+';flex-shrink:0">'+s.rating+'</span>';
@@ -3947,6 +3969,9 @@ function saveSession(empId){
   if(!date){alert('Bitte Datum eingeben.');return;}
   var timeEl=document.getElementById('sess-time');
   var uhrzeit=timeEl?timeEl.value:'';
+  var endTimeEl=document.getElementById('sess-end-time');
+  var endUhrzeit=endTimeEl?endTimeEl.value:'';
+  if(uhrzeit&&endUhrzeit&&endUhrzeit<=uhrzeit){alert('Die Endzeit muss nach der Startzeit liegen.');return;}
   var type=document.getElementById('sess-type').value;
   var start=document.getElementById('sess-start').value.trim();
   var stop=document.getElementById('sess-stop').value.trim();
@@ -3959,7 +3984,7 @@ function saveSession(empId){
   var fmEl=document.getElementById('sess-focus-metric');
   var focusMetric=fmEl?fmEl.value:'';
   var payload={
-    employee_id:empId,date:date,uhrzeit:uhrzeit||null,art:type,rating:null,
+    employee_id:empId,date:date,uhrzeit:uhrzeit||null,end_uhrzeit:endUhrzeit||null,art:type,rating:null,
     note:notes,focus:focus,status:'abgeschlossen',
     start_note:start,stop_note:stop,continue_note:cont,
     coach_id:currentCoach?currentCoach.id:null,
@@ -3969,7 +3994,7 @@ function saveSession(empId){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
     var r=res.data;
     var entry={
-      id:r.id,date:r.date,uhrzeit:uhrzeit,type:type,rating:null,
+      id:r.id,date:r.date,uhrzeit:uhrzeit,endUhrzeit:endUhrzeit,type:type,rating:null,
       topics:topics,start:start,stop:stop,cont:cont,notes:notes,note:notes,focus:focus,status:'abgeschlossen',
       coachId:r.coach_id||null,focusMetric:r.focus_metric||null
     };
@@ -3984,6 +4009,8 @@ function saveSession(empId){
     if(fmsel)fmsel.value='';
     var tel=document.getElementById('sess-time');
     if(tel)tel.value='';
+    var etel=document.getElementById('sess-end-time');
+    if(etel)etel.value='';
     renderTab();
   }).catch(function(err){
     alert('Unerwarteter Fehler: '+err.message);
@@ -4170,7 +4197,7 @@ function loadProtocolsFromSupabase(){
     res.data.forEach(function(r){
       if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
       byEmp[r.employee_id].push({
-        id:r.id,date:r.date,uhrzeit:r.uhrzeit?r.uhrzeit.slice(0,5):'',type:r.art,rating:r.rating,
+        id:r.id,date:r.date,uhrzeit:r.uhrzeit?r.uhrzeit.slice(0,5):'',endUhrzeit:r.end_uhrzeit?r.end_uhrzeit.slice(0,5):'',type:r.art,rating:r.rating,
         note:r.note,notes:r.note,focus:r.focus,status:r.status,
         start:r.start_note||'',stop:r.stop_note||'',cont:r.continue_note||'',
         topics:r.focus?[r.focus]:[],coachId:r.coach_id||null,focusMetric:r.focus_metric||null
@@ -4498,11 +4525,13 @@ function openPlannedSession(empId, sessionId, typ, fokus, datum, uhrzeit){
   setTimeout(function(){
     var dateEl=document.getElementById('sess-date');
     var timeEl=document.getElementById('sess-time');
+    var endTimeEl=document.getElementById('sess-end-time');
     var typeEl=document.getElementById('sess-type');
     var topicEl=document.getElementById('sess-topic-sel');
     var noteEl=document.getElementById('sess-note');
     if(dateEl&&datum) dateEl.value=datum;
     if(timeEl&&uhrzeit) timeEl.value=uhrzeit;
+    if(endTimeEl&&proto&&proto.endUhrzeit) endTimeEl.value=proto.endUhrzeit;
     if(typeEl&&typ){
       for(var i=0;i<typeEl.options.length;i++){
         if(typeEl.options[i].value===typ||typeEl.options[i].text===typ){typeEl.selectedIndex=i;break;}
@@ -4523,14 +4552,16 @@ function sessionSpeichernNeu(){
   var empId=document.getElementById('sessionEmpSel').value;
   var datum=document.getElementById('sessionDatum').value;
   var uhrzeit=document.getElementById('sessionUhrzeit').value||'';
+  var endUhrzeit=document.getElementById('sessionEndUhrzeit').value||'';
   var typ=document.getElementById('sessionTyp').value;
   var thema=document.getElementById('sessionThema').value||'';
   var fmEl=document.getElementById('sessionFocusMetric');
   var focusMetric=fmEl?fmEl.value:'';
   var notiz=document.getElementById('sessionNotiz').value.trim();
   if(!empId||!datum)return alert('Bitte Mitarbeiter und Datum auswählen.');
+  if(uhrzeit&&endUhrzeit&&endUhrzeit<=uhrzeit)return alert('Die Endzeit muss nach der Startzeit liegen.');
   var payload={
-    employee_id:empId,date:datum,uhrzeit:uhrzeit||null,art:typ,rating:null,
+    employee_id:empId,date:datum,uhrzeit:uhrzeit||null,end_uhrzeit:endUhrzeit||null,art:typ,rating:null,
     note:notiz||'',focus:thema,status:'geplant',
     coach_id:currentCoach?currentCoach.id:null,
     focus_metric:focusMetric||null
@@ -4540,7 +4571,7 @@ function sessionSpeichernNeu(){
     var r=res.data;
     if(!protocols[empId])protocols[empId]=[];
     protocols[empId].unshift({
-      id:r.id,date:datum,uhrzeit:uhrzeit,rating:null,
+      id:r.id,date:datum,uhrzeit:uhrzeit,endUhrzeit:endUhrzeit,rating:null,
       note:notiz||'',notes:notiz||'',focus:thema,type:typ,
       status:'geplant',topics:thema?[thema]:[],
       coachId:r.coach_id||null,focusMetric:r.focus_metric||null
@@ -4550,6 +4581,7 @@ function sessionSpeichernNeu(){
     document.getElementById('sessionNotiz').value='';
     document.getElementById('sessionDatum').value='';
     document.getElementById('sessionUhrzeit').value='09:00';
+    document.getElementById('sessionEndUhrzeit').value='';
     closeModal('sessionPlanenModal');
     renderSidebar();
     renderMain();
