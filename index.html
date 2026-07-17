@@ -3626,15 +3626,11 @@ function renderTab(){
     var teamOpts=allTeams().map(function(tm){return '<option'+(tm===emp.team?' selected':'')+'>'+tm+'</option>';}).join('')+'<option value="__new__">+ Neues Team...</option>';
     var ROLLEN=['Vertriebsmitarbeiter','Senior Vertriebsmitarbeiter','Sales Coach'];
 
-    var fcard='background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-md);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:10px 12px';
-    var flbl='font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block';
-    var finp='width:100%;box-sizing:border-box;padding:5px 8px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:13px;font-weight:600';
-
     html+='<div class="card"><div class="card-title"><i class="ti ti-user"></i> Stammdaten</div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">';
-    html+='<div style="'+fcard+';grid-column:span 2"><label style="'+flbl+'">Vollständiger Name</label><input type="text" id="es-name" value="'+emp.name+'" style="'+finp+'"></div>';
-    html+='<div style="'+fcard+'"><label style="'+flbl+'">Position</label>'
-      +'<select id="es-role" style="'+finp+'" onchange="var cv=this.value;if(cv===\'__new__\'){var nv=prompt(\'Neue Position eingeben:\');if(nv&&nv.trim()){var opt=document.createElement(\'option\');opt.value=nv.trim();opt.text=nv.trim();this.add(opt);this.value=nv.trim();}}">'
+    html+='<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">';
+    html+='<div><label>Vollständiger Name</label><input type="text" id="es-name" value="'+emp.name+'"></div>';
+    html+='<div><label>Position</label>'
+      +'<select id="es-role" onchange="var cv=this.value;if(cv===\'__new__\'){var nv=prompt(\'Neue Position eingeben:\');if(nv&&nv.trim()){var opt=document.createElement(\'option\');opt.value=nv.trim();opt.text=nv.trim();this.add(opt);this.value=nv.trim();}}">'
       +'<option'+(emp.role==='SR'?' selected':'')+'>SR</option>'
       +'<option'+(emp.role==='SE'?' selected':'')+'>SE</option>'
       +'<option'+(emp.role==='VLC'?' selected':'')+'>VLC</option>'
@@ -3642,21 +3638,23 @@ function renderTab(){
       +'<option'+(emp.role==='SC'?' selected':'')+'>SC</option>'
       +'<option value="__new__">+ Neue Position hinzufügen</option>'
       +'</select></div>';
-    html+='<div style="'+fcard+'"><label style="'+flbl+'">Phase</label><select id="es-phase" style="'+finp+'">'
+    html+='<div><label>Phase</label><select id="es-phase">'
       +'<option'+(emp.phase==='Onboarding'?' selected':'')+'>Onboarding</option>'
       +'<option'+(emp.phase==='Aktiv'?' selected':'')+'>Aktiv</option>'
       +'</select></div>';
-    html+='<div style="'+fcard+'"><label style="'+flbl+'">Anstellung</label><select id="es-contract" style="'+finp+'">'
+    html+='<div><label>Anstellung</label><select id="es-contract">'
       +'<option value="Vollzeit"'+(emp.contract==='Vollzeit'||emp.contract==='full'?' selected':'')+'>Vollzeit</option>'
       +'<option value="Teilzeit"'+(emp.contract==='Teilzeit'||emp.contract==='part'?' selected':'')+'>Teilzeit</option>'
       +'</select></div>';
-    html+='<div style="'+fcard+'"><label style="'+flbl+'">Stunden / Woche</label><input type="number" id="es-hours" value="'+(emp.hours||40)+'" min="1" max="60" style="'+finp+'"></div>';
-    html+='<div style="'+fcard+'"><label style="'+flbl+'">Vertragsbeginn</label><input type="date" id="es-start" value="'+(emp.startDate||'')+'" style="'+finp+'"></div>';
-    html+='<div style="'+fcard+'"><label style="'+flbl+'">Vertragsende</label><input type="date" id="es-end" value="'+(emp.endDate||'')+'" style="'+finp+'"></div>';
     html+='</div>';
-    html+='<div style="'+fcard+';margin-bottom:12px"><label style="'+flbl+'">Avatar-Farbe</label><div>'+swatches+'</div></div>';
-    html+='<div style="'+fcard+';margin-bottom:16px"><label style="'+flbl+'">Notizen <span style="font-weight:400;color:var(--text3);font-size:10.5px">(Stärken, Motivation, Karriereziele – nicht Teil der QA-Bewertung)</span></label>'
-      +'<textarea id="es-notes" rows="3" style="width:100%;box-sizing:border-box;padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical" placeholder="z. B. sehr motiviert, will perspektivisch ins Teamlead-Track, hat Stärken im Erstgespräch...">'+(emp.notes||'')+'</textarea></div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">';
+    html+='<div><label>Stunden / Woche</label><input type="number" id="es-hours" value="'+(emp.hours||40)+'" min="1" max="60"></div>';
+    html+='<div><label>Vertragsbeginn</label><input type="date" id="es-start" value="'+(emp.startDate||'')+'"></div>';
+    html+='<div><label>Vertragsende</label><input type="date" id="es-end" value="'+(emp.endDate||'')+'"></div>';
+    html+='</div>';
+    html+='<div style="margin-bottom:14px"><label>Avatar-Farbe</label><div style="margin-top:6px">'+swatches+'</div></div>';
+    html+='<div style="margin-bottom:16px"><label>Notizen <span style="font-weight:400;color:var(--text3);font-size:11px">(Stärken, Motivation, Karriereziele – nicht Teil der QA-Bewertung)</span></label>'
+      +'<textarea id="es-notes" rows="3" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical" placeholder="z. B. sehr motiviert, will perspektivisch ins Teamlead-Track, hat Stärken im Erstgespräch...">'+(emp.notes||'')+'</textarea></div>';
     html+='<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveEmpEinstellungen()"><i class="ti ti-check"></i> Änderungen speichern</button>';
     html+='</div>';
 
