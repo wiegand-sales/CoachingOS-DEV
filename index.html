@@ -532,7 +532,7 @@ var _appInitStarted = false;
 var currentCoach = null;      // {id,name,role} falls eingeloggter User ein Coach (SDM/SC) ist, sonst null (Admin/Overview)
 var coachFilterView = 'overview'; // 'overview' | employee-id des Coaches
 var SESSION_TYPES=['Call Shadowing Aktiv','Call Shadowing Passiv','1:1 Coaching','Calls Review','Gruppencoaching','Quiz','SolidRoad','Bemerkung','Sonstiges'];
-var SESSION_TOPICS=['Einwandsbehandlung','Bedarfsanalyse','Produktwissen','Gesprächsführung','Motivation','Coachability','Zuverlässigkeit','Teamfähigkeit','CR OEM','TW','SY','MY','Sonstiges'];
+var SESSION_TOPICS=['Einwandsbehandlung','Bedarfsanalyse','Produktwissen','Gesprächsführung','Motivation','Coachability','Zuverlässigkeit','Teamfähigkeit','CR OEM','CR TW','CR SY','CR MY','Sonstiges'];
 var FOCUS_METRICS=[
   {key:'aktivitaeten',label:'Aktivitäten'},
   {key:'convOEM',label:'Conv. OEM'},
@@ -2949,9 +2949,9 @@ function renderTab(){
       {key:'Zuverlässigkeit',    short:'Zuverl.',    cat:'will'},
       {key:'Teamfähigkeit',      short:'Teamf.',     cat:'will'},
       {key:'CR OEM',             short:'CR OEM',     cat:'result'},
-      {key:'TW',                 short:'TW',         cat:'result'},
-      {key:'SY',                 short:'SY',         cat:'result'},
-      {key:'MY',                 short:'MY',         cat:'result'},
+      {key:'CR TW',                 short:'CR TW',         cat:'result'},
+      {key:'CR SY',                 short:'CR SY',         cat:'result'},
+      {key:'CR MY',                 short:'CR MY',         cat:'result'},
     ];
     // Gleiche Farben wie Coaching Tab
     var SCCAT={
