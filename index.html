@@ -4945,12 +4945,13 @@ function openQaBewertungModal(empId){
   var b2bEl=document.getElementById('cb-b2b');if(b2bEl)b2bEl.value='B2C';
   var box=document.getElementById('qaScoringSection');
   if(box){
+    var uniCol='#174C52',uniBg='rgba(23,76,82,0.10)';
     var h='';
     CALL_CATS.forEach(function(cat){
       h+='<div style="border-radius:var(--r-md);overflow:hidden">';
-      h+='<div style="background:'+cat.bg+';padding:5px 10px;border-left:3px solid '+cat.col+'">';
-      h+='<span style="font-size:10px;font-weight:700;color:'+cat.col+'">'+cat.label.toUpperCase()+'</span>';
-      h+='<span style="font-size:10px;color:'+cat.col+';opacity:0.6"> · '+Math.round(cat.weight*100)+'%</span></div>';
+      h+='<div style="background:'+uniBg+';padding:5px 10px;border-left:3px solid '+uniCol+'">';
+      h+='<span style="font-size:10px;font-weight:700;color:'+uniCol+'">'+cat.label.toUpperCase()+'</span>';
+      h+='<span style="font-size:10px;color:'+uniCol+';opacity:0.6"> · '+Math.round(cat.weight*100)+'%</span></div>';
       cat.items.forEach(function(k){
         h+='<div style="padding:5px 10px;border-top:1px solid var(--border);background:var(--bg);display:flex;align-items:center;gap:8px">';
         h+='<div style="flex:1;font-size:12px">'+ITEM_LABELS[k]+'</div>';
