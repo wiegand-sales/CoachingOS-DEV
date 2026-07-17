@@ -2994,29 +2994,34 @@ function renderTab(){
     html+='</div>';
 
     html+='<div>';
-    html+='<div style="display:flex;flex-direction:column;gap:7px">';
+    html+='<div style="display:flex;flex-direction:column;gap:8px">';
     ['skill','will','result'].forEach(function(cat){
       var s=catSum[cat];
-      html+='<div style="background:'+SCCAT[cat].bg+';border:1px solid '+SCCAT[cat].col+';border-radius:var(--r-lg);padding:8px 14px;display:flex;align-items:center;justify-content:space-between">';
-      html+='<div><div style="font-size:10.5px;font-weight:700;color:'+SCCAT[cat].col+'">'+SCCAT[cat].l.toUpperCase()+'</div><div style="font-size:10.5px;color:'+SCCAT[cat].col+';opacity:0.7;margin-top:1px">Sessions zu diesem Bereich</div></div>';
-      html+='<div style="font-size:22px;font-weight:700;color:'+SCCAT[cat].col+'">'+s+'</div>';
+      var catDurMin=completedSessions.filter(function(sess){
+        return (sess.topics||[]).some(function(t){var dim=SDIMS.find(function(d){return d.key===t;});return dim&&dim.cat===cat;});
+      }).reduce(function(sum,sess){return sum+(sessionDuration(sess.uhrzeit,sess.endUhrzeit)||0);},0);
+      html+='<div style="background:'+SCCAT[cat].bg+';border:1px solid '+SCCAT[cat].col+';border-radius:var(--r-lg);padding:11px 14px;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div><div style="font-size:10.5px;font-weight:700;color:'+SCCAT[cat].col+'">'+SCCAT[cat].l.toUpperCase()+'</div><div style="font-size:10.5px;color:'+SCCAT[cat].col+';opacity:0.7;margin-top:1px">'+s+' Sessions'+(catDurMin?' · '+formatDuration(catDurMin):'')+'</div></div>';
+      html+='<div style="font-size:24px;font-weight:700;color:'+SCCAT[cat].col+'">'+s+'</div>';
       html+='</div>';
     });
     (function(){
       var totalDurationMin=completedSessions.reduce(function(sum,s){return sum+(sessionDuration(s.uhrzeit,s.endUhrzeit)||0);},0);
-      html+='<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:8px 14px;display:flex;align-items:center;justify-content:space-between">';
-      html+='<div><div style="font-size:10.5px;font-weight:700;color:var(--text)">GESAMT</div><div style="font-size:10.5px;color:var(--text2);opacity:0.8;margin-top:1px">'+(totalDurationMin?formatDuration(totalDurationMin)+' Gesamtdauer':'Sessions insgesamt')+'</div></div>';
-      html+='<div style="font-size:22px;font-weight:700;color:var(--text)">'+completedSessions.length+'</div>';
+      html+='<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:11px 14px;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div><div style="font-size:10.5px;font-weight:700;color:var(--text)">GESAMT</div><div style="font-size:10.5px;color:var(--text2);opacity:0.8;margin-top:1px">'+completedSessions.length+' Sessions'+(totalDurationMin?' · '+formatDuration(totalDurationMin):'')+'</div></div>';
+      html+='<div style="font-size:24px;font-weight:700;color:var(--text)">'+completedSessions.length+'</div>';
       html+='</div>';
     })();
-    html+='</div>';
-    html+='<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">';
-    html+='<button class="btn" data-eid="'+emp.id+'" onclick="openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-event"></i> Session planen</button>';
-    html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neue Session erfassen</button>';
     html+='</div>';
     html+='</div>';
 
     html+='</div>'; // Ende 2-Spalten-Grid
+
+    html+='<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">';
+    html+='<button class="btn" data-eid="'+emp.id+'" onclick="openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-event"></i> Session planen</button>';
+    html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neue Session erfassen</button>';
+    html+='</div>';
+
     html+='</div>'; // Ende Karte
 
     // ── Geplante Coachings ──
