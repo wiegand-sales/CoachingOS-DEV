@@ -3708,12 +3708,11 @@ function renderTab(){
         }
       });
 
-      // ── Vorher/Nachher-Vergleich fürs aktuell gewählte KPI ──
+      // ── Impact Coaching: immer 3 Zeilen, unabhängig von KPI/Datenlage ──
       (function(){
         var panel=document.getElementById('coachImpactPanel');
         if(!panel)return;
         var relevant=(protocols[selectedEmp]||[]).filter(function(s){return s.status!=='geplant'&&s.focusMetric===perfMetric;});
-        if(!relevant.length){panel.innerHTML='';return;}
         var fullPerf=(performance[selectedEmp]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
         function avgWindow(centerDate,daysBefore,daysAfter){
           var c=new Date(centerDate+'T00:00:00');
@@ -3740,7 +3739,18 @@ function renderTab(){
             +'<div style="width:70px;text-align:right;font-size:14px;font-weight:700;color:'+(delta===null?'var(--text3)':good?'var(--teal-dark)':'var(--red)')+'">'+arrow+' '+deltaTxt+'</div>'
             +'</div>';
         }
-        var visibleRows=sortedRelevant.slice(0,3).map(buildRow).join('');
+        function buildPlaceholderRow(){
+          return '<div style="display:flex;align-items:center;gap:14px;padding:10px 12px;margin-bottom:6px;background:rgba(0,0,0,0.03);border:1px solid var(--border2);border-radius:var(--r-md)">'
+            +'<div style="width:80px;font-size:12px;font-weight:600;flex-shrink:0;color:var(--text3)">—</div>'
+            +'<div style="flex:1;font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Keine Coaching Session vorhanden</div>'
+            +'<div style="font-size:11px;color:var(--text3);font-weight:600;width:70px;text-align:right">Ø vorher<br><b style="font-size:14px;color:var(--text3)">—</b></div>'
+            +'<div style="font-size:11px;color:var(--text3);font-weight:600;width:70px;text-align:right">Ø nachher<br><b style="font-size:14px;color:var(--text3)">—</b></div>'
+            +'<div style="width:70px;text-align:right;font-size:14px;font-weight:700;color:var(--text3)">—</div>'
+            +'</div>';
+        }
+        var realVisible=sortedRelevant.slice(0,3).map(buildRow);
+        var placeholdersNeeded=Math.max(0,3-realVisible.length);
+        var visibleRows=realVisible.join('')+Array(placeholdersNeeded).fill(0).map(buildPlaceholderRow).join('');
         var restRows=sortedRelevant.slice(3);
         var restHtml=restRows.length?restRows.map(buildRow).join(''):'';
         var toggleHtml=restRows.length?(
