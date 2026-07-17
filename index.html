@@ -85,11 +85,14 @@ body{font-family:'Inter',sans-serif;background:linear-gradient(155deg,#f2f3f0 0%
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
 .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
-.kpi{background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:var(--r-lg);padding:13px 15px;border-top:3px solid transparent;box-shadow:0 10px 24px rgba(0,0,0,0.05);transition:box-shadow .18s ease,transform .18s ease;}
+/* ── STANDARD-KACHEL (verbindlich für ALLE Kacheln in Coaching OS, auch künftige):
+   padding:12px 14px · Label 10.5px/600 · Wert 20px/700 · Sub/Trend 10.5px
+   Nutze wo möglich die Klasse .kpi + .kpi-label/.kpi-val/.kpi-sub statt eigener Inline-Maße. ── */
+.kpi{background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:var(--r-lg);padding:12px 14px;border-top:3px solid transparent;box-shadow:0 10px 24px rgba(0,0,0,0.05);transition:box-shadow .18s ease,transform .18s ease;}
 .kpi:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(0,0,0,0.09);}
-.kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
-.kpi-val{font-size:22px;font-weight:600;}
-.kpi-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.kpi-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+.kpi-val{font-size:20px;font-weight:700;}
+.kpi-sub{font-size:10.5px;color:var(--text3);margin-top:2px;}
 /* FORMS */
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
 .f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
@@ -811,10 +814,10 @@ function renderCoachingAnsicht(){
 
   // ══ ZEILE 1: 3 Stat-Kacheln + Linien-Chart (volle Breite) ══
   h+='<div style="display:grid;grid-template-columns:repeat(3,140px) 1fr;gap:12px;margin-bottom:16px;align-items:stretch">';
-  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--purple);border-radius:var(--r-lg);padding:14px 16px"><div style="font-size:10px;font-weight:600;color:var(--purple);letter-spacing:.05em;margin-bottom:4px">7 TAGE</div><div style="font-size:32px;font-weight:700;color:var(--purple);line-height:1">'+s7+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">Sessions</div></div>';
-  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--teal);border-radius:var(--r-lg);padding:14px 16px"><div style="font-size:10px;font-weight:600;color:var(--teal);letter-spacing:.05em;margin-bottom:4px">14 TAGE</div><div style="font-size:32px;font-weight:700;color:var(--teal);line-height:1">'+s14+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">Sessions</div></div>';
-  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:var(--r-lg);padding:14px 16px"><div style="font-size:10px;font-weight:600;color:var(--blue);letter-spacing:.05em;margin-bottom:4px">30 TAGE</div><div style="font-size:32px;font-weight:700;color:var(--blue);line-height:1">'+s30+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">Sessions</div></div>';
-  h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:14px 16px"><div style="font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.05em;margin-bottom:8px">SESSION-VERLAUF – LETZTE 30 TAGE</div>'+buildChart()+'</div>';
+  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--purple);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--purple);letter-spacing:.05em;margin-bottom:4px">7 TAGE</div><div style="font-size:20px;font-weight:700;color:var(--purple);line-height:1">'+s7+'</div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div></div>';
+  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--teal);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--teal);letter-spacing:.05em;margin-bottom:4px">14 TAGE</div><div style="font-size:20px;font-weight:700;color:var(--teal);line-height:1">'+s14+'</div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div></div>';
+  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--blue);letter-spacing:.05em;margin-bottom:4px">30 TAGE</div><div style="font-size:20px;font-weight:700;color:var(--blue);line-height:1">'+s30+'</div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div></div>';
+  h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.05em;margin-bottom:8px">SESSION-VERLAUF – LETZTE 30 TAGE</div>'+buildChart()+'</div>';
   h+='</div>';
 
   // ══ Coach-Wirksamkeit (nur Overview, ab 2 Coaches sinnvoll) ══
@@ -2565,9 +2568,9 @@ function renderTab(){
      {label:'Ø Score',val:(totalCalls?avgScore.toFixed(0):0)+'/100',sub:'Gesamt',col:avgScore>=75?'#206A72':avgScore>=50?'#32A8B4':'#BD2D29',bg:avgScore>=75?'rgba(32,106,114,0.10)':avgScore>=50?'rgba(50,168,180,0.12)':'rgba(189,45,41,0.10)'},
      {label:'Abschluss',val:totalCalls?Math.round(abschlussCount/totalCalls*100)+'%':'—',sub:abschlussCount+' von '+totalCalls,col:'#32A8B4',bg:'rgba(50,168,180,0.12)'}
     ].forEach(function(k){
-      html+='<div style="background:'+k.bg+';border:1px solid '+k.col+';border-radius:var(--r-lg);padding:11px 14px;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div style="background:'+k.bg+';border:1px solid '+k.col+';border-radius:var(--r-lg);padding:12px 14px;display:flex;align-items:center;justify-content:space-between">';
       html+='<div><div style="font-size:10.5px;font-weight:700;color:'+k.col+'">'+k.label.toUpperCase()+'</div><div style="font-size:10.5px;color:'+k.col+';opacity:0.7;margin-top:1px">'+k.sub+'</div></div>';
-      html+='<div style="font-size:24px;font-weight:700;color:'+k.col+'">'+k.val+'</div>';
+      html+='<div style="font-size:20px;font-weight:700;color:'+k.col+'">'+k.val+'</div>';
       html+='</div>';
     });
     html+='</div>';
@@ -2801,10 +2804,10 @@ function renderTab(){
       ['skill','will','result'].forEach(function(cat){
         var cdims=DIMS.filter(function(d){return d.cat===cat;});
         var avg=(cdims.reduce(function(a,d){return a+(showEval[d.key]||0);},0)/cdims.length).toFixed(1);
-        html+='<div style="background:'+CCAT[cat].fill+';border:1px solid '+CCAT[cat].col+';border-radius:var(--r-lg);padding:10px;text-align:center">';
-        html+='<div style="font-size:10px;font-weight:700;color:'+CCAT[cat].col+';margin-bottom:3px">'+CCAT[cat].l.toUpperCase()+'</div>';
-        html+='<div style="font-size:26px;font-weight:700;color:'+CCAT[cat].col+'">'+avg+'</div>';
-        html+='<div style="font-size:10px;color:'+CCAT[cat].col+';opacity:0.7">von 10</div></div>';
+        html+='<div style="background:'+CCAT[cat].fill+';border:1px solid '+CCAT[cat].col+';border-radius:var(--r-lg);padding:12px 14px;text-align:center">';
+        html+='<div style="font-size:10.5px;font-weight:700;color:'+CCAT[cat].col+';margin-bottom:3px">'+CCAT[cat].l.toUpperCase()+'</div>';
+        html+='<div style="font-size:20px;font-weight:700;color:'+CCAT[cat].col+'">'+avg+'</div>';
+        html+='<div style="font-size:10.5px;color:'+CCAT[cat].col+';opacity:0.7">von 10</div></div>';
       });
       html+='</div>';
     }
@@ -3042,16 +3045,16 @@ function renderTab(){
       var catDurMin=completedSessions.filter(function(sess){
         return (sess.topics||[]).some(function(t){var dim=SDIMS.find(function(d){return d.key===t;});return dim&&dim.cat===cat;});
       }).reduce(function(sum,sess){return sum+(sessionDuration(sess.uhrzeit,sess.endUhrzeit)||0);},0);
-      html+='<div style="background:'+SCCAT[cat].bg+';border:1px solid '+SCCAT[cat].col+';border-radius:var(--r-lg);padding:11px 14px;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div style="background:'+SCCAT[cat].bg+';border:1px solid '+SCCAT[cat].col+';border-radius:var(--r-lg);padding:12px 14px;display:flex;align-items:center;justify-content:space-between">';
       html+='<div><div style="font-size:10.5px;font-weight:700;color:'+SCCAT[cat].col+'">'+SCCAT[cat].l.toUpperCase()+'</div><div style="font-size:10.5px;color:'+SCCAT[cat].col+';opacity:0.7;margin-top:1px">'+s+' Sessions'+(catDurMin?' · '+formatDuration(catDurMin):'')+'</div></div>';
-      html+='<div style="font-size:24px;font-weight:700;color:'+SCCAT[cat].col+'">'+s+'</div>';
+      html+='<div style="font-size:20px;font-weight:700;color:'+SCCAT[cat].col+'">'+s+'</div>';
       html+='</div>';
     });
     (function(){
       var totalDurationMin=completedSessions.reduce(function(sum,s){return sum+(sessionDuration(s.uhrzeit,s.endUhrzeit)||0);},0);
-      html+='<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:11px 14px;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:12px 14px;display:flex;align-items:center;justify-content:space-between">';
       html+='<div><div style="font-size:10.5px;font-weight:700;color:var(--text)">GESAMT</div><div style="font-size:10.5px;color:var(--text2);opacity:0.8;margin-top:1px">'+completedSessions.length+' Sessions'+(totalDurationMin?' · '+formatDuration(totalDurationMin):'')+'</div></div>';
-      html+='<div style="font-size:24px;font-weight:700;color:var(--text)">'+completedSessions.length+'</div>';
+      html+='<div style="font-size:20px;font-weight:700;color:var(--text)">'+completedSessions.length+'</div>';
       html+='</div>';
     })();
     html+='</div>';
