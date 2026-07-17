@@ -2411,7 +2411,7 @@ function renderTab(){
       {label:'CR MY',  key:'crMegaYes',   target:empT.crMegaYes.val,   dir:empT.crMegaYes.dir,   pct:true},
       {label:'Conv. OEM',key:'convOEM',   target:null,                  dir:'gte',               pct:false},
     ];
-    html+='<div class="g5" style="margin-bottom:16px">';
+    html+='<div class="g5" style="margin-bottom:22px">';
     kpis.forEach(function(k){
       var v=avgRange(k.key);var vR=v!==null?(k.pct?Math.round(v):+v.toFixed(1)):null;
       var col=v!==null?kpiCol(v,k.target,k.dir):'var(--text3)';
@@ -2467,19 +2467,20 @@ function renderTab(){
       +'<span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:1.5px dashed rgba(140,140,140,0.6);display:inline-block"></span>Coaching zu anderem Thema</span>'
       +'</div><div id="coachImpactPanel"></div></div>';
     // Tabelle
-    html+='<div class="sec-title" style="margin-bottom:10px">Tagesübersicht</div>';
+    html+='<div class="card">';
+    html+='<div class="card-title"><i class="ti ti-table"></i> Tagesübersicht</div>';
     if(!perfAll.length){
-      html+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:32px;text-align:center;color:var(--text3)">'
-        +'<i class="ti ti-file-upload" style="font-size:28px;display:block;margin-bottom:8px"></i>'
+      html+='<div style="text-align:center;color:var(--text3);padding:24px">'
+        +'<i class="ti ti-file-upload" style="font-size:26px;display:block;margin-bottom:8px"></i>'
         +'Noch keine Daten – bitte CSV in den Einstellungen hochladen</div>';
     } else {
-      html+='<div class="tbl"><table><thead><tr>'
-        +'<th>Datum</th><th>Aktivitäten</th><th>NE</th><th>NM</th><th>NErr</th>'
-        +'<th>Conv. OEM</th><th>TW</th><th>Yes</th><th>SY</th><th>MY</th>'
-        +'<th>CR OEM%</th><th>CR TW%</th><th>CR SY%</th><th>CR MY%</th>'
-        +'<th>Upsells</th><th>WKA</th><th>Opt. Ges.</th><th>Marge Ges.</th>'
+      html+='<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;border-collapse:collapse"><thead><tr>'
+        +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">Datum</th>'
+        +['Aktivitäten','NE','NM','NErr','Conv. OEM','TW','Yes','SY','MY','CR OEM%','CR TW%','CR SY%','CR MY%','Upsells','WKA','Opt. Ges.','Marge Ges.'].map(function(h){
+          return '<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">'+h+'</th>';
+        }).join('')
         +'</tr></thead><tbody>';
-      perfAll.forEach(function(row){
+      perfAll.forEach(function(row,ridx){
         var akt=row.aktivitaeten||row.calls||0;
         var convOEM=row.convOEM||0;
         var tw=row.convTW||0,yes=row.convYes||0,sy=row.convSY||0,my=row.convMY||0;
@@ -2489,30 +2490,32 @@ function renderTab(){
         var marge=row.margeGesamt||row.margin||0;
         var crOEM=Math.round(row.crOEM||0),crTW=Math.round(row.crTeilweise||0),crSY=Math.round(row.crSuperYes||0),crMY=Math.round(row.crMegaYes||0);
         var optH=row.optPerH||0;
-        function fc(v,t,dir){if(!t&&t!==0)return '';return(dir==='lte'?v<=t:v>=t)?'color:var(--teal)':'color:var(--red)';}
-        html+='<tr>'
-          +'<td style="font-weight:500;white-space:nowrap">'+fd(row.date)+'</td>'
-          +'<td style="text-align:center;font-weight:600">'+akt+'</td>'
-          +'<td style="text-align:center;color:var(--text2)">'+notR+'</td>'
-          +'<td style="text-align:center;color:var(--text2)">'+notP+'</td>'
-          +'<td style="text-align:center;color:var(--text2)">'+notS+'</td>'
-          +'<td style="text-align:center;font-weight:600;color:var(--purple)">'+convOEM+'</td>'
-          +'<td style="text-align:center;color:var(--amber)">'+tw+'</td>'
-          +'<td style="text-align:center;color:var(--blue)">'+yes+'</td>'
-          +'<td style="text-align:center;color:var(--purple)">'+sy+'</td>'
-          +'<td style="text-align:center;color:var(--teal)">'+my+'</td>'
-          +'<td style="text-align:center;font-weight:600;'+fc(crOEM,empT.crOEM.val,empT.crOEM.dir)+'">'+crOEM+'%</td>'
-          +'<td style="text-align:center;'+fc(crTW,empT.crTeilweise.val,empT.crTeilweise.dir)+'">'+crTW+'%</td>'
-          +'<td style="text-align:center;'+fc(crSY,empT.crSuperYes.val,empT.crSuperYes.dir)+'">'+crSY+'%</td>'
-          +'<td style="text-align:center;'+fc(crMY,empT.crMegaYes.val,empT.crMegaYes.dir)+'">'+crMY+'%</td>'
-          +'<td style="text-align:center;color:var(--blue)">'+ups+'</td>'
-          +'<td style="text-align:center;color:var(--blue)">'+wka+'</td>'
-          +'<td style="text-align:center;font-weight:600">'+optGes+'</td>'
-          +'<td style="text-align:right;font-weight:600;color:var(--blue)">€'+Math.round(marge).toLocaleString('de-DE')+'</td>'
+        function fc(v,t,dir){if(!t&&t!==0)return '';return(dir==='lte'?v<=t:v>=t)?'color:var(--teal-dark)':'color:var(--red)';}
+        var rowBg=ridx%2===1?'background:rgba(0,0,0,0.03);':'';
+        html+='<tr style="'+rowBg+'">'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap">'+fd(row.date)+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">'+akt+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">'+notR+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">'+notP+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">'+notS+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600;color:var(--purple)">'+convOEM+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--amber-dark)">'+tw+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--blue-dark)">'+yes+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--purple)">'+sy+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--teal-dark)">'+my+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600;'+fc(crOEM,empT.crOEM.val,empT.crOEM.dir)+'">'+crOEM+'%</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crTW,empT.crTeilweise.val,empT.crTeilweise.dir)+'">'+crTW+'%</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crSY,empT.crSuperYes.val,empT.crSuperYes.dir)+'">'+crSY+'%</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crMY,empT.crMegaYes.val,empT.crMegaYes.dir)+'">'+crMY+'%</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--blue-dark)">'+ups+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--blue-dark)">'+wka+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">'+optGes+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;color:var(--blue-dark)">€'+Math.round(marge).toLocaleString('de-DE')+'</td>'
           +'</tr>';
       });
       html+='</tbody></table></div>';
     }
+    html+='</div>'; // Ende Tagesübersicht-Karte
   }
 
 
