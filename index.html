@@ -3173,40 +3173,6 @@ function renderTab(){
       })(showEval,DIMS,CCAT);
     }
 
-    // ── Session-Historie (unverändert, wie gewünscht) ──
-    var chSessions=(protocols[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-    html+='<div class="sec-title" style="margin-top:24px;margin-bottom:10px">Session-Historie <span style="font-size:12px;font-weight:400;color:var(--text3)">('+chSessions.length+')</span></div>';
-    if(!chSessions.length){
-      html+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:20px;text-align:center;color:var(--text3)"><i class="ti ti-calendar-off" style="font-size:24px;display:block;margin-bottom:6px"></i>Noch keine Sessions vorhanden</div>';
-    } else {
-      html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);overflow:hidden">';
-      html+='<colgroup><col style="width:140px"><col><col><col><col></colgroup>';
-      html+='<thead><tr style="background:var(--bg2)">';
-      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border)">Datum</th>';
-      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">Inhalt</th>';
-      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)"><span style="color:#2D7A4F">START</span></th>';
-      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)"><span style="color:#C0392B">STOP</span></th>';
-      html+='<th style="text-align:left;padding:8px 12px;font-size:11px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)"><span style="color:#B8860B">CONTINUE</span></th>';
-      html+='</tr></thead><tbody>';
-      chSessions.forEach(function(s,i){
-        var topics=s.topics&&s.topics.length?s.topics.join(', '):(s.focus||'—');
-        var stat=s.status||'abgeschlossen';
-        var statCol=stat==='geplant'?'var(--purple)':stat==='abgeschlossen'?'var(--teal)':'var(--amber)';
-        var tdStyle='padding:12px 12px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:top';
-        html+='<tr style="'+(i===0?'background:var(--bg2);':'')+'">';
-        html+='<td style="'+tdStyle+';white-space:nowrap">';
-        html+='<div style="font-weight:600">'+fd(s.date)+'</div>';
-        if(s.uhrzeit)html+='<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-clock" style="font-size:10px"></i> '+s.uhrzeit+'</div>';
-        html+='<div style="font-size:10px;color:'+statCol+';margin-top:3px;font-weight:600">'+stat.charAt(0).toUpperCase()+stat.slice(1)+'</div>';
-        html+='</td>';
-        html+='<td style="'+tdStyle+';border-left:1px solid var(--border);color:var(--text2)">'+topics+'</td>';
-        html+='<td style="'+tdStyle+';border-left:1px solid var(--border);color:var(--text);white-space:pre-wrap">'+(s.start&&s.start.trim()?s.start:'<span style="color:var(--text3)">—</span>')+'</td>';
-        html+='<td style="'+tdStyle+';border-left:1px solid var(--border);color:var(--text);white-space:pre-wrap">'+(s.stop&&s.stop.trim()?s.stop:'<span style="color:var(--text3)">—</span>')+'</td>';
-        html+='<td style="'+tdStyle+';border-left:1px solid var(--border);color:var(--text);white-space:pre-wrap">'+(s.cont&&s.cont.trim()?s.cont:'<span style="color:var(--text3)">—</span>')+'</td>';
-        html+='</tr>';
-      });
-      html+='</tbody></table></div>';
-    }
   }
 
 
