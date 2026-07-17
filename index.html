@@ -583,6 +583,8 @@ function loadEmployeesFromSupabase(){
 var _appInitStarted = false;
 var currentCoach = null;      // {id,name,role} falls eingeloggter User ein Coach (SDM/SC) ist, sonst null (Admin/Overview)
 var coachFilterView = 'overview'; // 'overview' | employee-id des Coaches
+var wiegandView='overview'; // 'overview' | 'team' (SFP Wiegand Tab-Navigation)
+function setWiegandView(v){wiegandView=v;renderTeam();}
 var coachCalYear=null, coachCalMonthIdx=null; // Kalender-Monatsnavigation SFP Coaching (init. beim ersten Rendern auf aktuellen Monat)
 function setCoachCalMonth(delta){
   var d=new Date(coachCalYear,coachCalMonthIdx+delta,1);
@@ -1875,6 +1877,15 @@ function renderTeam(){
   var HIDDEN=['SDM','SC'];
   var allVisible=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0;});
   var inactiveAll=employees.filter(function(e){return e.active===false&&HIDDEN.indexOf(e.role)<0;});
+  var onboardingEmpsT=allVisible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
+  var FDEFS=[
+    {key:'ALL',    label:'Alle',       n:allVisible.length},
+    {key:'SE',     label:'SE',         n:allVisible.filter(function(e){return e.role==='SE'&&e.phase!=='Onboarding';}).length},
+    {key:'SR',     label:'SR',         n:allVisible.filter(function(e){return e.role==='SR'&&e.phase!=='Onboarding';}).length},
+    {key:'VLC',    label:'VLC',        n:allVisible.filter(function(e){return e.role==='VLC';}).length},
+    {key:'OB',     label:'Onboarding', n:onboardingEmpsT.length},
+    {key:'INAKTIV',label:'Inaktiv',    n:inactiveAll.length},
+  ];
   var list=teamFilter==='INAKTIV'?inactiveAll:teamFilter==='ALL'?allVisible:teamFilter==='OB'?allVisible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';}):teamFilter==='VLC'?allVisible.filter(function(e){return e.role==='VLC';}):allVisible.filter(function(e){return e.role===teamFilter&&e.phase!=='Onboarding';});
   var allP=list.map(function(e){return teamGetPerf(e.id);}).reduce(function(a,b){return a.concat(b);},[]);
   function tAvg(key){if(!allP.length)return null;return allP.reduce(function(a,x){return a+x[key];},0)/allP.length;}
@@ -2073,38 +2084,44 @@ function renderTeam(){
   // ── RENDER ──
   ma.innerHTML='<div class="topbar">'
     +'<div class="tb-left"><div class="av" style="width:40px;height:40px;font-size:17px;background:var(--purple-bg);color:var(--purple-dark)"><i class="ti ti-layout-grid"></i></div>'
-    +'<div><div class="tb-name">Teamübersicht</div>'
+    +'<div><div class="tb-name">SFP Wiegand</div>'
     +'<div class="tb-meta">'+list.length+' Mitarbeiter · <span class="ftp-badge"><i class="ti ti-refresh" style="font-size:11px"></i> FTP sync aktiv</span></div></div></div>'
-    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-    // Zeitraum-Auswahl (Quick-Filter)
-    +'<div style="display:flex;border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden">'
-    +'<button style="padding:6px 14px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===7?'var(--purple)':'transparent')+';color:'+(!customActive&&days===7?'#fff':'var(--text2)')+'" onclick="setTeamRange(7)">7 Tage</button>'
-    +'<button style="padding:6px 14px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===14?'var(--purple)':'transparent')+';color:'+(!customActive&&days===14?'#fff':'var(--text2)')+'" onclick="setTeamRange(14)">14 Tage</button>'
-    +'<button style="padding:6px 14px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===30?'var(--purple)':'transparent')+';color:'+(!customActive&&days===30?'#fff':'var(--text2)')+'" onclick="setTeamRange(30)">30 Tage</button>'
-    +'<button style="padding:6px 14px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===90?'var(--purple)':'transparent')+';color:'+(!customActive&&days===90?'#fff':'var(--text2)')+'" onclick="setTeamRange(90)">90 Tage</button>'
-    +'</div>'
-    // Custom-Zeitraum: Von – Bis
-    +'<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid '+(customActive?'var(--purple)':'var(--border2)')+';border-radius:var(--r-md);background:'+(customActive?'var(--purple-bg)':'transparent')+'">'
-    +'<span style="font-size:11px;color:var(--text2);padding-left:4px">Von</span>'
-    +'<input type="date" id="teamFromDate" value="'+(teamCustomFrom||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:2px">'
-    +'<span style="font-size:11px;color:var(--text2)">Bis</span>'
-    +'<input type="date" id="teamToDate" value="'+(teamCustomTo||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:2px">'
-    +'<button class="btn btn-sm'+(customActive?' btn-primary':'')+'" style="padding:4px 10px" onclick="applyTeamCustomRange()"><i class="ti ti-check"></i></button>'
-    +(customActive?'<button class="btn btn-sm" style="padding:4px 8px" onclick="clearTeamCustomRange()" title="Custom-Zeitraum zurücksetzen"><i class="ti ti-x"></i></button>':'')
-    +'</div>'
     +'<button class="btn btn-primary" onclick="exportTeamReport()"><i class="ti ti-file-description"></i> Team-Report (PDF)</button>'
-    +'</div></div>'
+    +'</div>'
+    +'<div class="tab-bar">'
+    +'<div class="tab'+(wiegandView==='overview'?' active':'')+'" onclick="setWiegandView(\'overview\')">Overview</div>'
+    +'<div class="tab'+(wiegandView==='team'?' active':'')+'" onclick="setWiegandView(\'team\')">Team</div>'
+    +'</div>'
     +'<div class="content">'
-    // KPI Kacheln
+    +(wiegandView==='overview'?(''
+    // KPI Kacheln (reiches Format wie Coaching Sessions: Trend-Pfeil + Sparkline)
     +(function(){
-      var oemOk2=KPI_TARGETS.crOEM.dir==='lte'?(oemD!==null&&oemD<=KPI_TARGETS.crOEM.val):(oemD!==null&&oemD>=KPI_TARGETS.crOEM.val);var oemCol=oemD!==null&&oemOk2?'var(--teal)':'var(--amber)';
-      var syCol='var(--purple)';
-      var myCol='var(--teal)';
-      // Feste Kachel-Struktur: Titel / Wert + Delta / Balken (8px) / Unterzeile
-      // Alle 5 gleich hoch durch feste min-height
-      function kpiKarte(col, label, wert, unterzeile, balkenPct, balkenCol, zielPct, delta){
-        // balkenPct = aktueller Wert, zielPct = Zielwert (für Markierung)
-        return '<div class="kpi" style="border-top-color:'+col+';display:flex;flex-direction:column">'          +'<div class="kpi-label" style="color:'+col+'">'+label+'</div>'          +'<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">'          +'<div class="kpi-val" style="color:'+col+'">'+wert+'</div>'          +'</div>'          +'<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:6px;position:relative">'          +(balkenPct!==null&&balkenCol?'<div style="height:100%;width:'+Math.min(balkenPct,100)+'%;background:'+balkenCol+';border-radius:3px;transition:width .3s"></div>':'')          +(zielPct?'<div style="position:absolute;top:0;left:'+Math.min(zielPct,100)+'%;height:100%;width:2px;background:rgba(0,0,0,.25)"></div>':'')          +'</div>'          +'<div class="kpi-sub">'+unterzeile+'</div>'          +'</div>';
+      var oemOk2=KPI_TARGETS.crOEM.dir==='lte'?(oemD!==null&&oemD<=KPI_TARGETS.crOEM.val):(oemD!==null&&oemD>=KPI_TARGETS.crOEM.val);var oemCol=oemD!==null&&oemOk2?'#206A72':'var(--amber-dark)';
+      function teamDailySeries(key,n,mode){
+        var byDate={};
+        allP.forEach(function(r){if(!byDate[r.date])byDate[r.date]=[];if(r[key]!==undefined&&r[key]!==null)byDate[r.date].push(r[key]);});
+        var dates=Object.keys(byDate).sort();
+        var series=dates.map(function(d){
+          var arr=byDate[d];if(!arr.length)return null;
+          if(mode==='sum')return arr.reduce(function(a,b){return a+b;},0);
+          return arr.reduce(function(a,b){return a+b;},0)/arr.length;
+        }).filter(function(v){return v!==null;});
+        return series.slice(-(n||7));
+      }
+      function trendArrowCol(d){
+        if(d===null||d===undefined)return {arrow:'',col:'var(--text3)'};
+        return {arrow:d>0?'↑':d<0?'↓':'→',col:d>0?'var(--teal-dark)':d<0?'var(--red)':'var(--text2)'};
+      }
+      function tile(label,col,wert,unterzeile1,unterzeile2,spark){
+        return '<div class="card" style="padding:12px 14px;margin-bottom:0">'
+          +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">'+label+'</div>'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+          +wert
+          +sparkline(spark,col,54,26)
+          +'</div>'
+          +'<div style="font-size:10.5px;color:var(--text3)">'+unterzeile1+'</div>'
+          +'<div style="font-size:10.5px;color:var(--text3);margin-top:2px">'+unterzeile2+'</div>'
+          +'</div>';
       }
       var oemVal=oemD!==null?Math.round(oemD)+'%':'—';
       var syVal=syD!==null?Math.round(syD)+'%':'—';
@@ -2113,23 +2130,33 @@ function renderTeam(){
       var dSY=showTrend&&syD!==null&&tAvg7('crSuperYes')!==null?Math.round(syD)-Math.round(tAvg7('crSuperYes')):null;
       var dMY=showTrend&&myD!==null&&tAvg7('crMegaYes')!==null?Math.round(myD)-Math.round(tAvg7('crMegaYes')):null;
       var dMargin=showTrend?(totalMargin-totalMargin7):null;
-      // TW (Teilweise)
       var twD=allP.length?allP.reduce(function(a,x){return a+(x.crTeilweise||0);},0)/allP.length:null;
       var twTarget=KPI_TARGETS.crTeilweise?KPI_TARGETS.crTeilweise.val:25;
       var twDir=KPI_TARGETS.crTeilweise?KPI_TARGETS.crTeilweise.dir:'lte';
       var twOk=twD!==null&&(twDir==='lte'?twD<=twTarget:twD>=twTarget);
-      var twFarbe=twD!==null?(twOk?'var(--teal)':'var(--red)'):'var(--amber)';
+      var twFarbe=twD!==null?(twOk?'#206A72':'var(--red)'):'var(--amber-dark)';
       var twVal=twD!==null?Math.round(twD)+'%':'—';
-      // Farben basierend auf Zielerreichung
+      var dTW=showTrend&&twD!==null&&tAvg7('crTeilweise')!==null?Math.round(twD)-Math.round(tAvg7('crTeilweise')):null;
       var syTarget=KPI_TARGETS.crSuperYes.val;
       var myTarget=KPI_TARGETS.crMegaYes.val;
       var syOk=syD!==null&&(KPI_TARGETS.crSuperYes.dir==='lte'?syD<=syTarget:syD>=syTarget);
       var myOk=myD!==null&&(KPI_TARGETS.crMegaYes.dir==='lte'?myD<=myTarget:myD>=myTarget);
-      var syFarbe=syD!==null?(syOk?'var(--teal)':'var(--red)'):'var(--purple)';
-      var myFarbe=myD!==null?(myOk?'var(--teal)':'var(--red)'):'var(--teal)';
-      return '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px">'        +kpiKarte(oemCol,'TEAM CR OEM',oemVal,(showTrend?'7d: '+(tAvg7('crOEM')!==null?Math.round(tAvg7('crOEM'))+'%':'—')+' · ':'')+'Ziel ≥ '+CR_GOOD+'%',oemD,oemCol,CR_GOOD,dOEM)        +kpiKarte(twFarbe,'TEAM TW',twVal,(showTrend?'7d: '+(tAvg7('crTeilweise')!==null?Math.round(tAvg7('crTeilweise'))+'%':'—')+' · ':'')+'Ziel '+(twDir==='gte'?'≥':'≤')+twTarget+'%',twD,twFarbe,twTarget,null)        +kpiKarte(syFarbe,'TEAM SY',syVal,(showTrend?'7d: '+(tAvg7('crSuperYes')!==null?Math.round(tAvg7('crSuperYes'))+'%':'—')+' · ':'')+'Ziel '+( KPI_TARGETS.crSuperYes.dir==='gte'?'≥':'≤')+syTarget+'%',syD!==null?Math.round(syD):null,syFarbe,syTarget,dSY)        +kpiKarte(myFarbe,'TEAM MY',myVal,(showTrend?'7d: '+(tAvg7('crMegaYes')!==null?Math.round(tAvg7('crMegaYes'))+'%':'—')+' · ':'')+'Ziel '+( KPI_TARGETS.crMegaYes.dir==='gte'?'≥':'≤')+myTarget+'%',myD!==null?Math.round(myD):null,myFarbe,myTarget,dMY)        +kpiKarte('var(--blue)','ZUSÄTZL. MARGE','€'+totalMargin.toLocaleString('de-DE'),(showTrend?'7d: €'+totalMargin7.toLocaleString('de-DE')+' · ':'')+periodLabel+' Gesamt',null,null,null,null)        +kpiKarte('var(--red)','OFFENE ALERTS',totalAlerts+'',totalAlerts>0?'unter Zielwert':'keine Alerts',null,null,null,null)        +'</div>';
+      var syFarbe=syD!==null?(syOk?'#206A72':'var(--red)'):'#32A8B4';
+      var myFarbe=myD!==null?(myOk?'#206A72':'var(--red)'):'#7ED2DB';
+      var tOEM=trendArrowCol(dOEM),tTW=trendArrowCol(dTW),tSY=trendArrowCol(dSY),tMY=trendArrowCol(dMY),tMG=trendArrowCol(dMargin);
+      function valArrow(val,t,col2){
+        return '<div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:20px;font-weight:700;color:'+col2+'">'+val+'</div><div style="font-size:13px;font-weight:700;color:'+t.col+'">'+t.arrow+'</div></div>';
+      }
+      var html5='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
+      html5+=tile('TEAM CR OEM',oemCol,valArrow(oemVal,tOEM,oemCol),'Ziel ≥ '+CR_GOOD+'%'+(oemD!==null?(oemOk2?' ✓':' ↓'):''),(showTrend?'Vormonat: '+(tAvg7('crOEM')!==null?Math.round(tAvg7('crOEM'))+'%':'—'):'\u00A0'),teamDailySeries('crOEM',7));
+      html5+=tile('TEAM TW',twFarbe,valArrow(twVal,tTW,twFarbe),'Ziel '+(twDir==='gte'?'≥':'≤')+twTarget+'%'+(twD!==null?(twOk?' ✓':' ↓'):''),(showTrend?'Vormonat: '+(tAvg7('crTeilweise')!==null?Math.round(tAvg7('crTeilweise'))+'%':'—'):'\u00A0'),teamDailySeries('crTeilweise',7));
+      html5+=tile('TEAM SY',syFarbe,valArrow(syVal,tSY,syFarbe),'Ziel '+(KPI_TARGETS.crSuperYes.dir==='gte'?'≥':'≤')+syTarget+'%'+(syD!==null?(syOk?' ✓':' ↓'):''),(showTrend?'Vormonat: '+(tAvg7('crSuperYes')!==null?Math.round(tAvg7('crSuperYes'))+'%':'—'):'\u00A0'),teamDailySeries('crSuperYes',7));
+      html5+=tile('TEAM MY',myFarbe,valArrow(myVal,tMY,myFarbe),'Ziel '+(KPI_TARGETS.crMegaYes.dir==='gte'?'≥':'≤')+myTarget+'%'+(myD!==null?(myOk?' ✓':' ↓'):''),(showTrend?'Vormonat: '+(tAvg7('crMegaYes')!==null?Math.round(tAvg7('crMegaYes'))+'%':'—'):'\u00A0'),teamDailySeries('crMegaYes',7));
+      html5+=tile('MARGE','#7ED2DB',valArrow('€'+totalMargin.toLocaleString('de-DE'),tMG,'#7ED2DB'),periodLabel+' gesamt',(showTrend?'Vormonat: €'+totalMargin7.toLocaleString('de-DE'):'\u00A0'),teamDailySeries('margeGesamt',7,'sum'));
+      html5+='</div>';
+      return html5;
     })()
-    // Team Performance Trend Chart
+    // Team Performance Trend Chart (inkl. kombinierter Filter-Zeile)
     +(function(){
       var TMETRICS=[
         {k:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
@@ -2141,38 +2168,44 @@ function renderTeam(){
         {k:'crMegaYes',  l:'CR MY',      c:'#7ED2DB'},
         {k:'margeGesamt',l:'Marge',      c:'#9FE1E8'},
       ];
-      var s='<div class="card" style="margin-bottom:22px">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
-        +'<div class="card-title" style="margin:0">Team Performance Trend</div>'
-        +'<div class="chart-toggle">';
+      var s='<div class="card" style="margin-bottom:22px">';
+      // Filter-Zeile: Zeitraum-Schnellwahl + Von-Bis + Anzeigen-Dropdown
+      s+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">';
+      s+='<div class="card-title" style="margin:0">Team Performance Trend</div>';
+      s+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+      s+='<div style="display:flex;border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden">';
+      [7,14,30,90].forEach(function(dd){
+        s+='<button style="padding:6px 12px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===dd?'var(--purple)':'transparent')+';color:'+(!customActive&&days===dd?'#fff':'var(--text2)')+'" onclick="setTeamRange('+dd+')">'+dd+'T</button>';
+      });
+      s+='</div>';
+      s+='<div style="display:flex;align-items:center;gap:5px;padding:4px 6px;border:1px solid '+(customActive?'var(--purple)':'var(--border2)')+';border-radius:var(--r-md);background:'+(customActive?'var(--purple-bg)':'transparent')+'">';
+      s+='<span style="font-size:11px;color:var(--text2);padding-left:4px">Von</span>';
+      s+='<input type="date" id="teamFromDate" value="'+(teamCustomFrom||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:2px;width:120px">';
+      s+='<span style="font-size:11px;color:var(--text2)">Bis</span>';
+      s+='<input type="date" id="teamToDate" value="'+(teamCustomTo||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:2px;width:120px">';
+      s+='<button class="btn btn-sm'+(customActive?' btn-primary':'')+'" style="padding:4px 10px" onclick="applyTeamCustomRange()"><i class="ti ti-check"></i></button>';
+      s+=(customActive?'<button class="btn btn-sm" style="padding:4px 8px" onclick="clearTeamCustomRange()" title="Custom-Zeitraum zurücksetzen"><i class="ti ti-x"></i></button>':'');
+      s+='</div>';
+      s+='<select onchange="setTeamFilter(this.value)" style="width:auto;font-size:12px;font-weight:500;padding:7px 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:rgba(255,255,255,0.6);color:var(--text);cursor:pointer">';
+      FDEFS.forEach(function(fd){
+        if(!fd.n&&fd.key!=='ALL')return;
+        s+='<option value="'+fd.key+'"'+(teamFilter===fd.key?' selected':'')+'>'+(fd.key==='ALL'?'Anzeigen: Alle':fd.label)+' ('+fd.n+')</option>';
+      });
+      s+='</select>';
+      s+='</div></div>';
+      // Metrik-Umschalter für den Chart
+      s+='<div class="chart-toggle" style="margin-bottom:10px">';
       TMETRICS.forEach(function(it){
         s+='<button class="'+(teamPerfMetric===it.k?'active':'')+'" data-m="'+it.k+'" onclick="setTeamMetric(this.dataset.m)">'+it.l+'</button>';
       });
-      s+='</div></div><div style="position:relative;height:260px"><canvas id="teamPerfChart"></canvas></div></div>';
+      s+='</div>';
+      s+='<div style="position:relative;height:260px"><canvas id="teamPerfChart"></canvas></div></div>';
       return s;
     })()
+    ):(''
+    // ── TEAM TAB: Alert Banner + Coaching-Abdeckung + SFP Performance Tabelle ──
     // Alert Banner
     +(totalAlerts>0?'<div class="alert alert-warn" style="margin-bottom:18px"><i class="ti ti-alert-triangle" style="font-size:18px;color:var(--amber);flex-shrink:0"></i><div><div style="font-size:13px;font-weight:600;color:var(--amber-dark)">'+totalAlerts+' Performance-Alert'+(totalAlerts!==1?'s':'')+' im Team</div><div style="font-size:12px;color:var(--amber-dark)">'+list.filter(function(e){return checkAlerts(e.id).length>0;}).map(function(e){return e.name;}).join(', ')+'</div></div></div>':'')
-    // CR Tabelle
-    +(function(){
-      var onboardingEmpsT=allVisible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
-      var FDEFS=[
-        {key:'ALL',    label:'Alle',       n:allVisible.length},
-        {key:'SE',     label:'SE',         n:allVisible.filter(function(e){return e.role==='SE'&&e.phase!=='Onboarding';}).length},
-        {key:'SR',     label:'SR',         n:allVisible.filter(function(e){return e.role==='SR'&&e.phase!=='Onboarding';}).length},
-        {key:'VLC',    label:'VLC',        n:allVisible.filter(function(e){return e.role==='VLC';}).length},
-        {key:'OB',     label:'Onboarding', n:onboardingEmpsT.length},
-        {key:'INAKTIV',label:'Inaktiv',    n:inactiveAll.length},
-      ];
-      var fbar='<div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap">';
-      fbar+='<span style="font-size:11px;font-weight:600;color:var(--text3);margin-right:2px">Anzeigen:</span>';
-      FDEFS.forEach(function(fd){
-        if(!fd.n&&fd.key!=='ALL')return;
-        var act=teamFilter===fd.key;
-        fbar+='<button class="tfbtn" data-k="'+fd.key+'" onclick="setTeamFilter(this.dataset.k)" style="font-size:12px;font-weight:'+(act?700:500)+';padding:4px 12px;border-radius:20px;border:1px solid '+(act?'var(--purple)':'var(--border)')+';background:'+(act?'var(--purple)':'var(--bg)')+';color:'+(act?'#fff':'var(--text2)')+';cursor:pointer">'+fd.label+' <span style="font-size:11px;opacity:0.7">'+fd.n+'</span></button>';
-      });
-      return fbar+'</div>';
-    })()
     +coverageHtml
     +'<div class="card">'
     +'<div class="card-title"><i class="ti ti-table"></i> SFP Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· CR als % aller Gespräche · Gut ≥ '+CR_GOOD+'%'+(showTrend?' · Pfeil = Trend vs. 7-Tage-Ø':'')+'</span></div>'
@@ -2193,6 +2226,7 @@ function renderTeam(){
     +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Aktion</th>'
     +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
     +'</div>'
+    ))
     +'</div>';
   // ── Team Performance Trend Chart.js ──
   window._teamChartData=null;
