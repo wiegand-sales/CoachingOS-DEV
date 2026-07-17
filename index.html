@@ -1667,6 +1667,24 @@ function naechsteGeplanteSession(id){
   return p[0].date;
 }
 
+// Persönliche Bestwerte (Highscores) über die gesamte Performance-Historie
+function personalBestEvents(empId){
+  var rows=(performance[empId]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var fields=[{key:'optGesamt',label:'Optimierungen gesamt'},{key:'aktivitaeten',label:'Aktivitäten'}];
+  var events=[];
+  fields.forEach(function(f){
+    var max=null;
+    rows.forEach(function(r){
+      var v=r[f.key];
+      if(v===undefined||v===null)return;
+      if(max!==null&&v>max){
+        events.push({date:r.date,label:'Bestwert '+f.label+': '+Math.round(v)+' (bisher: '+Math.round(max)+')'});
+      }
+      if(max===null||v>max)max=v;
+    });
+  });
+  return events;
+}
 function kpiMilestones(empId){
   var perf=(performance[empId]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   var emp=employees.find(function(e){return e.id===empId;});
@@ -2385,54 +2403,82 @@ function renderTab(){
   // ── TIMELINE TAB ──
   if(activeTab==='timeline'){
 
-    // Kombinierte Timeline: Sessions + Reviews + KPI-Meilensteine
+    // Kombinierte Timeline: Sessions + Reviews + KPI-Meilensteine + Highscores
     var tlEvents=[];
     (protocols[emp.id]||[]).forEach(function(s){
       var _dur=sessionDuration(s.uhrzeit,s.endUhrzeit);
-      tlEvents.push({date:s.date,kind:'session',icon:'ti-message-circle',col:'var(--purple)',bg:'rgba(32,106,114,0.10)',
+      tlEvents.push({date:s.date,kind:'session',icon:'ti-message-circle',col:'var(--purple)',
         title:(s.type||'Session')+(s.status==='geplant'?' (geplant)':'')+(_dur?' · '+formatDuration(_dur):''),
         sub:(s.topics&&s.topics.length?s.topics.join(', '):(s.focus||''))});
     });
     (reviews[emp.id]||[]).forEach(function(r){
       var isEval=r.einwand!==undefined;
-      tlEvents.push({date:r.date,kind:'review',icon:isEval?'ti-clipboard-check':'ti-calendar-event',col:'var(--blue)',bg:'rgba(126,210,219,0.16)',
+      tlEvents.push({date:r.date,kind:'review',icon:isEval?'ti-clipboard-check':'ti-calendar-event',col:'var(--blue-dark)',
         title:isEval?'Mitarbeiterentwicklung bewertet':(r.type||'Review')+(r.status==='geplant'?' (geplant)':''),
         sub:isEval?(r.note||''):(r.rating||r.notes||'')});
     });
     kpiMilestones(emp.id).forEach(function(m){
-      tlEvents.push({date:m.date,kind:'milestone',icon:'ti-trophy',col:'var(--amber-dark)',bg:'rgba(217,65,9,0.10)',title:m.label,sub:''});
+      tlEvents.push({date:m.date,kind:'milestone',icon:'ti-trophy',col:'var(--amber-dark)',title:m.label,sub:''});
+    });
+    personalBestEvents(emp.id).forEach(function(p){
+      tlEvents.push({date:p.date,kind:'record',icon:'ti-confetti',col:'#174C52',title:p.label,sub:'Neuer persönlicher Bestwert 🎉'});
     });
     (employeeHistory[emp.id]||[]).forEach(function(h){
       var fieldLabel=h.field==='team'?'Team':'Rolle';
-      tlEvents.push({date:h.changedAt?h.changedAt.slice(0,10):'',kind:'history',icon:'ti-arrows-exchange',col:'var(--text2)',bg:'var(--bg2)',
+      tlEvents.push({date:h.changedAt?h.changedAt.slice(0,10):'',kind:'history',icon:'ti-arrows-exchange',col:'var(--text2)',
         title:fieldLabel+'-Wechsel',sub:(h.oldValue||'—')+' → '+(h.newValue||'—')});
     });
     (goals[emp.id]||[]).forEach(function(g){
-      tlEvents.push({date:g.createdAt?g.createdAt.slice(0,10):'',kind:'goal',icon:'ti-flag',col:'var(--purple)',bg:'rgba(32,106,114,0.10)',
+      tlEvents.push({date:g.createdAt?g.createdAt.slice(0,10):'',kind:'goal',icon:'ti-flag',col:'var(--purple)',
         title:'Ziel vereinbart',sub:g.description+(g.targetDate?' (bis '+fd(g.targetDate)+')':'')});
     });
     tlEvents.sort(function(a,b){return b.date.localeCompare(a.date);});
 
-    html+='<div class="sec-title" style="margin-bottom:10px">Timeline <span style="font-weight:400;text-transform:none;letter-spacing:0">· Sessions, Reviews & Meilensteine in einer Ansicht</span></div>';
+    // ── 5 Kacheln: Werdegang auf einen Blick ──
+    var tenureDays=emp.startDate?Math.floor((new Date(today()+'T00:00:00')-new Date(emp.startDate+'T00:00:00'))/86400000):null;
+    var tenureTxt=tenureDays===null?'—':tenureDays<30?tenureDays+' Tage':tenureDays<365?Math.floor(tenureDays/30)+' Monate':(tenureDays/365).toFixed(1)+' Jahre';
+    var sessTotal=(protocols[emp.id]||[]).filter(function(p){return p.status!=='geplant';}).length;
+    var qaTotal=(callRatings[emp.id]||[]).length;
+    var goalsAll=goals[emp.id]||[];
+    var goalsDone=goalsAll.filter(function(g){return g.status==='done'||g.status==='erreicht';}).length;
+    var bestOpt=(performance[emp.id]||[]).reduce(function(a,r){return Math.max(a,r.optGesamt||0);},0);
+    var tiles=[
+      {label:'Bei Wiegand seit',val:tenureTxt,sub:emp.startDate?fd(emp.startDate):'—',col:'#206A72',bg:'rgba(32,106,114,0.10)'},
+      {label:'Sessions gesamt',val:sessTotal,sub:'abgeschlossen',col:'#32A8B4',bg:'rgba(50,168,180,0.12)'},
+      {label:'Calls bewertet',val:qaTotal,sub:'QA gesamt',col:'#7ED2DB',bg:'rgba(126,210,219,0.18)'},
+      {label:'Ziele erreicht',val:goalsDone+'/'+goalsAll.length,sub:goalsAll.length?Math.round(goalsDone/goalsAll.length*100)+'%':'—',col:'#2A8792',bg:'rgba(42,135,146,0.12)'},
+      {label:'Bestwert Opt.',val:bestOpt||'—',sub:'höchster Tageswert',col:'#174C52',bg:'rgba(23,76,82,0.10)'}
+    ];
+    html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
+    tiles.forEach(function(t){
+      html+='<div class="card" style="padding:12px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div><div style="font-size:10.5px;font-weight:700;color:'+t.col+'">'+t.label.toUpperCase()+'</div><div style="font-size:10.5px;color:'+t.col+';opacity:0.8;margin-top:1px">'+t.sub+'</div></div>';
+      html+='<div style="font-size:20px;font-weight:700;color:'+t.col+'">'+t.val+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+
+    // ── Timeline: eine weiße Box, Highscores türkis hervorgehoben, alle Zeilen gleich hoch ──
+    html+='<div class="card">';
+    html+='<div class="card-title"><i class="ti ti-timeline"></i> Timeline <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· Sessions, Reviews, Meilensteine & Highscores</span></div>';
     if(!tlEvents.length){
-      html+='<div class="card" style="text-align:center;color:var(--text3);padding:32px"><i class="ti ti-timeline" style="font-size:28px;display:block;margin-bottom:8px"></i>Noch keine Ereignisse vorhanden</div>';
+      html+='<div style="text-align:center;color:var(--text3);padding:24px"><i class="ti ti-timeline" style="font-size:26px;display:block;margin-bottom:8px"></i>Noch keine Ereignisse vorhanden</div>';
     } else {
-      html+='<div style="position:relative;padding-left:20px">';
-      html+='<div style="position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--border)"></div>';
+      html+='<div style="display:flex;flex-direction:column;gap:6px">';
       tlEvents.forEach(function(ev){
-        html+='<div style="position:relative;margin-bottom:14px">';
-        html+='<div style="position:absolute;left:-20px;top:3px;width:12px;height:12px;border-radius:50%;background:'+ev.col+';border:2px solid var(--bg-solid)"></div>';
-        html+='<div class="card" style="padding:10px 14px;margin-bottom:0">';
-        html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">';
-        html+='<i class="ti '+ev.icon+'" style="font-size:14px;color:'+ev.col+'"></i>';
-        html+='<span style="font-size:12px;font-weight:700">'+fd(ev.date)+'</span>';
-        html+='<span style="font-size:11px;color:var(--text2)">· '+ev.title+'</span>';
-        html+='</div>';
-        if(ev.sub)html+='<div style="font-size:11.5px;color:var(--text2);padding-left:22px">'+ev.sub+'</div>';
+        var isRecord=ev.kind==='record';
+        var rowBg=isRecord?'rgba(126,210,219,0.28)':'rgba(0,0,0,0.03)';
+        var rowBorder=isRecord?'#7ED2DB':'var(--border2)';
+        html+='<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:'+rowBg+';border:1px solid '+rowBorder+';border-radius:var(--r-md);min-height:20px">';
+        html+='<i class="ti '+ev.icon+'" style="font-size:15px;color:'+ev.col+';margin-top:1px;flex-shrink:0"></i>';
+        html+='<div style="flex:1;min-width:0">';
+        html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:12px;font-weight:700">'+fd(ev.date)+'</span><span style="font-size:11.5px;color:var(--text2)">· '+ev.title+'</span></div>';
+        html+='<div style="font-size:11.5px;color:var(--text2);margin-top:2px">'+(ev.sub||'\u00A0')+'</div>';
         html+='</div></div>';
       });
       html+='</div>';
     }
+    html+='</div>'; // Ende Timeline-Karte
   }
 
   // ── PERFORMANCE TAB ──
