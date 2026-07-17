@@ -2191,12 +2191,11 @@ function renderTeam(){
         s+='<option value="'+fd.key+'"'+(teamFilter===fd.key?' selected':'')+'>'+(fd.key==='ALL'?'Anzeigen: Alle':fd.label)+' ('+fd.n+')</option>';
       });
       s+='</select>';
-      s+='</div>';
-      // Metrik-Umschalter für den Chart
-      s+='<div class="chart-toggle" style="margin-bottom:10px">';
+      s+='<select onchange="setTeamMetric(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
       TMETRICS.forEach(function(it){
-        s+='<button class="'+(teamPerfMetric===it.k?'active':'')+'" data-m="'+it.k+'" onclick="setTeamMetric(this.dataset.m)">'+it.l+'</button>';
+        s+='<option value="'+it.k+'"'+(teamPerfMetric===it.k?' selected':'')+'>'+it.l+'</option>';
       });
+      s+='</select>';
       s+='</div>';
       s+='<div style="position:relative;height:260px"><canvas id="teamPerfChart"></canvas></div></div>';
       return s;
