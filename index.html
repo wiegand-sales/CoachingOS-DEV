@@ -2577,7 +2577,7 @@ function renderTab(){
 
     html+='<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end;align-items:center">';
     if(callRat.length>1){
-      html+='<select onchange="window._selCallId=this.value;renderTab()" style="font-size:13px;font-weight:500;padding:7px 13px;border:1px solid var(--border2);border-radius:var(--r-md);background:rgba(255,255,255,0.5);color:var(--text);cursor:pointer;font-family:inherit">';
+      html+='<select onchange="window._selCallId=this.value;renderTab()" style="width:auto;font-size:13px;font-weight:500;padding:7px 13px;border:1px solid var(--border2);border-radius:var(--r-md);background:rgba(255,255,255,0.5);color:var(--text);cursor:pointer;font-family:inherit">';
       callRat.forEach(function(r,i){
         var sel=(showCall&&r.id===showCall.id)?' selected':'';
         html+='<option value="'+r.id+'"'+sel+'>'+r.date+(i===0?' ★':'')+'</option>';
