@@ -3045,11 +3045,6 @@ function renderTab(){
 
     html+='<div>';
     html+='<div style="position:relative;height:340px"><canvas id="sessRadar"></canvas></div>';
-    html+='<div style="display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap">';
-    ['skill','will','result'].forEach(function(cat){
-      html+='<span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:'+SCCAT[cat].col+'"><span style="width:10px;height:10px;border-radius:50%;background:'+SCCAT[cat].col+';display:inline-block"></span>'+SCCAT[cat].l+'</span>';
-    });
-    html+='</div>';
     html+='</div>';
 
     html+='<div>';
