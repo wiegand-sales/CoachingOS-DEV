@@ -2969,22 +2969,25 @@ function renderTab(){
       result:{col:'#0A6B55',fill:'rgba(10,107,85,0.15)',  bg:'#E1F5EE', l:'Result'}
     };
     var sessions=(protocols[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+    var completedSessions=sessions.filter(function(s){return s.status!=='geplant';});
+    var plannedSessions=sessions.filter(function(s){return s.status==='geplant';}).sort(function(a,b){return a.date.localeCompare(b.date);});
 
-    // Zähle Sessions pro Topic
+    // Zähle abgeschlossene Sessions pro Topic (geplante zählen noch nicht mit)
     var tc={};SDIMS.forEach(function(d){tc[d.key]=0;});
-    sessions.forEach(function(s){(s.topics||[]).forEach(function(t){if(tc[t]!==undefined)tc[t]++;});});
+    completedSessions.forEach(function(s){(s.topics||[]).forEach(function(t){if(tc[t]!==undefined)tc[t]++;});});
     var maxVal=Math.max(1,Math.max.apply(null,SDIMS.map(function(d){return tc[d.key];})));
     var catSum={skill:0,will:0,result:0};
     SDIMS.forEach(function(d){catSum[d.cat]+=tc[d.key];});
 
-    // ── Kopfzeile: nur noch der Erfassen-Button (Titel wandert in die Karte) ──
-    html+='<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px">';
+    // ── Kopfzeile: Coaching planen + Neues Coaching erfassen ──
+    html+='<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px">';
+    html+='<button class="btn" data-eid="'+emp.id+'" onclick="openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-event"></i> Coaching planen</button>';
     html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neues Coaching erfassen</button>';
     html+='</div>';
 
     // ── Coaching-Übersicht: EINE Karte, links Spinnendiagramm, rechts Zusammenfassung ──
     html+='<div class="card" style="margin-bottom:12px">';
-    html+='<div class="card-title"><i class="ti ti-chart-radar"></i> Coaching-Übersicht <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+sessions.length+' Sessions gesamt</span></div>';
+    html+='<div class="card-title"><i class="ti ti-chart-radar"></i> Coaching-Übersicht <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+completedSessions.length+' abgeschlossene Sessions</span></div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">';
 
     html+='<div>';
@@ -3011,6 +3014,26 @@ function renderTab(){
     html+='</div>'; // Ende 2-Spalten-Grid
     html+='</div>'; // Ende Karte
 
+    // ── Geplante Coachings ──
+    if(plannedSessions.length){
+      html+='<div class="sec-title" style="margin-bottom:10px">Geplante Coachings <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">('+plannedSessions.length+')</span></div>';
+      html+='<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">';
+      plannedSessions.forEach(function(s){
+        var dtP=new Date(s.date+'T00:00:00'),dfP=Math.round((dtP-new Date(today()+'T00:00:00'))/86400000);
+        var whenTxt=dfP===0?'Heute':dfP===1?'Morgen':dfP<0?'Überfällig':'in '+dfP+' Tagen';
+        var whenCol=dfP<0?'var(--red)':dfP<=1?'var(--amber-dark)':'var(--purple)';
+        html+='<div class="card" style="margin-bottom:0;display:flex;align-items:center;gap:12px;cursor:pointer" data-eid="'+emp.id+'" data-sid="'+s.id+'" data-typ="'+(s.type||'')+'" data-fokus="'+(s.focus||'')+'" data-datum="'+s.date+'" data-uhrzeit="'+(s.uhrzeit||'')+'" onclick="openPlannedSession(this.dataset.eid,this.dataset.sid,this.dataset.typ,this.dataset.fokus,this.dataset.datum,this.dataset.uhrzeit)">';
+        html+='<div style="width:8px;height:8px;border-radius:50%;background:'+whenCol+';flex-shrink:0"></div>';
+        html+='<div style="font-size:12px;font-weight:700;white-space:nowrap">'+fd(s.date)+(s.uhrzeit?' · '+s.uhrzeit:'')+'</div>';
+        html+='<span class="badge">'+(s.type||'Coaching')+'</span>';
+        html+='<span style="font-size:12px;color:var(--purple);flex:1">'+(s.focus||'')+'</span>';
+        html+='<span style="font-size:11px;font-weight:600;color:'+whenCol+'">'+whenTxt+'</span>';
+        html+='<i class="ti ti-chevron-right" style="color:var(--text3)"></i>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+
     // ── Zone 3: Einklappbare Themen-Details ──
     html+='<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden">';
     html+='<div onclick="var b=document.getElementById(\'topicDetailBody\');var a=document.getElementById(\'topicDetailArrow\');var open=b.style.display!==\'none\';b.style.display=open?\'none\':\'block\';a.style.transform=open?\'rotate(0deg)\':\'rotate(180deg)\';" style="padding:12px 17px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">';
@@ -3035,13 +3058,13 @@ function renderTab(){
     });
     html+='</div></div>';
 
-    // ── Zone 4: Coaching-Historie (volle Breite) ──
-    html+='<div class="sec-title" style="margin-bottom:10px">Coaching-Historie <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">('+sessions.length+')</span></div>';
-    if(!sessions.length){
+    // ── Zone 4: Coaching-Historie (volle Breite, nur abgeschlossene) ──
+    html+='<div class="sec-title" style="margin-bottom:10px">Coaching-Historie <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">('+completedSessions.length+')</span></div>';
+    if(!completedSessions.length){
       html+='<div class="card" style="text-align:center;color:var(--text3);padding:32px"><i class="ti ti-calendar-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Noch keine Coachings erfasst<div style="margin-top:10px"><button class="btn btn-sm btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-plus"></i> Jetzt erfassen</button></div></div>';
     } else {
       html+='<div style="display:flex;flex-direction:column;gap:8px">';
-      sessions.forEach(function(s,idx){
+      completedSessions.forEach(function(s,idx){
         var eid='se'+emp.id+'x'+idx;
         var RM={Teilweise:{c:'var(--amber)'},Yes:{c:'var(--teal)'},'Super Yes':{c:'var(--purple)'},'Mega Yes':{c:'var(--blue)'}};
         var rm=s.rating?RM[s.rating]:null;
