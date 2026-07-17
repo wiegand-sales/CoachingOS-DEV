@@ -2093,7 +2093,7 @@ function renderTeam(){
     +'<div class="tab'+(wiegandView==='team'?' active':'')+'" onclick="setWiegandView(\'team\')">Team</div>'
     +'</div>'
     +'<div class="content">'
-    +(wiegandView==='overview'?(''
+    +(wiegandView==='team'?(''
     // KPI Kacheln (reiches Format wie Coaching Sessions: Trend-Pfeil + Sparkline)
     +(function(){
       var oemOk2=KPI_TARGETS.crOEM.dir==='lte'?(oemD!==null&&oemD<=KPI_TARGETS.crOEM.val):(oemD!==null&&oemD>=KPI_TARGETS.crOEM.val);var oemCol=oemD!==null&&oemOk2?'#206A72':'var(--amber-dark)';
@@ -2169,30 +2169,29 @@ function renderTeam(){
         {k:'margeGesamt',l:'Marge',      c:'#9FE1E8'},
       ];
       var s='<div class="card" style="margin-bottom:22px">';
-      // Filter-Zeile: Zeitraum-Schnellwahl + Von-Bis + Anzeigen-Dropdown
-      s+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">';
-      s+='<div class="card-title" style="margin:0">Team Performance Trend</div>';
-      s+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-      s+='<div style="display:flex;border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden">';
+      s+='<div class="card-title" style="margin-bottom:14px">Team Performance Trend</div>';
+      // Filter-Zeile: Zeitraum-Schnellwahl + Von-Bis + Anzeigen-Dropdown (einheitliche Höhe, eigene Zeile)
+      s+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">';
+      s+='<div style="display:flex;border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden;height:34px">';
       [7,14,30,90].forEach(function(dd){
-        s+='<button style="padding:6px 12px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===dd?'var(--purple)':'transparent')+';color:'+(!customActive&&days===dd?'#fff':'var(--text2)')+'" onclick="setTeamRange('+dd+')">'+dd+'T</button>';
+        s+='<button style="padding:0 14px;height:100%;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===dd?'var(--purple)':'transparent')+';color:'+(!customActive&&days===dd?'#fff':'var(--text2)')+'" onclick="setTeamRange('+dd+')">'+dd+' Tage</button>';
       });
       s+='</div>';
-      s+='<div style="display:flex;align-items:center;gap:5px;padding:4px 6px;border:1px solid '+(customActive?'var(--purple)':'var(--border2)')+';border-radius:var(--r-md);background:'+(customActive?'var(--purple-bg)':'transparent')+'">';
-      s+='<span style="font-size:11px;color:var(--text2);padding-left:4px">Von</span>';
-      s+='<input type="date" id="teamFromDate" value="'+(teamCustomFrom||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:2px;width:120px">';
+      s+='<div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;border:1px solid '+(customActive?'var(--purple)':'var(--border2)')+';border-radius:var(--r-md);background:'+(customActive?'var(--purple-bg)':'transparent')+'">';
+      s+='<span style="font-size:11px;color:var(--text2)">Von</span>';
+      s+='<input type="date" id="teamFromDate" value="'+(teamCustomFrom||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:112px">';
       s+='<span style="font-size:11px;color:var(--text2)">Bis</span>';
-      s+='<input type="date" id="teamToDate" value="'+(teamCustomTo||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:2px;width:120px">';
-      s+='<button class="btn btn-sm'+(customActive?' btn-primary':'')+'" style="padding:4px 10px" onclick="applyTeamCustomRange()"><i class="ti ti-check"></i></button>';
+      s+='<input type="date" id="teamToDate" value="'+(teamCustomTo||'')+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:112px">';
+      s+='<button class="btn btn-sm'+(customActive?' btn-primary':'')+'" style="padding:4px 8px" onclick="applyTeamCustomRange()"><i class="ti ti-check"></i></button>';
       s+=(customActive?'<button class="btn btn-sm" style="padding:4px 8px" onclick="clearTeamCustomRange()" title="Custom-Zeitraum zurücksetzen"><i class="ti ti-x"></i></button>':'');
       s+='</div>';
-      s+='<select onchange="setTeamFilter(this.value)" style="width:auto;font-size:12px;font-weight:500;padding:7px 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:rgba(255,255,255,0.6);color:var(--text);cursor:pointer">';
+      s+='<select onchange="setTeamFilter(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
       FDEFS.forEach(function(fd){
         if(!fd.n&&fd.key!=='ALL')return;
         s+='<option value="'+fd.key+'"'+(teamFilter===fd.key?' selected':'')+'>'+(fd.key==='ALL'?'Anzeigen: Alle':fd.label)+' ('+fd.n+')</option>';
       });
       s+='</select>';
-      s+='</div></div>';
+      s+='</div>';
       // Metrik-Umschalter für den Chart
       s+='<div class="chart-toggle" style="margin-bottom:10px">';
       TMETRICS.forEach(function(it){
@@ -2202,8 +2201,7 @@ function renderTeam(){
       s+='<div style="position:relative;height:260px"><canvas id="teamPerfChart"></canvas></div></div>';
       return s;
     })()
-    ):(''
-    // ── TEAM TAB: Alert Banner + Coaching-Abdeckung + SFP Performance Tabelle ──
+    // ── Alert Banner + Coaching-Abdeckung + SFP Performance Tabelle (alles unter Team) ──
     // Alert Banner
     +(totalAlerts>0?'<div class="alert alert-warn" style="margin-bottom:18px"><i class="ti ti-alert-triangle" style="font-size:18px;color:var(--amber);flex-shrink:0"></i><div><div style="font-size:13px;font-weight:600;color:var(--amber-dark)">'+totalAlerts+' Performance-Alert'+(totalAlerts!==1?'s':'')+' im Team</div><div style="font-size:12px;color:var(--amber-dark)">'+list.filter(function(e){return checkAlerts(e.id).length>0;}).map(function(e){return e.name;}).join(', ')+'</div></div></div>':'')
     +coverageHtml
@@ -2226,7 +2224,7 @@ function renderTeam(){
     +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Aktion</th>'
     +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
     +'</div>'
-    ))
+    ):('<div class="card" style="text-align:center;color:var(--text3);padding:40px"><i class="ti ti-layout-dashboard" style="font-size:32px;display:block;margin-bottom:10px"></i>Overview folgt noch</div>'))
     +'</div>';
   // ── Team Performance Trend Chart.js ──
   window._teamChartData=null;
