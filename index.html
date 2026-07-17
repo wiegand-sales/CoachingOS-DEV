@@ -3732,12 +3732,12 @@ function renderTab(){
           var good=delta!==null&&(target===null?delta>0:(tk&&empT[tk]&&empT[tk].dir==='lte'?delta<0:delta>0));
           var deltaTxt=delta===null?'—':(delta>0?'+':'')+delta.toFixed(1);
           var arrow=delta===null?'':(delta>0?'↑':delta<0?'↓':'→');
-          return '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border)">'
+          return '<div style="display:flex;align-items:center;gap:14px;padding:10px 12px;margin-bottom:6px;background:rgba(0,0,0,0.045);border:1px solid var(--border2);border-radius:var(--r-md)">'
             +'<div style="width:80px;font-size:12px;font-weight:600;flex-shrink:0">'+fd(s.date)+'</div>'
             +'<div style="flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.type||'Coaching')+(s.focus?' · '+s.focus:'')+'</div>'
-            +'<div style="font-size:12px;color:var(--text3);width:70px;text-align:right">Ø vorher<br><b style="color:var(--text)">'+(before!==null?before.toFixed(1):'—')+'</b></div>'
-            +'<div style="font-size:12px;color:var(--text3);width:70px;text-align:right">Ø nachher<br><b style="color:var(--text)">'+(after!==null?after.toFixed(1):'—')+'</b></div>'
-            +'<div style="width:70px;text-align:right;font-size:13px;font-weight:700;color:'+(delta===null?'var(--text3)':good?'var(--teal-dark)':'var(--red)')+'">'+arrow+' '+deltaTxt+'</div>'
+            +'<div style="font-size:11px;color:var(--text2);font-weight:600;width:70px;text-align:right">Ø vorher<br><b style="font-size:14px;color:var(--text)">'+(before!==null?before.toFixed(1):'—')+'</b></div>'
+            +'<div style="font-size:11px;color:var(--text2);font-weight:600;width:70px;text-align:right">Ø nachher<br><b style="font-size:14px;color:var(--text)">'+(after!==null?after.toFixed(1):'—')+'</b></div>'
+            +'<div style="width:70px;text-align:right;font-size:14px;font-weight:700;color:'+(delta===null?'var(--text3)':good?'var(--teal-dark)':'var(--red)')+'">'+arrow+' '+deltaTxt+'</div>'
             +'</div>';
         }
         var visibleRows=sortedRelevant.slice(0,3).map(buildRow).join('');
