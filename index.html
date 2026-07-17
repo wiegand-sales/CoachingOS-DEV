@@ -2992,10 +2992,6 @@ function renderTab(){
       html+='<span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:'+SCCAT[cat].col+'"><span style="width:10px;height:10px;border-radius:50%;background:'+SCCAT[cat].col+';display:inline-block"></span>'+SCCAT[cat].l+'</span>';
     });
     html+='</div>';
-    html+='<div style="display:flex;gap:8px;margin-top:16px">';
-    html+='<button class="btn" data-eid="'+emp.id+'" onclick="openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-event"></i> Session planen</button>';
-    html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neue Session erfassen</button>';
-    html+='</div>';
     html+='</div>';
 
     html+='<div>';
@@ -3007,6 +3003,17 @@ function renderTab(){
       html+='<div style="font-size:32px;font-weight:700;color:'+SCCAT[cat].col+'">'+s+'</div>';
       html+='</div>';
     });
+    (function(){
+      var totalDurationMin=completedSessions.reduce(function(sum,s){return sum+(sessionDuration(s.uhrzeit,s.endUhrzeit)||0);},0);
+      html+='<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:14px;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div><div style="font-size:11px;font-weight:700;color:var(--text)">GESAMT</div><div style="font-size:11px;color:var(--text2);opacity:0.8;margin-top:2px">'+(totalDurationMin?formatDuration(totalDurationMin)+' Gesamtdauer':'Sessions insgesamt')+'</div></div>';
+      html+='<div style="font-size:32px;font-weight:700;color:var(--text)">'+completedSessions.length+'</div>';
+      html+='</div>';
+    })();
+    html+='</div>';
+    html+='<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">';
+    html+='<button class="btn" data-eid="'+emp.id+'" onclick="openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-event"></i> Session planen</button>';
+    html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neue Session erfassen</button>';
     html+='</div>';
     html+='</div>';
 
