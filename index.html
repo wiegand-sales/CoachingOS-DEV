@@ -2416,11 +2416,11 @@ function renderTab(){
       var v=avgRange(k.key);var vR=v!==null?(k.pct?Math.round(v):+v.toFixed(1)):null;
       var col=v!==null?kpiCol(v,k.target,k.dir):'var(--text3)';
       var hit=v!==null&&(k.dir==='lte'?v<=k.target:v>=k.target);
-      html+='<div class="kpi" style="border-top-color:'+col+'">'
-        +'<div class="kpi-label" style="color:'+col+'">'+k.label+'</div>'
-        +'<div class="kpi-val" style="color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
-        +'<div class="kpi-sub" style="color:'+(v!==null?(hit?'var(--teal)':'var(--red)'):'var(--text3)')
-        +'">Ziel '+(k.dir==='gte'?'≥':'≤')+k.target+(k.pct?'%':'')+' '+(v!==null?(hit?'✓':'↓'):'')+'</div>'
+      var subCol=v!==null?(hit?'var(--teal-dark)':'var(--red)'):'var(--text3)';
+      html+='<div class="card" style="padding:12px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between">'
+        +'<div><div style="font-size:10.5px;font-weight:700;color:'+col+'">'+k.label.toUpperCase()+'</div>'
+        +'<div style="font-size:10.5px;color:'+subCol+';opacity:0.85;margin-top:1px">Ziel '+(k.dir==='gte'?'≥':'≤')+k.target+(k.pct?'%':'')+' '+(v!==null?(hit?'✓':'↓'):'')+'</div></div>'
+        +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
         +'</div>';
     });
     html+='</div>';
