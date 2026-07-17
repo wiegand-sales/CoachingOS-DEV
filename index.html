@@ -3469,9 +3469,10 @@ function renderTab(){
     var empTasks=tasks[emp.id]||[];
     var todayStr=today();
     function isOD(t){return !t.done&&t.dueDate&&t.dueDate<todayStr;}
-    var openTasks=empTasks.filter(function(t){return !t.done&&!isOD(t);});
+    var openTasks=empTasks.filter(function(t){return !isOD(t)&&(t.status||'open')==='open';});
+    var inProgressTasks=empTasks.filter(function(t){return !isOD(t)&&t.status==='in_progress';});
     var overdueTasks=empTasks.filter(function(t){return isOD(t);});
-    var doneTasks=empTasks.filter(function(t){return t.done;});
+    var doneTasks=empTasks.filter(function(t){return t.done||t.status==='done';});
     var prioStyle={high:{bg:'var(--red-bg)',color:'var(--red)'},medium:{bg:'var(--amber-bg)',color:'var(--amber-dark)'},low:{bg:'var(--bg2)',color:'var(--text2)'}};
     // ── Automatisch generierte Aufgabe: QA-Bewertungspflicht (Ziel 5 Calls / 60 Tage) ──
     var qaDue=qaCallsDue(emp.id);
@@ -3488,14 +3489,30 @@ function renderTab(){
         +'<button class="btn btn-sm btn-primary" data-eid="'+emp.id+'" onclick="event.stopPropagation();openQaBewertungModal(this.dataset.eid)"><i class="ti ti-phone-plus"></i> Bewerten</button>'
         +'</div></div>';
     }
-    // Summary
-    html+='<div class="g3" style="margin-bottom:20px">'
-      +'<div class="kpi" style="border-top-color:var(--purple)"><div class="kpi-label" style="color:var(--purple)">Open</div><div class="kpi-val" style="color:var(--purple)">'+openTasks.length+'</div><div class="kpi-sub">'+(openTasks.length===0?'All clear':'task'+(openTasks.length!==1?'s':'')+' to do')+'</div></div>'
-      +'<div class="kpi" style="border-top-color:'+(overdueTasks.length>0?'var(--red)':'var(--teal)')+'"><div class="kpi-label" style="color:'+(overdueTasks.length>0?'var(--red)':'var(--teal)')+'">Overdue</div><div class="kpi-val" style="color:'+(overdueTasks.length>0?'var(--red)':'var(--teal)')+'">'+overdueTasks.length+'</div><div class="kpi-sub">'+(overdueTasks.length>0?'Frist überschritten':'no overdue tasks')+'</div></div>'
-      +'<div class="kpi" style="border-top-color:var(--teal)"><div class="kpi-label" style="color:var(--teal)">Completed</div><div class="kpi-val" style="color:var(--teal)">'+doneTasks.length+'</div><div class="kpi-sub">'+(empTasks.length>0?Math.round(doneTasks.length/empTasks.length*100)+'% completion':'noch keine Aufgaben')+'</div></div>'
+    var qaHighUrgent=qaDue.due>0&&qaDue.cnt===0;
+    var qaLowUrgent=qaDue.due>0&&qaDue.cnt>0;
+    var openCount=openTasks.length+(qaLowUrgent?1:0);
+    var overdueCount=overdueTasks.length+(qaHighUrgent?1:0);
+
+    // ── 4 Kacheln: Open / Overdue / In Progress / Completed ──
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">'
+      +'<div class="card" style="padding:12px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between">'
+      +'<div><div style="font-size:10.5px;font-weight:700;color:var(--purple)">OPEN</div><div style="font-size:10.5px;color:var(--text3);margin-top:1px">'+(openCount===0?'Alles erledigt':'zu erledigen')+'</div></div>'
+      +'<div style="font-size:20px;font-weight:700;color:var(--purple)">'+openCount+'</div></div>'
+
+      +'<div class="card" style="padding:12px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between">'
+      +'<div><div style="font-size:10.5px;font-weight:700;color:'+(overdueCount>0?'var(--red)':'var(--teal-dark)')+'">OVERDUE</div><div style="font-size:10.5px;color:var(--text3);margin-top:1px">'+(overdueCount>0?'Frist überschritten':'keine überfällig')+'</div></div>'
+      +'<div style="font-size:20px;font-weight:700;color:'+(overdueCount>0?'var(--red)':'var(--teal-dark)')+'">'+overdueCount+'</div></div>'
+
+      +'<div class="card" style="padding:12px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between">'
+      +'<div><div style="font-size:10.5px;font-weight:700;color:#32A8B4">IN PROGRESS</div><div style="font-size:10.5px;color:var(--text3);margin-top:1px">in Bearbeitung</div></div>'
+      +'<div style="font-size:20px;font-weight:700;color:#32A8B4">'+inProgressTasks.length+'</div></div>'
+
+      +'<div class="card" style="padding:12px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between">'
+      +'<div><div style="font-size:10.5px;font-weight:700;color:var(--teal-dark)">COMPLETED</div><div style="font-size:10.5px;color:var(--text3);margin-top:1px">'+(empTasks.length>0?Math.round(doneTasks.length/empTasks.length*100)+'% abgeschlossen':'noch keine Aufgaben')+'</div></div>'
+      +'<div style="font-size:20px;font-weight:700;color:var(--teal-dark)">'+doneTasks.length+'</div></div>'
       +'</div>';
-    html+='<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn btn-primary btn-sm" onclick="openModal(\'addTaskModal\')"><i class="ti ti-plus"></i> Add task</button></div>';
-    if(empTasks.length===0&&qaDue.due===0){html+='<div class="empty">No tasks yet. Add tasks manually or from a protocol.</div>';}
+
     function taskCard(t){
       var ps=prioStyle[t.priority]||prioStyle.low;
       var od=isOD(t);
@@ -3508,37 +3525,54 @@ function renderTab(){
         else if(dueDays===1){dueLabel='Morgen fällig';}
         else{dueLabel='Fällig in '+dueDays+'d';}
       }
+      var statusBadge=t.status==='in_progress'?'<span style="font-size:10px;font-weight:700;color:#32A8B4;background:rgba(50,168,180,0.12);padding:2px 7px;border-radius:20px;margin-left:6px">in progress</span>':'';
       return '<div class="task-item'+(od?' overdue':'')+(t.done?' done-item':'')+'" id="task-'+t.id+'">'
         +'<div class="task-row" onclick="toggleTaskDetail(\''+t.id+'\')">'
         +'<div class="task-check'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleTask(\''+t.id+'\')">'+(t.done?'<i class="ti ti-check" style="font-size:11px"></i>':'')+'</div>'
-        +'<div style="flex:1;min-width:0"><div class="task-title'+(t.done?' done':'')+'">'+(od?'<i class="ti ti-alert-circle" style="font-size:13px;color:var(--red);margin-right:4px"></i>':'')+t.text+'</div>'
+        +'<div style="flex:1;min-width:0"><div class="task-title'+(t.done?' done':'')+'">'+(od?'<i class="ti ti-alert-circle" style="font-size:13px;color:var(--red);margin-right:4px"></i>':'')+t.text+statusBadge+'</div>'
         +'<div class="task-meta">'+(t.source?'<span>'+t.source+'</span>':'')+( dueLabel?'<span style="color:'+dueColor+'">'+dueLabel+'</span>':'')+'</div></div>'
         +'<span class="task-prio" style="background:'+ps.bg+';color:'+ps.color+'">'+t.priority+'</span>'
         +'<button class="task-del" onclick="event.stopPropagation();deleteTask(\''+t.id+'\')"><i class="ti ti-x"></i></button>'
         +'</div>'
         +'<div class="task-detail" id="td-'+t.id+'">'+(t.description||'No description added.')
         +'<div class="task-actions">'
+        +(!t.done&&(t.status||'open')==='open'?'<button class="btn btn-sm" onclick="setTaskStatus(\''+t.id+'\',\'in_progress\')"><i class="ti ti-player-play"></i> Start</button>':'')
         +(!t.done?'<button class="btn btn-sm btn-primary" onclick="toggleTask(\''+t.id+'\')"><i class="ti ti-check"></i> Mark as done</button>':'<button class="btn btn-sm" onclick="toggleTask(\''+t.id+'\')"><i class="ti ti-rotate-left"></i> Reopen</button>')
         +'<button class="btn btn-sm btn-danger" onclick="deleteTask(\''+t.id+'\')"><i class="ti ti-trash"></i> Delete</button>'
         +'</div></div></div>';
     }
-    var qaHighUrgent=qaDue.due>0&&qaDue.cnt===0;
-    var qaLowUrgent=qaDue.due>0&&qaDue.cnt>0;
-    if(overdueTasks.length>0||qaHighUrgent){
-      html+='<div class="sec-title" style="color:var(--red)">Overdue ('+(overdueTasks.length+(qaHighUrgent?1:0))+')</div>';
-      if(qaHighUrgent)html+=qaTaskHtml;
-      overdueTasks.forEach(function(t){html+=taskCard(t);});
+
+    // ── Alle Aufgaben in einer weißen Box ──
+    html+='<div class="card">';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+    html+='<div class="card-title" style="margin:0"><i class="ti ti-checklist"></i> Aufgaben</div>';
+    html+='<button class="btn btn-primary btn-sm" onclick="openModal(\'addTaskModal\')"><i class="ti ti-plus"></i> Add task</button>';
+    html+='</div>';
+    if(empTasks.length===0&&qaDue.due===0){
+      html+='<div class="empty">No tasks yet. Add tasks manually or from a protocol.</div>';
+    } else {
+      if(overdueTasks.length>0||qaHighUrgent){
+        html+='<div class="sec-title" style="color:var(--red)">Overdue ('+overdueCount+')</div>';
+        if(qaHighUrgent)html+=qaTaskHtml;
+        overdueTasks.forEach(function(t){html+=taskCard(t);});
+      }
+      if(openTasks.length>0||qaLowUrgent){
+        html+='<div class="sec-title" style="margin-top:'+((overdueTasks.length||qaHighUrgent)?'16px':'0')+'">Open ('+openCount+')</div>';
+        if(qaLowUrgent)html+=qaTaskHtml;
+        openTasks.forEach(function(t){html+=taskCard(t);});
+      }
+      if(inProgressTasks.length>0){
+        html+='<div class="sec-title" style="margin-top:16px;color:#32A8B4">In Progress ('+inProgressTasks.length+')</div>';
+        inProgressTasks.forEach(function(t){html+=taskCard(t);});
+      }
+      if(doneTasks.length>0){
+        html+='<div class="sec-title" style="margin-top:16px">Completed ('+doneTasks.length+')</div>';
+        doneTasks.forEach(function(t){html+=taskCard(t);});
+      }
     }
-    if(openTasks.length>0||qaLowUrgent){
-      html+='<div class="sec-title" style="margin-top:'+((overdueTasks.length||qaHighUrgent)?'16px':'0')+'">Open ('+(openTasks.length+(qaLowUrgent?1:0))+')</div>';
-      if(qaLowUrgent)html+=qaTaskHtml;
-      openTasks.forEach(function(t){html+=taskCard(t);});
-    }
-    if(doneTasks.length>0){
-      html+='<div class="sec-title" style="margin-top:16px">Completed ('+doneTasks.length+')</div>';
-      doneTasks.forEach(function(t){html+=taskCard(t);});
-    }
+    html+='</div>'; // Ende Aufgaben-Karte
   }
+
 
 
   
@@ -4396,11 +4430,26 @@ function toggleTask(id){
   var t=(tasks[selectedEmp]||[]).find(function(x){return x.id===id;});
   if(!t)return;
   t.done=!t.done;
+  t.status=t.done?'done':'open';
   renderTab();
-  sb.from('tasks').update({done:t.done}).eq('id',id).then(function(res){
+  sb.from('tasks').update({done:t.done,status:t.status}).eq('id',id).then(function(res){
     if(res.error){
       alert('Fehler beim Speichern: '+res.error.message+'\n\nDie Änderung ist lokal sichtbar, aber NICHT gespeichert.');
-      t.done=!t.done;renderTab();
+      t.done=!t.done;t.status=t.done?'done':'open';renderTab();
+    }
+  });
+}
+function setTaskStatus(id,newStatus){
+  var t=(tasks[selectedEmp]||[]).find(function(x){return x.id===id;});
+  if(!t)return;
+  var oldStatus=t.status,oldDone=t.done;
+  t.status=newStatus;
+  t.done=(newStatus==='done');
+  renderTab();
+  sb.from('tasks').update({status:newStatus,done:t.done}).eq('id',id).then(function(res){
+    if(res.error){
+      alert('Fehler beim Speichern: '+res.error.message+'\n\nDie Änderung ist lokal sichtbar, aber NICHT gespeichert.');
+      t.status=oldStatus;t.done=oldDone;renderTab();
     }
   });
 }
@@ -4424,7 +4473,7 @@ function saveNewTask(){
   var source=document.getElementById('taskQuelle')?document.getElementById('taskQuelle').value.trim():'';
   if(!text)return;
   var payload={
-    employee_id:selectedEmp,text:text,description:desc,done:false,
+    employee_id:selectedEmp,text:text,description:desc,done:false,status:'open',
     priority:prio,due_date:due||null,source:source
   };
   sb.from('tasks').insert(payload).select().single().then(function(res){
@@ -4432,7 +4481,7 @@ function saveNewTask(){
     var r=res.data;
     if(!tasks[selectedEmp])tasks[selectedEmp]=[];
     tasks[selectedEmp].unshift({
-      id:r.id,text:r.text,description:r.description||'',done:false,
+      id:r.id,text:r.text,description:r.description||'',done:false,status:r.status||'open',
       priority:r.priority,dueDate:r.due_date,source:r.source||''
     });
     document.getElementById('taskText').value='';
@@ -4643,6 +4692,7 @@ function loadTasksFromSupabase(){
       if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
       byEmp[r.employee_id].push({
         id:r.id,text:r.text,description:r.description||'',done:r.done,
+        status:r.status||(r.done?'done':'open'),
         priority:r.priority,dueDate:r.due_date,source:r.source||''
       });
     });
@@ -4953,13 +5003,13 @@ function saveNewGoal(empId){
     // Zugehörige offene Aufgabe im Task-Tab anlegen
     var taskPayload={
       employee_id:empId,text:'Ziel: '+desc,description:(metricKey?focusMetricLabel(metricKey)+' auf '+targetValue+'% steigern':'')+(targetDate?' · bis '+fd(targetDate):''),
-      done:false,priority:'medium',due_date:targetDate,source:'Zielvereinbarung'
+      done:false,status:'open',priority:'medium',due_date:targetDate,source:'Zielvereinbarung'
     };
     sb.from('tasks').insert(taskPayload).select().single().then(function(tres){
       if(!tres.error){
         var tr=tres.data;
         if(!tasks[empId])tasks[empId]=[];
-        tasks[empId].unshift({id:tr.id,text:tr.text,description:tr.description||'',done:false,priority:tr.priority,dueDate:tr.due_date,source:tr.source||''});
+        tasks[empId].unshift({id:tr.id,text:tr.text,description:tr.description||'',done:false,status:tr.status||'open',priority:tr.priority,dueDate:tr.due_date,source:tr.source||''});
       }
       closeModal('goalModal');
       renderTab();
