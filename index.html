@@ -2483,7 +2483,8 @@ function renderTab(){
       +'<div style="display:flex;gap:16px;margin-top:8px;font-size:10.5px;color:var(--text2)">'
       +'<span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:1.5px dashed rgba(32,106,114,0.7);display:inline-block"></span>Coaching zu diesem KPI (Kürzel = Coach)</span>'
       +'<span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:1.5px dashed rgba(140,140,140,0.6);display:inline-block"></span>Coaching zu anderem Thema</span>'
-      +'</div><div id="coachImpactPanel"></div></div>';
+      +'</div></div>';
+    html+='<div id="coachImpactPanel"></div>';
     // Tabelle
     html+='<div class="card">';
     html+='<div class="card-title"><i class="ti ti-table"></i> Tagesübersicht</div>';
@@ -3723,7 +3724,8 @@ function renderTab(){
           var vals=rows.map(function(p){return p[m.f];}).filter(function(v){return v!==undefined&&v!==null;});
           return vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
         }
-        var rowsHtml=relevant.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,5).map(function(s){
+        var sortedRelevant=relevant.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+        function buildRow(s){
           var before=avgWindow(s.date,14,0);
           var after=avgWindow(s.date,0,14);
           var delta=(before!==null&&after!==null)?(after-before):null;
@@ -3737,10 +3739,18 @@ function renderTab(){
             +'<div style="font-size:12px;color:var(--text3);width:70px;text-align:right">Ø nachher<br><b style="color:var(--text)">'+(after!==null?after.toFixed(1):'—')+'</b></div>'
             +'<div style="width:70px;text-align:right;font-size:13px;font-weight:700;color:'+(delta===null?'var(--text3)':good?'var(--teal-dark)':'var(--red)')+'">'+arrow+' '+deltaTxt+'</div>'
             +'</div>';
-        }).join('');
-        panel.innerHTML='<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">'
-          +'<div class="sec-title" style="margin-bottom:4px">Vorher/Nachher – '+m.l+' <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(Ø 14 Tage vor vs. nach dem Coaching)</span></div>'
-          +rowsHtml+'</div>';
+        }
+        var visibleRows=sortedRelevant.slice(0,3).map(buildRow).join('');
+        var restRows=sortedRelevant.slice(3);
+        var restHtml=restRows.length?restRows.map(buildRow).join(''):'';
+        var toggleHtml=restRows.length?(
+          '<div onclick="var b=document.getElementById(\'vnRestBody\');var a=document.getElementById(\'vnArrow\');var open=b.style.display!==\'none\';b.style.display=open?\'none\':\'block\';a.style.transform=open?\'rotate(0deg)\':\'rotate(180deg)\';" style="display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 0 0;cursor:pointer;user-select:none;font-size:11.5px;color:var(--purple-dark);font-weight:600">'
+          +'+'+restRows.length+' weitere anzeigen <span id="vnArrow" style="font-size:12px;transition:transform .2s">▾</span>'
+          +'</div><div id="vnRestBody" style="display:none">'+restHtml+'</div>'
+        ):'';
+        panel.innerHTML='<div class="card">'
+          +'<div class="card-title"><i class="ti ti-arrows-diff"></i> Vorher/Nachher – '+m.l+' <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">(Ø 14 Tage vor vs. nach dem Coaching)</span></div>'
+          +visibleRows+toggleHtml+'</div>';
       })();
     },50);
   }
