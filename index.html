@@ -2169,9 +2169,21 @@ function renderTeam(){
         {k:'margeGesamt',l:'Marge',      c:'#9FE1E8'},
       ];
       var s='<div class="card" style="margin-bottom:22px">';
-      s+='<div class="card-title" style="margin-bottom:14px">Team Performance Trend</div>';
-      // Filter-Zeile: Zeitraum-Schnellwahl + Von-Bis + Anzeigen-Dropdown (einheitliche Höhe, eigene Zeile)
-      s+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">';
+      s+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">';
+      s+='<div class="card-title" style="margin:0">Team Performance Trend</div>';
+      // Filter-Zeile: Team-Auswahl → KPI → Zeitraum-Schnellwahl → Von-Bis (rechtsbündig, gleiche Höhe wie Titel)
+      s+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">';
+      s+='<select onchange="setTeamFilter(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
+      FDEFS.forEach(function(fd){
+        if(!fd.n&&fd.key!=='ALL')return;
+        s+='<option value="'+fd.key+'"'+(teamFilter===fd.key?' selected':'')+'>'+(fd.key==='ALL'?'Anzeigen: Alle':fd.label)+' ('+fd.n+')</option>';
+      });
+      s+='</select>';
+      s+='<select onchange="setTeamMetric(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
+      TMETRICS.forEach(function(it){
+        s+='<option value="'+it.k+'"'+(teamPerfMetric===it.k?' selected':'')+'>'+it.l+'</option>';
+      });
+      s+='</select>';
       s+='<div style="display:flex;border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden;height:34px">';
       [7,14,30,90].forEach(function(dd){
         s+='<button style="padding:0 14px;height:100%;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:'+(!customActive&&days===dd?'var(--purple)':'transparent')+';color:'+(!customActive&&days===dd?'#fff':'var(--text2)')+'" onclick="setTeamRange('+dd+')">'+dd+' Tage</button>';
@@ -2185,17 +2197,7 @@ function renderTeam(){
       s+='<button class="btn btn-sm'+(customActive?' btn-primary':'')+'" style="padding:4px 8px" onclick="applyTeamCustomRange()"><i class="ti ti-check"></i></button>';
       s+=(customActive?'<button class="btn btn-sm" style="padding:4px 8px" onclick="clearTeamCustomRange()" title="Custom-Zeitraum zurücksetzen"><i class="ti ti-x"></i></button>':'');
       s+='</div>';
-      s+='<select onchange="setTeamFilter(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
-      FDEFS.forEach(function(fd){
-        if(!fd.n&&fd.key!=='ALL')return;
-        s+='<option value="'+fd.key+'"'+(teamFilter===fd.key?' selected':'')+'>'+(fd.key==='ALL'?'Anzeigen: Alle':fd.label)+' ('+fd.n+')</option>';
-      });
-      s+='</select>';
-      s+='<select onchange="setTeamMetric(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
-      TMETRICS.forEach(function(it){
-        s+='<option value="'+it.k+'"'+(teamPerfMetric===it.k?' selected':'')+'>'+it.l+'</option>';
-      });
-      s+='</select>';
+      s+='</div>';
       s+='</div>';
       s+='<div style="position:relative;height:260px"><canvas id="teamPerfChart"></canvas></div></div>';
       return s;
