@@ -2212,13 +2212,13 @@ function renderTabBar(){
 function switchTab(t){activeTab=t;renderTabBar();renderTab();}
 
 var CALL_CATS=[
-  {key:'opener',        label:'Einstieg',            short:'Einstieg',   weight:0.05, col:'#534AB7', fill:'rgba(83,74,183,0.12)',  bg:'#EEEDFE', items:['intro','ziel']},
-  {key:'einwand',       label:'Einwandsentkräftung', short:'Einwand',    weight:0.35, col:'#C47A1E', fill:'rgba(196,122,30,0.12)', bg:'#FBEAE0', items:['qualifizieren','solidarisierung','umgang','entkraeftung','testabschluss','vertrauen']},
-  {key:'loop',          label:'Loop',                short:'Loop',       weight:0.10, col:'#1D9E75', fill:'rgba(29,158,117,0.12)', bg:'#E1F5EE', items:['dranbleiben']},
-  {key:'bedarf',        label:'Bedarfserweiterung',  short:'Bedarf',     weight:0.15, col:'#0A6B55', fill:'rgba(10,107,85,0.12)',  bg:'#E8F5EE', items:['erweitern','quantifizieren','potenzial']},
-  {key:'abschluss',     label:'Abschluss',           short:'Abschluss',  weight:0.20, col:'#BA7517', fill:'rgba(186,117,23,0.12)', bg:'#FEF3E2', items:['abschlussversuch','angebotsqualitaet','kaufsignale']},
-  {key:'gespraech',     label:'Gesprächsführung',    short:'Gespräch',   weight:0.10, col:'#535350', fill:'rgba(83,83,80,0.10)',   bg:'#F2F2F0', items:['struktur','kontrolle','klarheit','fragequalitaet']},
-  {key:'zusammenfassung',label:'Zusammenfassung',    short:'Zusammenf.', weight:0.05, col:'#2776d2', fill:'rgba(39,118,210,0.10)', bg:'#EBF2FD', items:['naechsteschritte']},
+  {key:'opener',        label:'Einstieg',            short:'Einstieg',   weight:0.05, col:'#7ED2DB', fill:'rgba(126,210,219,0.15)',  bg:'rgba(126,210,219,0.18)', items:['intro','ziel']},
+  {key:'einwand',       label:'Einwandsentkräftung', short:'Einwand',    weight:0.35, col:'#174C52', fill:'rgba(23,76,82,0.15)', bg:'rgba(23,76,82,0.10)', items:['qualifizieren','solidarisierung','umgang','entkraeftung','testabschluss','vertrauen']},
+  {key:'loop',          label:'Loop',                short:'Loop',       weight:0.10, col:'#206A72', fill:'rgba(32,106,114,0.15)', bg:'rgba(32,106,114,0.10)', items:['dranbleiben']},
+  {key:'bedarf',        label:'Bedarfserweiterung',  short:'Bedarf',     weight:0.15, col:'#2A8792', fill:'rgba(42,135,146,0.15)',  bg:'rgba(42,135,146,0.12)', items:['erweitern','quantifizieren','potenzial']},
+  {key:'abschluss',     label:'Abschluss',           short:'Abschluss',  weight:0.20, col:'#32A8B4', fill:'rgba(50,168,180,0.15)', bg:'rgba(50,168,180,0.12)', items:['abschlussversuch','angebotsqualitaet','kaufsignale']},
+  {key:'gespraech',     label:'Gesprächsführung',    short:'Gespräch',   weight:0.10, col:'#5FBAC4', fill:'rgba(95,186,196,0.15)',   bg:'rgba(95,186,196,0.15)', items:['struktur','kontrolle','klarheit','fragequalitaet']},
+  {key:'zusammenfassung',label:'Zusammenfassung',    short:'Zusammenf.', weight:0.05, col:'#3f6c72', fill:'rgba(63,108,114,0.12)', bg:'rgba(63,108,114,0.10)', items:['naechsteschritte']},
 ];
 var ITEM_LABELS={
   intro:'Intro / Einstieg',ziel:'Ziel des Calls',
@@ -2255,6 +2255,37 @@ function qaWeakSpots(empId,n){
     }
   });
   return weak;
+}
+// QA-Kategorie: Ø der letzten n Calls vs. Ø der n Calls davor (analog "dieser Monat vs Vormonat")
+function qaCatTrend(empId,cat,n){
+  n=n||5;
+  var sorted=(callRatings[empId]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var recent=sorted.slice(0,n),older=sorted.slice(n,n*2);
+  function avgOf(arr){
+    var vals=arr.map(function(r){return catAvg(r,cat);}).filter(function(v){return v>0;});
+    return vals.length?vals.reduce(function(a,b){return a+b;},0)/vals.length:null;
+  }
+  return {cur:avgOf(recent),prev:avgOf(older)};
+}
+// QA-Kategorie: Ø über aktive Kollegen der gleichen Rolle (jeweils letzte n Calls)
+function qaCatRoleBenchmark(empId,cat,n){
+  n=n||5;
+  var emp=employees.find(function(e){return e.id===empId;});
+  if(!emp)return null;
+  var peers=employees.filter(function(e){return e.role===emp.role&&e.active!==false;});
+  var vals=[];
+  peers.forEach(function(e){
+    var sorted=(callRatings[e.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,n);
+    var catVals=sorted.map(function(r){return catAvg(r,cat);}).filter(function(v){return v>0;});
+    if(catVals.length)vals.push(catVals.reduce(function(a,b){return a+b;},0)/catVals.length);
+  });
+  return vals.length?vals.reduce(function(a,b){return a+b;},0)/vals.length:null;
+}
+// QA-Kategorie: letzte 7 Bewertungen chronologisch (für Sparkline)
+function qaCatSparkline(empId,cat,n){
+  n=n||7;
+  var sorted=(callRatings[empId]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  return sorted.slice(-n).map(function(r){return catAvg(r,cat);}).filter(function(v){return v>0;});
 }
 
 // ── RENDER TAB ──
@@ -2462,6 +2493,33 @@ function renderTab(){
         +'<div style="margin-top:8px"><button class="btn btn-sm btn-primary" data-eid="'+emp.id+'" data-focus="'+weakSpots[0].label+'" onclick="openSessionModalWithFocus(this.dataset.eid,this.dataset.focus)"><i class="ti ti-calendar-plus"></i> Session dazu planen</button></div>'
         +'</div></div>';
     }
+
+    // ── QA-Kategorie-Snapshot: Ø-Bewertung je Kategorie, Trend vs. letzte Bewertungen, vs. Ø Rolle, Sparkline ──
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">';
+    CALL_CATS.forEach(function(cat){
+      var tr=qaCatTrend(emp.id,cat,5);
+      var bench=qaCatRoleBenchmark(emp.id,cat,5);
+      var trend=(tr.cur!==null&&tr.prev!==null)?tr.cur-tr.prev:null;
+      var trendArrow=trend===null?'':(trend>0.15?'↑':trend<-0.15?'↓':'→');
+      var trendCol=trend===null?'var(--text3)':(trend>0.15?'var(--teal-dark)':trend<-0.15?'var(--red)':'var(--text2)');
+      var vsRole=(tr.cur!==null&&bench!==null)?tr.cur-bench:null;
+      var vsRoleTxt=vsRole===null?'—':(vsRole>=0?'+':'')+vsRole.toFixed(1)+' vs. Ø Rolle';
+      var vsRoleCol=vsRole===null?'var(--text3)':(vsRole>=0?'var(--teal-dark)':'var(--red)');
+      var spark=qaCatSparkline(emp.id,cat,7);
+      html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+        +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">'+cat.short.toUpperCase()+'</div>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+        +'<div style="display:flex;align-items:baseline;gap:6px">'
+        +'<div style="font-size:20px;font-weight:700">'+(tr.cur!==null?tr.cur.toFixed(1):'—')+'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
+        +'</div>'
+        +sparkline(spark,cat.col,80,28)
+        +'</div>'
+        +'<div style="font-size:10.5px;color:var(--text3)">Letzte Bewertung: '+(tr.prev!==null?tr.prev.toFixed(1):'—')+'</div>'
+        +'<div style="font-size:10.5px;color:'+vsRoleCol+';margin-top:2px;font-weight:600">'+vsRoleTxt+'</div>'
+        +'</div>';
+    });
+    html+='</div>';
 
     // ── QA-Übersicht: EINE Karte, links Radar, rechts Zusammenfassung, Button unten rechts ──
     html+='<div class="card" style="margin-bottom:20px">';
