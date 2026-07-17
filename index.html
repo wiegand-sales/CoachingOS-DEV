@@ -544,6 +544,21 @@ var FOCUS_METRICS=[
   {key:'crMegaYes',label:'CR Mega Yes %'},
   {key:'margeGesamt',label:'Marge Gesamt €'}
 ];
+function sparkline(values,color,w,h){
+  w=w||90;h=h||30;
+  values=(values||[]).filter(function(v){return v!==undefined&&v!==null;});
+  if(values.length<2)return '<svg width="'+w+'" height="'+h+'"></svg>';
+  var min=Math.min.apply(null,values),max=Math.max.apply(null,values);
+  var range=max-min||1;
+  var step=w/(values.length-1);
+  var pad=4;
+  var pts=values.map(function(v,i){
+    var x=i*step;
+    var y=pad+(1-(v-min)/range)*(h-2*pad);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="display:block"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
 function focusMetricLabel(key){var m=FOCUS_METRICS.find(function(x){return x.key===key;});return m?m.label:key;}
 function sessionDuration(start,end){
   if(!start||!end)return null;
@@ -2967,11 +2982,15 @@ function renderTab(){
       var vsRole=(cur!==null&&bench!==null)?cur-bench:null;
       var vsRoleTxt=vsRole===null?'—':(vsRole>=0?'+':'')+vsRole.toFixed(1)+'% vs. Ø Rolle';
       var vsRoleCol=vsRole===null?'var(--text3)':(vsRole>=0?'var(--teal-dark)':'var(--red)');
+      var spark7=getPerf(emp.id,7).map(function(x){return x[d.k];});
       html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
         +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">'+d.l.toUpperCase()+'</div>'
-        +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+        +'<div style="display:flex;align-items:baseline;gap:6px">'
         +'<div style="font-size:20px;font-weight:700">'+(cur!==null?Math.round(cur)+'%':'—')+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
+        +'</div>'
+        +sparkline(spark7,'#7ED2DB',80,28)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+'%':'—')+'</div>'
         +'<div style="font-size:10.5px;color:'+vsRoleCol+';margin-top:2px;font-weight:600">'+vsRoleTxt+'</div>'
