@@ -75,7 +75,8 @@ body{font-family:'Inter',sans-serif;background:linear-gradient(155deg,#f2f3f0 0%
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 /* CARDS */
-.card{background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:var(--r-lg);padding:15px 17px;margin-bottom:14px;box-shadow:0 12px 30px rgba(15,61,66,0.08);transition:box-shadow .18s ease,transform .18s ease;}
+/* ── STANDARD-ABSTAND zwischen zwei Boxen/Karten: 22px (siehe .card margin-bottom) ── */
+.card{background:var(--glass);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:var(--r-lg);padding:15px 17px;margin-bottom:22px;box-shadow:0 12px 30px rgba(15,61,66,0.08);transition:box-shadow .18s ease,transform .18s ease;}
 .card:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(15,61,66,0.13);}
 .card-title{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
 .sec-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px;}
@@ -823,7 +824,7 @@ function renderCoachingAnsicht(){
   // ══ Coach-Wirksamkeit (nur Overview, ab 2 Coaches sinnvoll) ══
   if(coachFilterView==='overview'&&coachList.length>=2){
     var eff=computeCoachEffectiveness();
-    h+='<div class="card" style="margin-bottom:16px">';
+    h+='<div class="card" style="margin-bottom:22px">';
     h+='<div class="card-title">Coach-Wirksamkeit <span style="font-weight:400;color:var(--text3);font-size:11px">· Ø KPI-Veränderung 14 Tage vor vs. nach Coachings mit Ziel-KPI</span></div>';
     if(!eff.length){
       h+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px">Noch nicht genug Coachings mit Ziel-KPI vorhanden, um das zu berechnen.</div>';
@@ -1898,7 +1899,7 @@ function renderTeam(){
   if(noCoachCount>0)coachDistRows.push({name:'Ohne Zuordnung (Altdaten)',n:noCoachCount});
   var maxCoachN=Math.max.apply(null,coachDistRows.map(function(x){return x.n;}).concat([1]));
 
-  var coverageHtml='<div class="card" style="margin-bottom:20px">'
+  var coverageHtml='<div class="card" style="margin-bottom:22px">'
     +'<div class="card-title">Coaching-Abdeckung <span style="font-weight:400;color:var(--text3);font-size:11px">· '+(customActive?periodLabel:'letzte '+days+' Tage')+'</span></div>'
     +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px">';
 
@@ -2067,7 +2068,7 @@ function renderTeam(){
         {k:'crMegaYes',  l:'CR MY',      c:'#1D9E75'},
         {k:'margeGesamt',l:'Marge',      c:'#0C447C'},
       ];
-      var s='<div class="card" style="margin-bottom:16px">'
+      var s='<div class="card" style="margin-bottom:22px">'
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
         +'<div class="card-title" style="margin:0">Team Performance Trend</div>'
         +'<div class="chart-toggle">';
@@ -2422,7 +2423,7 @@ function renderTab(){
       crMegaYes:{f:'crMegaYes',l:'CR MY %',c:'#1D9E75'},
       crOEM:{f:'crOEM',l:'CR OEM %',c:'#BA7517'}
     };
-    html+='<div class="card" style="margin-bottom:16px">'
+    html+='<div class="card" style="margin-bottom:22px">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">'
       +'<div class="card-title" style="margin:0">Performance Trend</div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
@@ -2547,7 +2548,7 @@ function renderTab(){
     html+='</div>';
 
     // ── QA-Übersicht: EINE Karte, links Radar, rechts Zusammenfassung, Button unten rechts ──
-    html+='<div class="card" style="margin-bottom:20px">';
+    html+='<div class="card" style="margin-bottom:22px">';
     html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
     html+='<div class="card-title" style="margin:0"><i class="ti ti-phone-calling"></i> QA-Übersicht <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+totalCalls+' bewertete Calls</span></div>';
     html+='</div>';
@@ -2592,7 +2593,7 @@ function renderTab(){
     html+='</div>'; // Ende Karte
 
     // ── Aktuelle Bewertung im Detail (einklappbar) ──
-    html+='<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden">';
+    html+='<div class="card" style="margin-bottom:22px;padding:0;overflow:hidden">';
     html+='<div onclick="var b=document.getElementById(\'callDetailBody\');var a=document.getElementById(\'callDetailArrow\');var open=b.style.display!==\'none\';b.style.display=open?\'none\':\'block\';a.style.transform=open?\'rotate(0deg)\':\'rotate(180deg)\';" style="padding:12px 17px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">';
     html+='<span class="card-title" style="margin:0"><i class="ti ti-list-details"></i> Aktuelle Bewertung im Detail'+(showCall?' <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+fd(showCall.date)+'</span>':'')+'</span>';
     html+='<span id="callDetailArrow" style="color:var(--text3);font-size:13px;transition:transform .2s">▾</span>';
@@ -2710,7 +2711,7 @@ function renderTab(){
     // ── Ziele (strukturierte Zielvereinbarungen) ──
     (function(){
       var empGoals=(goals[emp.id]||[]).slice().sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
-      html+='<div class="card" style="margin-bottom:20px">';
+      html+='<div class="card" style="margin-bottom:22px">';
       html+='<div class="card-title"><i class="ti ti-flag"></i> Zielvereinbarungen</div>';
       if(!empGoals.length){
         html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:14px">Noch keine Ziele vereinbart</div>';
@@ -3025,7 +3026,7 @@ function renderTab(){
     html+='</div>';
 
     // ── Coaching-Übersicht: EINE Karte, links Spinnendiagramm + Aktionen, rechts Zusammenfassung (oben) ──
-    html+='<div class="card" style="margin-bottom:12px">';
+    html+='<div class="card" style="margin-bottom:22px">';
     html+='<div class="card-title"><i class="ti ti-chart-radar"></i> Coaching-Übersicht <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+completedSessions.length+' abgeschlossene Sessions</span></div>';
     html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:flex-start">';
 
@@ -3070,7 +3071,7 @@ function renderTab(){
     html+='</div>'; // Ende Karte
 
     // ── Alle Coachings im Detail (Themen-Aufschlüsselung, einklappbar) ──
-    html+='<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden">';
+    html+='<div class="card" style="margin-bottom:22px;padding:0;overflow:hidden">';
     html+='<div onclick="var b=document.getElementById(\'topicDetailBody\');var a=document.getElementById(\'topicDetailArrow\');var open=b.style.display!==\'none\';b.style.display=open?\'none\':\'block\';a.style.transform=open?\'rotate(0deg)\':\'rotate(180deg)\';" style="padding:12px 17px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">';
     html+='<span class="card-title" style="margin:0"><i class="ti ti-list-details"></i> Alle Coachings im Detail</span>';
     html+='<span id="topicDetailArrow" style="color:var(--text3);font-size:13px;transition:transform .2s">▾</span>';
@@ -3095,7 +3096,7 @@ function renderTab(){
 
     // ── Geplante Coachings ──
     if(plannedSessions.length){
-      html+='<div class="card" style="margin-bottom:20px">';
+      html+='<div class="card" style="margin-bottom:22px">';
       html+='<div class="card-title"><i class="ti ti-calendar-time"></i> Geplante Coachings <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+plannedSessions.length+')</span></div>';
       html+='<div style="display:flex;flex-direction:column;gap:6px">';
       plannedSessions.forEach(function(s){
