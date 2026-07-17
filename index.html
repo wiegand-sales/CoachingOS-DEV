@@ -2955,9 +2955,9 @@ function renderTab(){
     ];
     // Gleiche Farben wie Coaching Tab
     var SCCAT={
-      skill: {col:'#206A72',fill:'rgba(32,106,114,0.15)',  bg:'var(--purple-bg)', l:'Skill'},
-      will:  {col:'#D94109',fill:'rgba(217,65,9,0.15)', bg:'var(--amber-bg)', l:'Will'},
-      result:{col:'#3f6c72',fill:'rgba(91,151,158,0.15)',  bg:'var(--teal-bg)', l:'Result'}
+      skill: {col:'#206A72',fill:'rgba(32,106,114,0.15)',  bg:'rgba(32,106,114,0.10)', l:'Skill'},
+      will:  {col:'#32A8B4',fill:'rgba(50,168,180,0.15)', bg:'rgba(50,168,180,0.12)', l:'Will'},
+      result:{col:'#7ED2DB',fill:'rgba(126,210,219,0.15)',  bg:'rgba(126,210,219,0.18)', l:'Result'}
     };
     var sessions=(protocols[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
     var completedSessions=sessions.filter(function(s){return s.status!=='geplant';});
