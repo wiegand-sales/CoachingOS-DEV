@@ -3043,32 +3043,10 @@ function renderTab(){
 
     html+='</div>'; // Ende Karte
 
-    // ── Geplante Coachings ──
-    if(plannedSessions.length){
-      html+='<div class="card" style="margin-bottom:20px">';
-      html+='<div class="card-title"><i class="ti ti-calendar-time"></i> Geplante Coachings <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+plannedSessions.length+')</span></div>';
-      html+='<div style="display:flex;flex-direction:column;gap:6px">';
-      plannedSessions.forEach(function(s){
-        var dtP=new Date(s.date+'T00:00:00'),dfP=Math.round((dtP-new Date(today()+'T00:00:00'))/86400000);
-        var whenTxt=dfP===0?'Heute':dfP===1?'Morgen':dfP<0?'Überfällig':'in '+dfP+' Tagen';
-        var whenCol=dfP<0?'var(--red)':dfP<=1?'var(--amber-dark)':'var(--purple)';
-        html+='<div style="background:var(--bg2);border-radius:var(--r-md);padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" data-eid="'+emp.id+'" data-sid="'+s.id+'" data-typ="'+(s.type||'')+'" data-fokus="'+(s.focus||'')+'" data-datum="'+s.date+'" data-uhrzeit="'+(s.uhrzeit||'')+'" onclick="openPlannedSession(this.dataset.eid,this.dataset.sid,this.dataset.typ,this.dataset.fokus,this.dataset.datum,this.dataset.uhrzeit)">';
-        html+='<div style="width:8px;height:8px;border-radius:50%;background:'+whenCol+';flex-shrink:0"></div>';
-        html+='<div style="font-size:12px;font-weight:700;white-space:nowrap">'+fd(s.date)+(s.uhrzeit?' · '+s.uhrzeit:'')+'</div>';
-        html+='<span class="badge">'+(s.type||'Coaching')+'</span>';
-        html+='<span style="font-size:12px;color:var(--purple);flex:1">'+(s.focus||'')+'</span>';
-        html+='<span style="font-size:11px;font-weight:600;color:'+whenCol+'">'+whenTxt+'</span>';
-        html+='<i class="ti ti-chevron-right" style="color:var(--text3)"></i>';
-        html+='</div>';
-      });
-      html+='</div>';
-      html+='</div>';
-    }
-
-    // ── Zone 3: Einklappbare Themen-Details ──
+    // ── Alle Coachings im Detail (Themen-Aufschlüsselung, einklappbar) ──
     html+='<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden">';
     html+='<div onclick="var b=document.getElementById(\'topicDetailBody\');var a=document.getElementById(\'topicDetailArrow\');var open=b.style.display!==\'none\';b.style.display=open?\'none\':\'block\';a.style.transform=open?\'rotate(0deg)\':\'rotate(180deg)\';" style="padding:12px 17px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none">';
-    html+='<span class="card-title" style="margin:0"><i class="ti ti-list-details"></i> Alle Themen im Detail</span>';
+    html+='<span class="card-title" style="margin:0"><i class="ti ti-list-details"></i> Alle Coachings im Detail</span>';
     html+='<span id="topicDetailArrow" style="color:var(--text3);font-size:13px;transition:transform .2s">▾</span>';
     html+='</div>';
     html+='<div id="topicDetailBody" style="display:none;border-top:1px solid var(--border)">';
@@ -3089,6 +3067,28 @@ function renderTab(){
     });
     html+='</div></div>';
 
+    // ── Geplante Coachings ──
+    if(plannedSessions.length){
+      html+='<div class="card" style="margin-bottom:20px">';
+      html+='<div class="card-title"><i class="ti ti-calendar-time"></i> Geplante Coachings <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+plannedSessions.length+')</span></div>';
+      html+='<div style="display:flex;flex-direction:column;gap:6px">';
+      plannedSessions.forEach(function(s){
+        var dtP=new Date(s.date+'T00:00:00'),dfP=Math.round((dtP-new Date(today()+'T00:00:00'))/86400000);
+        var whenTxt=dfP===0?'Heute':dfP===1?'Morgen':dfP<0?'Überfällig':'in '+dfP+' Tagen';
+        var whenCol=dfP<0?'var(--red)':dfP<=1?'var(--amber-dark)':'var(--purple)';
+        html+='<div style="background:rgba(0,0,0,0.045);border:1px solid var(--border2);border-radius:var(--r-md);padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" data-eid="'+emp.id+'" data-sid="'+s.id+'" data-typ="'+(s.type||'')+'" data-fokus="'+(s.focus||'')+'" data-datum="'+s.date+'" data-uhrzeit="'+(s.uhrzeit||'')+'" onclick="openPlannedSession(this.dataset.eid,this.dataset.sid,this.dataset.typ,this.dataset.fokus,this.dataset.datum,this.dataset.uhrzeit)">';
+        html+='<div style="width:8px;height:8px;border-radius:50%;background:'+whenCol+';flex-shrink:0"></div>';
+        html+='<div style="font-size:12px;font-weight:700;white-space:nowrap">'+fd(s.date)+(s.uhrzeit?' · '+s.uhrzeit:'')+'</div>';
+        html+='<span class="badge">'+(s.type||'Coaching')+'</span>';
+        html+='<span style="font-size:12px;color:var(--purple);flex:1">'+(s.focus||'')+'</span>';
+        html+='<span style="font-size:11px;font-weight:600;color:'+whenCol+'">'+whenTxt+'</span>';
+        html+='<i class="ti ti-chevron-right" style="color:var(--text3)"></i>';
+        html+='</div>';
+      });
+      html+='</div>';
+      html+='</div>';
+    }
+
     // ── Zone 4: Coaching-Historie (volle Breite, nur abgeschlossene) ──
     html+='<div class="card">';
     html+='<div class="card-title"><i class="ti ti-history"></i> Coaching-Historie <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+completedSessions.length+')</span></div>';
@@ -3100,7 +3100,7 @@ function renderTab(){
         var eid='se'+emp.id+'x'+idx;
         var RM={Teilweise:{c:'var(--amber)'},Yes:{c:'var(--teal)'},'Super Yes':{c:'var(--purple)'},'Mega Yes':{c:'var(--blue)'}};
         var rm=s.rating?RM[s.rating]:null;
-        html+='<div style="background:var(--bg2);border-radius:var(--r-md);overflow:hidden">';
+        html+='<div style="background:rgba(0,0,0,0.045);border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden">';
         html+='<div class="sess-hdr" data-eid="'+eid+'" onclick="toggleSessCard(this.dataset.eid)" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none">';
         html+='<span style="font-size:12px;font-weight:700;white-space:nowrap">'+fd(s.date)+'</span>';
         if(s.uhrzeit)html+='<span style="font-size:11px;color:var(--text2);flex-shrink:0"><i class="ti ti-clock" style="font-size:10px"></i> '+s.uhrzeit+(s.endUhrzeit?'–'+s.endUhrzeit:'')+'</span>';
