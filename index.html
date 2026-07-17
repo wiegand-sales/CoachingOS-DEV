@@ -373,7 +373,7 @@ tr:hover td{background:var(--bg2);}
 
 <!-- NEUES COACHING ERFASSEN (ehem. "Neue Session erfassen", jetzt Pop-up) -->
 <div class="modal-ov hidden" id="neuesCoachingModal"><div class="modal" style="width:560px;max-width:95vw;max-height:88vh;overflow-y:auto">
-  <div class="modal-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-calendar-plus" style="color:var(--purple)"></i> Neues Coaching erfassen</div>
+  <div class="modal-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-calendar-plus" style="color:var(--purple)"></i> Neue Session erfassen</div>
   <div id="ncLastContinueBox"></div>
   <div class="f3" style="gap:8px;margin-bottom:10px">
     <div><label>Datum</label><input type="date" id="sess-date" value=""></div>
@@ -407,7 +407,7 @@ tr:hover td{background:var(--bg2);}
   </div>
   <div class="modal-actions">
     <button class="btn" onclick="closeModal('neuesCoachingModal')">Abbrechen</button>
-    <button class="btn btn-primary" data-eid="" id="ncSaveBtn" onclick="saveSession(document.getElementById('ncSaveBtn').dataset.eid)"><i class="ti ti-device-floppy"></i> Coaching speichern</button>
+    <button class="btn btn-primary" data-eid="" id="ncSaveBtn" onclick="saveSession(document.getElementById('ncSaveBtn').dataset.eid)"><i class="ti ti-device-floppy"></i> Session speichern</button>
   </div>
 </div></div>
 
@@ -2153,7 +2153,7 @@ function renderEmpDetail(){
     +'<div class="tab" data-tab="performance" onclick="switchTab(\'performance\')">KPI Performance</div>'
     +'<div class="tab" data-tab="call-performance" onclick="switchTab(\'call-performance\')">QA Performance</div>'
     +'<div class="tab" data-tab="timeline" onclick="switchTab(\'timeline\')">Timeline</div>'
-    +'<div class="tab" data-tab="session" onclick="switchTab(\'session\')">Coaching</div>'
+    +'<div class="tab" data-tab="session" onclick="switchTab(\'session\')">Coaching Sessions</div>'
     +'<div class="tab" data-tab="coaching-eval" onclick="switchTab(\'coaching-eval\')">Development</div>'
     +'<div class="tab" data-tab="tasks" onclick="switchTab(\'tasks\')" id="tasksTabBtn">Task'+(tc>0?' <span style="background:var(--purple);color:#fff;border-radius:20px;font-size:10px;font-weight:600;padding:1px 6px">'+tc+'</span>':'')+'</div>'
     +'<div class="tab" data-tab="solidroad" onclick="switchTab(\'solidroad\')">SolidRoad</div>'
@@ -2979,16 +2979,10 @@ function renderTab(){
     var catSum={skill:0,will:0,result:0};
     SDIMS.forEach(function(d){catSum[d.cat]+=tc[d.key];});
 
-    // ── Kopfzeile: Coaching planen + Neues Coaching erfassen ──
-    html+='<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:12px">';
-    html+='<button class="btn" data-eid="'+emp.id+'" onclick="openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-event"></i> Coaching planen</button>';
-    html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neues Coaching erfassen</button>';
-    html+='</div>';
-
-    // ── Coaching-Übersicht: EINE Karte, links Spinnendiagramm, rechts Zusammenfassung ──
+    // ── Coaching-Übersicht: EINE Karte, links Spinnendiagramm + Aktionen, rechts Zusammenfassung (oben) ──
     html+='<div class="card" style="margin-bottom:12px">';
     html+='<div class="card-title"><i class="ti ti-chart-radar"></i> Coaching-Übersicht <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+completedSessions.length+' abgeschlossene Sessions</span></div>';
-    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:flex-start">';
 
     html+='<div>';
     html+='<div style="position:relative;height:340px"><canvas id="sessRadar"></canvas></div>';
@@ -2996,10 +2990,14 @@ function renderTab(){
     ['skill','will','result'].forEach(function(cat){
       html+='<span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:'+SCCAT[cat].col+'"><span style="width:10px;height:10px;border-radius:50%;background:'+SCCAT[cat].col+';display:inline-block"></span>'+SCCAT[cat].l+'</span>';
     });
-    html+='</div></div>';
+    html+='</div>';
+    html+='<div style="display:flex;gap:8px;margin-top:16px">';
+    html+='<button class="btn" data-eid="'+emp.id+'" onclick="openSessionModal(this.dataset.eid)"><i class="ti ti-calendar-event"></i> Session planen</button>';
+    html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neue Session erfassen</button>';
+    html+='</div>';
+    html+='</div>';
 
     html+='<div>';
-    html+='<div class="sec-title" style="margin-bottom:10px">Zusammenfassung</div>';
     html+='<div style="display:flex;flex-direction:column;gap:10px">';
     ['skill','will','result'].forEach(function(cat){
       var s=catSum[cat];
