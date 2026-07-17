@@ -1350,6 +1350,45 @@ var settings={srApiKey:'',srOrgId:'',ftpUrl:''};
 var view='team', selectedEmp=null, activeTab='performance';
 var teamFilter='ALL';
 var perfMetric='crOEM', perfRange=7;
+var perfTableGroup='day'; // 'day' | 'week' | 'month'
+function setPerfTableGroup(g){perfTableGroup=g;renderTab();}
+function isoWeekOf(d){
+  var dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  var dayNum=(dt.getUTCDay()+6)%7;
+  dt.setUTCDate(dt.getUTCDate()-dayNum+3);
+  var firstThursday=new Date(Date.UTC(dt.getUTCFullYear(),0,4));
+  var week=1+Math.round(((dt-firstThursday)/86400000-3+((firstThursday.getUTCDay()+6)%7))/7);
+  return {year:dt.getUTCFullYear(),week:week};
+}
+function groupPerfRows(rows,mode){
+  if(mode==='day')return rows.map(function(r){return {label:fd(r.date),count:1,row:r};});
+  var groups={},order=[];
+  rows.forEach(function(r){
+    var d=new Date(r.date+'T00:00:00'),key,label;
+    if(mode==='week'){
+      var iw=isoWeekOf(d);
+      key=iw.year+'-W'+(iw.week<10?'0':'')+iw.week;
+      label='KW '+iw.week+' · '+iw.year;
+    } else {
+      key=r.date.slice(0,7);
+      var mNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+      label=mNames[d.getMonth()]+' '+d.getFullYear();
+    }
+    if(!groups[key]){groups[key]={label:label,items:[]};order.push(key);}
+    groups[key].items.push(r);
+  });
+  var sumFields=['aktivitaeten','calls','notReached','notPossible','notSuccessful','convOEM','convTW','convYes','convSY','convMY','upsells','wka','optGesamt','margeGesamt','margin'];
+  var avgFields=['crOEM','crTeilweise','crSuperYes','crMegaYes'];
+  return order.sort().reverse().map(function(key){
+    var g=groups[key],agg={};
+    sumFields.forEach(function(f){agg[f]=g.items.reduce(function(a,x){return a+(x[f]||0);},0);});
+    avgFields.forEach(function(f){
+      var vals=g.items.map(function(x){return x[f];}).filter(function(v){return v!==undefined&&v!==null;});
+      agg[f]=vals.length?vals.reduce(function(a,b){return a+b;},0)/vals.length:0;
+    });
+    return {label:g.label,count:g.items.length,row:agg};
+  });
+}
 var perfCustomFrom=null, perfCustomTo=null;
 function empGetPerf(id){
   if(perfCustomFrom&&perfCustomTo){
@@ -2487,19 +2526,29 @@ function renderTab(){
     html+='<div id="coachImpactPanel"></div>';
     // Tabelle
     html+='<div class="card">';
-    html+='<div class="card-title"><i class="ti ti-table"></i> Tagesübersicht</div>';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+    html+='<div class="card-title" style="margin:0"><i class="ti ti-table"></i> Performance</div>';
+    html+='<div class="chart-toggle">';
+    [{k:'day',l:'Tag'},{k:'week',l:'Woche'},{k:'month',l:'Monat'}].forEach(function(it){
+      html+='<button class="'+(perfTableGroup===it.k?'active':'')+'" data-g="'+it.k+'" onclick="setPerfTableGroup(this.dataset.g)">'+it.l+'</button>';
+    });
+    html+='</div>';
+    html+='</div>';
     if(!perfAll.length){
       html+='<div style="text-align:center;color:var(--text3);padding:24px">'
         +'<i class="ti ti-file-upload" style="font-size:26px;display:block;margin-bottom:8px"></i>'
         +'Noch keine Daten – bitte CSV in den Einstellungen hochladen</div>';
     } else {
+      var groupedRows=groupPerfRows(perfAll,perfTableGroup);
+      var firstColLabel=perfTableGroup==='day'?'Datum':perfTableGroup==='week'?'Woche':'Monat';
       html+='<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;border-collapse:collapse"><thead><tr>'
-        +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">Datum</th>'
+        +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">'+firstColLabel+'</th>'
         +['Aktivitäten','NE','NM','NErr','Conv. OEM','TW','Yes','SY','MY','CR OEM%','CR TW%','CR SY%','CR MY%','Upsells','WKA','Opt. Ges.','Marge Ges.'].map(function(h){
           return '<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">'+h+'</th>';
         }).join('')
         +'</tr></thead><tbody>';
-      perfAll.forEach(function(row,ridx){
+      groupedRows.forEach(function(g,ridx){
+        var row=g.row;
         var akt=row.aktivitaeten||row.calls||0;
         var convOEM=row.convOEM||0;
         var tw=row.convTW||0,yes=row.convYes||0,sy=row.convSY||0,my=row.convMY||0;
@@ -2508,11 +2557,10 @@ function renderTab(){
         var optGes=row.optGesamt||(convOEM+ups+wka)||0;
         var marge=row.margeGesamt||row.margin||0;
         var crOEM=Math.round(row.crOEM||0),crTW=Math.round(row.crTeilweise||0),crSY=Math.round(row.crSuperYes||0),crMY=Math.round(row.crMegaYes||0);
-        var optH=row.optPerH||0;
         function fc(v,t,dir){if(!t&&t!==0)return '';return(dir==='lte'?v<=t:v>=t)?'color:var(--teal-dark)':'color:var(--red)';}
         var rowBg=ridx%2===1?'background:rgba(0,0,0,0.03);':'';
         html+='<tr style="'+rowBg+'">'
-          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap">'+fd(row.date)+'</td>'
+          +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap">'+g.label+(perfTableGroup!=='day'?' <span style="font-weight:400;color:var(--text3);font-size:10.5px">('+g.count+' Tage)</span>':'')+'</td>'
           +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">'+akt+'</td>'
           +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">'+notR+'</td>'
           +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">'+notP+'</td>'
@@ -2534,7 +2582,7 @@ function renderTab(){
       });
       html+='</tbody></table></div>';
     }
-    html+='</div>'; // Ende Tagesübersicht-Karte
+    html+='</div>'; // Ende Performance-Karte
   }
 
 
