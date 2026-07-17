@@ -735,12 +735,23 @@ function buildCoachingAbdeckungTab(liste,hD,heute){
   }).filter(function(x){return x.cnt<5;}).sort(function(a,b){return a.cnt-b.cnt;});
   var bedarfListe=visible.map(function(e){return {e:e,weak:qaWeakSpots(e.id,5)};}).filter(function(x){return x.weak.length>0;});
 
+  function covTile(label,val,col,sub1,sub2){
+    return '<div class="card" style="padding:12px 14px;margin-bottom:0">'
+      +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">'+label+'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+      +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+val+'</div>'
+      +sparkline([],col,54,26)
+      +'</div>'
+      +'<div style="font-size:10.5px;color:var(--text3)">'+sub1+'</div>'
+      +'<div style="font-size:10.5px;color:var(--text3);margin-top:2px">'+(sub2||'\u00A0')+'</div>'
+      +'</div>';
+  }
   var h='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">'
-    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">MITARBEITER</div><div style="font-size:20px;font-weight:700">'+visible.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">aktiv, ohne Coaches</div></div>'
-    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">ÜBERFÄLLIG</div><div style="font-size:20px;font-weight:700;color:'+(ueberfaellig.length?'var(--red)':'var(--teal-dark)')+'">'+ueberfaellig.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">&gt;30 Tage kein Coaching</div></div>'
-    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">Ø TAGE SEIT LETZTEM</div><div style="font-size:20px;font-weight:700">'+(avgTage!==null?avgTage+'d':'—')+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">Team-Durchschnitt</div></div>'
-    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">QA FÄLLIG</div><div style="font-size:20px;font-weight:700;color:'+(qaDueListe.length?'var(--amber-dark)':'var(--teal-dark)')+'">'+qaDueListe.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">unter 5 Calls / 60 Tage</div></div>'
-    +'<div class="card" style="padding:12px 14px;margin-bottom:0"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">QA-BEDARF</div><div style="font-size:20px;font-weight:700;color:'+(bedarfListe.length?'var(--red)':'var(--teal-dark)')+'">'+bedarfListe.length+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:4px">konstant schwache Kategorie</div></div>'
+    +covTile('MITARBEITER',visible.length,'#206A72','aktiv, ohne Coaches')
+    +covTile('ÜBERFÄLLIG',ueberfaellig.length,ueberfaellig.length?'var(--red)':'var(--teal-dark)','>30 Tage kein Coaching')
+    +covTile('Ø TAGE SEIT LETZTEM',(avgTage!==null?avgTage+'d':'—'),'#206A72','Team-Durchschnitt')
+    +covTile('QA FÄLLIG',qaDueListe.length,qaDueListe.length?'var(--amber-dark)':'var(--teal-dark)','unter 5 Calls / 60 Tage')
+    +covTile('QA-BEDARF',bedarfListe.length,bedarfListe.length?'var(--red)':'var(--teal-dark)','konstant schwache Kategorie')
     +'</div>';
 
   // ── Überfällige Coachings: volle Liste ──
