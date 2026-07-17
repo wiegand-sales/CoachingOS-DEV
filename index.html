@@ -2977,34 +2977,39 @@ function renderTab(){
     var catSum={skill:0,will:0,result:0};
     SDIMS.forEach(function(d){catSum[d.cat]+=tc[d.key];});
 
-    // ── Zone 1: Kopfzeile mit Erfassen-Button ──
-    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
-    html+='<div class="sec-title" style="margin:0">Coaching-Übersicht <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">· '+sessions.length+' Sessions gesamt</span></div>';
+    // ── Kopfzeile: nur noch der Erfassen-Button (Titel wandert in die Karte) ──
+    html+='<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px">';
     html+='<button class="btn btn-primary" data-eid="'+emp.id+'" onclick="openNeuesCoachingModal(this.dataset.eid)"><i class="ti ti-calendar-plus"></i> Neues Coaching erfassen</button>';
     html+='</div>';
 
-    // ── Zone 2: Radar (kompakter) + 3 Kategorie-Kacheln ──
-    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:12px;align-items:stretch">';
+    // ── Coaching-Übersicht: EINE Karte, links Spinnendiagramm, rechts Zusammenfassung ──
+    html+='<div class="card" style="margin-bottom:12px">';
+    html+='<div class="card-title"><i class="ti ti-chart-radar"></i> Coaching-Übersicht <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+sessions.length+' Sessions gesamt</span></div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">';
 
-    html+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:16px">';
-    html+='<div class="sec-title" style="margin-bottom:8px">Themenverteilung</div>';
-    html+='<div style="position:relative;height:230px"><canvas id="sessRadar"></canvas></div>';
-    html+='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">';
+    html+='<div>';
+    html+='<div style="position:relative;height:340px"><canvas id="sessRadar"></canvas></div>';
+    html+='<div style="display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap">';
     ['skill','will','result'].forEach(function(cat){
       html+='<span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:'+SCCAT[cat].col+'"><span style="width:10px;height:10px;border-radius:50%;background:'+SCCAT[cat].col+';display:inline-block"></span>'+SCCAT[cat].l+'</span>';
     });
     html+='</div></div>';
 
+    html+='<div>';
+    html+='<div class="sec-title" style="margin-bottom:10px">Zusammenfassung</div>';
     html+='<div style="display:flex;flex-direction:column;gap:10px">';
     ['skill','will','result'].forEach(function(cat){
       var s=catSum[cat];
-      html+='<div style="flex:1;background:'+SCCAT[cat].bg+';border:1px solid '+SCCAT[cat].col+';border-radius:var(--r-lg);padding:14px;display:flex;align-items:center;justify-content:space-between">';
+      html+='<div style="background:'+SCCAT[cat].bg+';border:1px solid '+SCCAT[cat].col+';border-radius:var(--r-lg);padding:14px;display:flex;align-items:center;justify-content:space-between">';
       html+='<div><div style="font-size:11px;font-weight:700;color:'+SCCAT[cat].col+'">'+SCCAT[cat].l.toUpperCase()+'</div><div style="font-size:11px;color:'+SCCAT[cat].col+';opacity:0.7;margin-top:2px">Sessions zu diesem Bereich</div></div>';
       html+='<div style="font-size:32px;font-weight:700;color:'+SCCAT[cat].col+'">'+s+'</div>';
       html+='</div>';
     });
     html+='</div>';
     html+='</div>';
+
+    html+='</div>'; // Ende 2-Spalten-Grid
+    html+='</div>'; // Ende Karte
 
     // ── Zone 3: Einklappbare Themen-Details ──
     html+='<div class="card" style="margin-bottom:20px;padding:0;overflow:hidden">';
