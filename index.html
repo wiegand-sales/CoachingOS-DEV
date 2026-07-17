@@ -427,6 +427,17 @@ tr:hover td{background:var(--bg2);}
     <div><label>Abschluss?</label><select id="cb-status"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
     <div><label>B2B / B2C</label><select id="cb-b2b"><option value="B2C">B2C</option><option value="B2B">B2B</option></select></div>
   </div>
+  <div style="margin-bottom:10px"><label>Optimierung</label>
+    <select id="cb-abschlussart">
+      <option value="">Keine Optimierung</option>
+      <option value="TW">Opt.: TW</option>
+      <option value="Yes">Opt.: Yes</option>
+      <option value="SY">Opt.: SY</option>
+      <option value="MY">Opt.: MY</option>
+      <option value="Upsell">Opt.: Upsell</option>
+      <option value="WKA">Opt.: WKA</option>
+    </select>
+  </div>
   <div style="margin-bottom:12px"><label>Genannter Einwand</label><input type="text" id="cb-einwand" placeholder="z.B. Preis zu hoch, Kündigung läuft"></div>
   <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">BEWERTUNG (1–4 pro Kriterium)</div>
   <div id="qaScoringSection" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
@@ -1488,7 +1499,7 @@ function checkAlerts(id){
   check('crTeilweise','crTeilweise','CR TW');
   check('optPerH','optPerH','Opt./Std.');
   return alerts;
-}function openTaskCount(id){return(tasks[id]||[]).filter(function(t){return!t.done;}).length;}
+}function openTaskCount(id){return(tasks[id]||[]).filter(function(t){return!t.done;}).length+(qaCallsDue(id).due>0?1:0);}
 function allTeams(){
   var ts={};
   employees.forEach(function(e){if(e.team)ts[e.team]=1;});
@@ -2313,6 +2324,13 @@ function qaCatSparkline(empId,cat,n){
   var sorted=(callRatings[empId]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   return sorted.slice(-n).map(function(r){return catAvg(r,cat);}).filter(function(v){return v>0;});
 }
+// QA-Bewertungspflicht: Ziel 5 Calls / 60 Tage. Gibt {due, cnt, target} zurück.
+function qaCallsDue(empId){
+  var target=5;
+  var cutoff=(function(){var d=new Date(today()+'T00:00:00');d.setDate(d.getDate()-60);return d.toISOString().slice(0,10);})();
+  var cnt=(callRatings[empId]||[]).filter(function(r){return r.date>=cutoff;}).length;
+  return {due:Math.max(0,target-cnt),cnt:cnt,target:target};
+}
 
 // ── RENDER TAB ──
 function renderTab(){
@@ -2638,7 +2656,7 @@ function renderTab(){
         html+='<div class="sess-hdr" data-eid="'+cardId+'" onclick="toggleSessCard(this.dataset.eid)" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none">';
         html+='<span style="font-size:12px;font-weight:700;white-space:nowrap">'+fd(r.date)+'</span>';
         html+='<span style="font-size:11px;color:var(--text2);background:var(--bg-solid);padding:2px 8px;border-radius:20px;flex-shrink:0">'+(r.b2b||'B2C')+'</span>';
-        html+='<span style="font-size:11px;color:'+(r.status==='ja'?'var(--teal-dark)':'var(--red)')+';flex:1">'+(r.status==='ja'?'✓ Abschluss':'✗ Kein Abschluss')+'</span>';
+        html+='<span style="font-size:11px;color:'+(r.status==='ja'?'var(--teal-dark)':'var(--red)')+';flex:1">'+(r.status==='ja'?'✓ Abschluss':'✗ Kein Abschluss')+(r.abschlussArt?' · Opt.: '+r.abschlussArt:'')+'</span>';
         html+='<span style="font-size:13px;font-weight:700;color:'+tcol+';flex-shrink:0">'+ts.toFixed(0)+'</span>';
         html+='<span id="arr-'+cardId+'" style="color:var(--text3);font-size:12px;flex-shrink:0;transition:transform .2s">▾</span></div>';
         html+='<div id="body-'+cardId+'" style="display:none;border-top:1px solid var(--border)">';
@@ -3245,6 +3263,21 @@ function renderTab(){
     var overdueTasks=empTasks.filter(function(t){return isOD(t);});
     var doneTasks=empTasks.filter(function(t){return t.done;});
     var prioStyle={high:{bg:'var(--red-bg)',color:'var(--red)'},medium:{bg:'var(--amber-bg)',color:'var(--amber-dark)'},low:{bg:'var(--bg2)',color:'var(--text2)'}};
+    // ── Automatisch generierte Aufgabe: QA-Bewertungspflicht (Ziel 5 Calls / 60 Tage) ──
+    var qaDue=qaCallsDue(emp.id);
+    var qaTaskHtml='';
+    if(qaDue.due>0){
+      var qaHigh=qaDue.cnt===0;
+      var ps=qaHigh?prioStyle.high:prioStyle.medium;
+      qaTaskHtml='<div class="task-item">'
+        +'<div class="task-row" style="cursor:default">'
+        +'<div class="task-check" style="background:'+ps.bg+';border-color:'+ps.color+';cursor:default"><i class="ti ti-phone-plus" style="font-size:11px;color:'+ps.color+'"></i></div>'
+        +'<div style="flex:1;min-width:0"><div class="task-title">QA-Bewertungen: noch '+qaDue.due+' Call'+(qaDue.due!==1?'s':'')+' bewerten</div>'
+        +'<div class="task-meta"><span>Automatisch &middot; Ziel 5 Calls / 60 Tage</span><span style="color:'+ps.color+'">'+qaDue.cnt+'/'+qaDue.target+' bewertet</span></div></div>'
+        +'<span class="task-prio" style="background:'+ps.bg+';color:'+ps.color+'">'+(qaHigh?'high':'medium')+'</span>'
+        +'<button class="btn btn-sm btn-primary" data-eid="'+emp.id+'" onclick="event.stopPropagation();openQaBewertungModal(this.dataset.eid)"><i class="ti ti-phone-plus"></i> Bewerten</button>'
+        +'</div></div>';
+    }
     // Summary
     html+='<div class="g3" style="margin-bottom:20px">'
       +'<div class="kpi" style="border-top-color:var(--purple)"><div class="kpi-label" style="color:var(--purple)">Open</div><div class="kpi-val" style="color:var(--purple)">'+openTasks.length+'</div><div class="kpi-sub">'+(openTasks.length===0?'All clear':'task'+(openTasks.length!==1?'s':'')+' to do')+'</div></div>'
@@ -3252,7 +3285,7 @@ function renderTab(){
       +'<div class="kpi" style="border-top-color:var(--teal)"><div class="kpi-label" style="color:var(--teal)">Completed</div><div class="kpi-val" style="color:var(--teal)">'+doneTasks.length+'</div><div class="kpi-sub">'+(empTasks.length>0?Math.round(doneTasks.length/empTasks.length*100)+'% completion':'noch keine Aufgaben')+'</div></div>'
       +'</div>';
     html+='<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn btn-primary btn-sm" onclick="openModal(\'addTaskModal\')"><i class="ti ti-plus"></i> Add task</button></div>';
-    if(empTasks.length===0){html+='<div class="empty">No tasks yet. Add tasks manually or from a protocol.</div>';}
+    if(empTasks.length===0&&qaDue.due===0){html+='<div class="empty">No tasks yet. Add tasks manually or from a protocol.</div>';}
     function taskCard(t){
       var ps=prioStyle[t.priority]||prioStyle.low;
       var od=isOD(t);
@@ -3279,12 +3312,16 @@ function renderTab(){
         +'<button class="btn btn-sm btn-danger" onclick="deleteTask(\''+t.id+'\')"><i class="ti ti-trash"></i> Delete</button>'
         +'</div></div></div>';
     }
-    if(overdueTasks.length>0){
-      html+='<div class="sec-title" style="color:var(--red)">Overdue ('+overdueTasks.length+')</div>';
+    var qaHighUrgent=qaDue.due>0&&qaDue.cnt===0;
+    var qaLowUrgent=qaDue.due>0&&qaDue.cnt>0;
+    if(overdueTasks.length>0||qaHighUrgent){
+      html+='<div class="sec-title" style="color:var(--red)">Overdue ('+(overdueTasks.length+(qaHighUrgent?1:0))+')</div>';
+      if(qaHighUrgent)html+=qaTaskHtml;
       overdueTasks.forEach(function(t){html+=taskCard(t);});
     }
-    if(openTasks.length>0){
-      html+='<div class="sec-title" style="margin-top:'+(overdueTasks.length?'16px':'0')+'">Open ('+openTasks.length+')</div>';
+    if(openTasks.length>0||qaLowUrgent){
+      html+='<div class="sec-title" style="margin-top:'+((overdueTasks.length||qaHighUrgent)?'16px':'0')+'">Open ('+(openTasks.length+(qaLowUrgent?1:0))+')</div>';
+      if(qaLowUrgent)html+=qaTaskHtml;
       openTasks.forEach(function(t){html+=taskCard(t);});
     }
     if(doneTasks.length>0){
@@ -4444,7 +4481,7 @@ function loadCallRatingsFromSupabase(){
       if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
       byEmp[r.employee_id].push({
         id:r.id,date:r.date,auftragsnr:r.auftragsnr||'',bewertetVon:r.bewertet_von||'',
-        status:r.status,b2b:r.b2b,einwand:r.einwand||'',hinweis:r.hinweis||'',
+        status:r.status,b2b:r.b2b,abschlussArt:r.abschluss_art||'',einwand:r.einwand||'',hinweis:r.hinweis||'',
         scores:scoresByRating[r.id]||{}
       });
     });
@@ -4860,6 +4897,7 @@ function saveInlineCallBewertung(empId){
   var bewerter=document.getElementById('cb-bewerter');
   var status=document.getElementById('cb-status');
   var b2b=document.getElementById('cb-b2b');
+  var abschlussart=document.getElementById('cb-abschlussart');
   var einwand=document.getElementById('cb-einwand');
   var hinweis=document.getElementById('cb-hinweis');
   if(!datum||!datum.value){alert('Bitte Datum eingeben');return;}
@@ -4870,6 +4908,7 @@ function saveInlineCallBewertung(empId){
     bewertet_von:bewerter?bewerter.value.trim():'',
     status:status?status.value:'nein',
     b2b:b2b?b2b.value:'B2C',
+    abschluss_art:abschlussart&&abschlussart.value?abschlussart.value:null,
     einwand:einwand?einwand.value.trim():'',
     hinweis:hinweis?hinweis.value.trim():''
   };
@@ -4882,7 +4921,7 @@ function saveInlineCallBewertung(empId){
     var afterScores=function(){
       var entry={
         id:r.id,date:r.date,auftragsnr:r.auftragsnr||'',bewertetVon:r.bewertet_von||'',
-        status:r.status,b2b:r.b2b,einwand:r.einwand||'',hinweis:r.hinweis||'',scores:scores
+        status:r.status,b2b:r.b2b,abschlussArt:r.abschluss_art||'',einwand:r.einwand||'',hinweis:r.hinweis||'',scores:scores
       };
       if(!callRatings[selectedEmp])callRatings[selectedEmp]=[];
       callRatings[selectedEmp].unshift(entry);
@@ -4951,6 +4990,7 @@ function openQaBewertungModal(empId){
   });
   var statusEl=document.getElementById('cb-status');if(statusEl)statusEl.value='nein';
   var b2bEl=document.getElementById('cb-b2b');if(b2bEl)b2bEl.value='B2C';
+  var artEl=document.getElementById('cb-abschlussart');if(artEl)artEl.value='';
   var box=document.getElementById('qaScoringSection');
   if(box){
     var uniCol='#174C52',uniBg='rgba(23,76,82,0.10)';
