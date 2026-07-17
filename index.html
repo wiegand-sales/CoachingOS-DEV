@@ -1351,6 +1351,8 @@ var view='team', selectedEmp=null, activeTab='performance';
 var teamFilter='ALL';
 var perfMetric='crOEM', perfRange=7;
 var perfTableGroup='day'; // 'day' | 'week' | 'month'
+var tlFilter='all'; // 'all' | 'session' | 'review' | 'milestone' | 'record'
+function setTlFilter(f){tlFilter=f;renderTab();}
 function setPerfTableGroup(g){perfTableGroup=g;renderTab();}
 function isoWeekOf(d){
   var dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
@@ -1670,7 +1672,13 @@ function naechsteGeplanteSession(id){
 // Persönliche Bestwerte (Highscores) über die gesamte Performance-Historie
 function personalBestEvents(empId){
   var rows=(performance[empId]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
-  var fields=[{key:'optGesamt',label:'Optimierungen gesamt'},{key:'aktivitaeten',label:'Aktivitäten'}];
+  var fields=[
+    {key:'optGesamt',label:'Optimierungen gesamt',fmt:function(v){return Math.round(v);}},
+    {key:'aktivitaeten',label:'Aktivitäten',fmt:function(v){return Math.round(v);}},
+    {key:'crOEM',label:'CR OEM',fmt:function(v){return Math.round(v)+'%';}},
+    {key:'margeGesamt',label:'Marge Gesamt',fmt:function(v){return '€'+Math.round(v).toLocaleString('de-DE');}},
+    {key:'convOEM',label:'Conv. OEM',fmt:function(v){return Math.round(v);}}
+  ];
   var events=[];
   fields.forEach(function(f){
     var max=null;
@@ -1678,7 +1686,7 @@ function personalBestEvents(empId){
       var v=r[f.key];
       if(v===undefined||v===null)return;
       if(max!==null&&v>max){
-        events.push({date:r.date,label:'Bestwert '+f.label+': '+Math.round(v)+' (bisher: '+Math.round(max)+')'});
+        events.push({date:r.date,label:'Bestwert '+f.label+': '+f.fmt(v)+' (bisher: '+f.fmt(max)+')'});
       }
       if(max===null||v>max)max=v;
     });
@@ -2407,13 +2415,13 @@ function renderTab(){
     var tlEvents=[];
     (protocols[emp.id]||[]).forEach(function(s){
       var _dur=sessionDuration(s.uhrzeit,s.endUhrzeit);
-      tlEvents.push({date:s.date,kind:'session',icon:'ti-message-circle',col:'var(--purple)',
+      tlEvents.push({date:s.date,kind:'session',icon:'ti-message-circle',col:'#206A72',
         title:(s.type||'Session')+(s.status==='geplant'?' (geplant)':'')+(_dur?' · '+formatDuration(_dur):''),
         sub:(s.topics&&s.topics.length?s.topics.join(', '):(s.focus||''))});
     });
     (reviews[emp.id]||[]).forEach(function(r){
       var isEval=r.einwand!==undefined;
-      tlEvents.push({date:r.date,kind:'review',icon:isEval?'ti-clipboard-check':'ti-calendar-event',col:'var(--blue-dark)',
+      tlEvents.push({date:r.date,kind:'review',icon:isEval?'ti-clipboard-check':'ti-calendar-event',col:'#32A8B4',
         title:isEval?'Mitarbeiterentwicklung bewertet':(r.type||'Review')+(r.status==='geplant'?' (geplant)':''),
         sub:isEval?(r.note||''):(r.rating||r.notes||'')});
     });
@@ -2425,61 +2433,131 @@ function renderTab(){
     });
     (employeeHistory[emp.id]||[]).forEach(function(h){
       var fieldLabel=h.field==='team'?'Team':'Rolle';
-      tlEvents.push({date:h.changedAt?h.changedAt.slice(0,10):'',kind:'history',icon:'ti-arrows-exchange',col:'var(--text2)',
+      tlEvents.push({date:h.changedAt?h.changedAt.slice(0,10):'',kind:'milestone',icon:'ti-arrows-exchange',col:'var(--text2)',
         title:fieldLabel+'-Wechsel',sub:(h.oldValue||'—')+' → '+(h.newValue||'—')});
     });
     (goals[emp.id]||[]).forEach(function(g){
-      tlEvents.push({date:g.createdAt?g.createdAt.slice(0,10):'',kind:'goal',icon:'ti-flag',col:'var(--purple)',
+      tlEvents.push({date:g.createdAt?g.createdAt.slice(0,10):'',kind:'milestone',icon:'ti-flag',col:'#206A72',
         title:'Ziel vereinbart',sub:g.description+(g.targetDate?' (bis '+fd(g.targetDate)+')':'')});
     });
     tlEvents.sort(function(a,b){return b.date.localeCompare(a.date);});
 
-    // ── 5 Kacheln: Werdegang auf einen Blick ──
+    // ── 5 Kacheln: Werdegang auf einen Blick (gleiches Format wie QA Performance: Trend + Sparkline) ──
     var tenureDays=emp.startDate?Math.floor((new Date(today()+'T00:00:00')-new Date(emp.startDate+'T00:00:00'))/86400000):null;
     var tenureTxt=tenureDays===null?'—':tenureDays<30?tenureDays+' Tage':tenureDays<365?Math.floor(tenureDays/30)+' Monate':(tenureDays/365).toFixed(1)+' Jahre';
-    var sessTotal=(protocols[emp.id]||[]).filter(function(p){return p.status!=='geplant';}).length;
-    var qaTotal=(callRatings[emp.id]||[]).length;
+    var sessAllDone=(protocols[emp.id]||[]).filter(function(p){return p.status!=='geplant';});
+    var qaAll=(callRatings[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
     var goalsAll=goals[emp.id]||[];
     var goalsDone=goalsAll.filter(function(g){return g.status==='done'||g.status==='erreicht';}).length;
-    var bestOpt=(performance[emp.id]||[]).reduce(function(a,r){return Math.max(a,r.optGesamt||0);},0);
-    var tiles=[
-      {label:'Bei Wiegand seit',val:tenureTxt,sub:emp.startDate?fd(emp.startDate):'—',col:'#206A72',bg:'rgba(32,106,114,0.10)'},
-      {label:'Sessions gesamt',val:sessTotal,sub:'abgeschlossen',col:'#32A8B4',bg:'rgba(50,168,180,0.12)'},
-      {label:'Calls bewertet',val:qaTotal,sub:'QA gesamt',col:'#7ED2DB',bg:'rgba(126,210,219,0.18)'},
-      {label:'Ziele erreicht',val:goalsDone+'/'+goalsAll.length,sub:goalsAll.length?Math.round(goalsDone/goalsAll.length*100)+'%':'—',col:'#2A8792',bg:'rgba(42,135,146,0.12)'},
-      {label:'Bestwert Opt.',val:bestOpt||'—',sub:'höchster Tageswert',col:'#174C52',bg:'rgba(23,76,82,0.10)'}
-    ];
+    var perfSorted=(performance[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+    var bestOptRow=perfSorted.reduce(function(a,r){return(r.optGesamt||0)>(a?a.optGesamt||0:-1)?r:a;},null);
+    function monthKey(dateStr){return dateStr.slice(0,7);}
+    function countByMonth(items,dateFn){
+      var m={};items.forEach(function(it){var k=monthKey(dateFn(it));m[k]=(m[k]||0)+1;});return m;
+    }
+    function last6MonthsCounts(items,dateFn){
+      var m=countByMonth(items,dateFn);
+      var keys=Object.keys(m).sort();
+      return keys.slice(-7).map(function(k){return m[k];});
+    }
+    var sessMonthCounts=last6MonthsCounts(sessAllDone,function(s){return s.date;});
+    var qaMonthCounts=last6MonthsCounts(qaAll,function(r){return r.date;});
+    function monthTrend(counts){
+      if(counts.length<2)return {arrow:'',col:'var(--text3)'};
+      var d=counts[counts.length-1]-counts[counts.length-2];
+      return {arrow:d>0?'↑':d<0?'↓':'→',col:d>0?'var(--teal-dark)':d<0?'var(--red)':'var(--text2)'};
+    }
+    var sessTrend=monthTrend(sessMonthCounts),qaTrend=monthTrend(qaMonthCounts);
+    var optSpark=perfSorted.slice(-7).map(function(r){return r.optGesamt;}).filter(function(v){return v!==undefined&&v!==null;});
+    var LBL='font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    var SUB='font-size:10.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
     html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
-    tiles.forEach(function(t){
-      html+='<div class="card" style="padding:12px 14px;margin-bottom:0;display:flex;align-items:center;justify-content:space-between">';
-      html+='<div><div style="font-size:10.5px;font-weight:700;color:'+t.col+'">'+t.label.toUpperCase()+'</div><div style="font-size:10.5px;color:'+t.col+';opacity:0.8;margin-top:1px">'+t.sub+'</div></div>';
-      html+='<div style="font-size:20px;font-weight:700;color:'+t.col+'">'+t.val+'</div>';
-      html+='</div>';
-    });
+    // Kachel 1: Bei Wiegand seit
+    html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+      +'<div style="'+LBL+'">DABEI SEIT</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+      +'<div style="font-size:20px;font-weight:700;color:#206A72">'+tenureTxt+'</div>'
+      +sparkline([],'#206A72',54,26)
+      +'</div>'
+      +'<div style="'+SUB+'">Start '+(emp.startDate?fd(emp.startDate):'—')+'</div>'
+      +'<div style="'+SUB+';margin-top:2px">&nbsp;</div>'
+      +'</div>';
+    // Kachel 2: Sessions gesamt
+    html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+      +'<div style="'+LBL+'">SESSIONS</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+      +'<div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:20px;font-weight:700;color:#32A8B4">'+sessAllDone.length+'</div><div style="font-size:13px;font-weight:700;color:'+sessTrend.col+'">'+sessTrend.arrow+'</div></div>'
+      +sparkline(sessMonthCounts,'#32A8B4',54,26)
+      +'</div>'
+      +'<div style="'+SUB+'">Ø/Monat '+(sessMonthCounts.length?(sessMonthCounts.reduce(function(a,b){return a+b;},0)/sessMonthCounts.length).toFixed(1):'—')+'</div>'
+      +'<div style="'+SUB+';margin-top:2px">dies. Monat '+(sessMonthCounts.length?sessMonthCounts[sessMonthCounts.length-1]:0)+'</div>'
+      +'</div>';
+    // Kachel 3: Calls bewertet
+    html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+      +'<div style="'+LBL+'">QA CALLS</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+      +'<div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:20px;font-weight:700;color:#7ED2DB">'+qaAll.length+'</div><div style="font-size:13px;font-weight:700;color:'+qaTrend.col+'">'+qaTrend.arrow+'</div></div>'
+      +sparkline(qaMonthCounts,'#7ED2DB',54,26)
+      +'</div>'
+      +'<div style="'+SUB+'">Ø/Monat '+(qaMonthCounts.length?(qaMonthCounts.reduce(function(a,b){return a+b;},0)/qaMonthCounts.length).toFixed(1):'—')+'</div>'
+      +'<div style="'+SUB+';margin-top:2px">dies. Monat '+(qaMonthCounts.length?qaMonthCounts[qaMonthCounts.length-1]:0)+'</div>'
+      +'</div>';
+    // Kachel 4: Ziele erreicht
+    html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+      +'<div style="'+LBL+'">ZIELE</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+      +'<div style="font-size:20px;font-weight:700;color:#2A8792">'+goalsDone+'/'+goalsAll.length+'</div>'
+      +sparkline([],'#2A8792',54,26)
+      +'</div>'
+      +'<div style="'+SUB+'">'+(goalsAll.length?Math.round(goalsDone/goalsAll.length*100)+'% erreicht':'—')+'</div>'
+      +'<div style="'+SUB+';margin-top:2px">offen '+(goalsAll.length-goalsDone)+'</div>'
+      +'</div>';
+    // Kachel 5: Bestwert Opt.
+    html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+      +'<div style="'+LBL+'">BESTWERT OPT.</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
+      +'<div style="font-size:20px;font-weight:700;color:#174C52">'+(bestOptRow?Math.round(bestOptRow.optGesamt):'—')+'</div>'
+      +sparkline(optSpark,'#174C52',54,26)
+      +'</div>'
+      +'<div style="'+SUB+'">am '+(bestOptRow?fd(bestOptRow.date):'—')+'</div>'
+      +'<div style="'+SUB+';margin-top:2px">höchster Tag</div>'
+      +'</div>';
     html+='</div>';
 
-    // ── Timeline: eine weiße Box, Highscores türkis hervorgehoben, alle Zeilen gleich hoch ──
+    // ── Timeline: eine weiße Box mit Filter, Linie+Punkte im modernen Stil, Highscores türkis ──
     html+='<div class="card">';
-    html+='<div class="card-title"><i class="ti ti-timeline"></i> Timeline <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· Sessions, Reviews, Meilensteine & Highscores</span></div>';
-    if(!tlEvents.length){
-      html+='<div style="text-align:center;color:var(--text3);padding:24px"><i class="ti ti-timeline" style="font-size:26px;display:block;margin-bottom:8px"></i>Noch keine Ereignisse vorhanden</div>';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">';
+    html+='<div class="card-title" style="margin:0"><i class="ti ti-timeline"></i> Timeline</div>';
+    html+='<div class="chart-toggle">';
+    [{k:'all',l:'Alle'},{k:'session',l:'Sessions'},{k:'review',l:'Reviews'},{k:'milestone',l:'Meilensteine'},{k:'record',l:'Highscores'}].forEach(function(it){
+      html+='<button class="'+(tlFilter===it.k?'active':'')+'" data-f="'+it.k+'" onclick="setTlFilter(this.dataset.f)">'+it.l+'</button>';
+    });
+    html+='</div>';
+    html+='</div>';
+    var filteredEvents=tlFilter==='all'?tlEvents:tlEvents.filter(function(ev){return ev.kind===tlFilter;});
+    if(!filteredEvents.length){
+      html+='<div style="text-align:center;color:var(--text3);padding:24px"><i class="ti ti-timeline" style="font-size:26px;display:block;margin-bottom:8px"></i>Keine Ereignisse in dieser Ansicht</div>';
     } else {
-      html+='<div style="display:flex;flex-direction:column;gap:6px">';
-      tlEvents.forEach(function(ev){
+      html+='<div style="position:relative;padding-left:22px">';
+      html+='<div style="position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,var(--border2),var(--border))"></div>';
+      filteredEvents.forEach(function(ev){
         var isRecord=ev.kind==='record';
         var rowBg=isRecord?'rgba(126,210,219,0.28)':'rgba(0,0,0,0.03)';
         var rowBorder=isRecord?'#7ED2DB':'var(--border2)';
+        html+='<div style="position:relative;margin-bottom:8px">';
+        html+='<div style="position:absolute;left:-22px;top:13px;width:11px;height:11px;border-radius:50%;background:'+ev.col+';border:2px solid var(--bg-solid);box-shadow:0 0 0 2px '+(isRecord?'#7ED2DB':'transparent')+'"></div>';
         html+='<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:'+rowBg+';border:1px solid '+rowBorder+';border-radius:var(--r-md);min-height:20px">';
         html+='<i class="ti '+ev.icon+'" style="font-size:15px;color:'+ev.col+';margin-top:1px;flex-shrink:0"></i>';
         html+='<div style="flex:1;min-width:0">';
         html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:12px;font-weight:700">'+fd(ev.date)+'</span><span style="font-size:11.5px;color:var(--text2)">· '+ev.title+'</span></div>';
         html+='<div style="font-size:11.5px;color:var(--text2);margin-top:2px">'+(ev.sub||'\u00A0')+'</div>';
-        html+='</div></div>';
+        html+='</div></div></div>';
       });
       html+='</div>';
     }
     html+='</div>'; // Ende Timeline-Karte
   }
+
 
   // ── PERFORMANCE TAB ──
   if(activeTab==='performance'){
