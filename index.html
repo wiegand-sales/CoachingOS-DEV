@@ -1051,7 +1051,7 @@ function renderCoachingAnsicht(){
     '</div>';
   h+='<div class="tab-bar">';
   h+='<div class="tab'+(coachFilterView==='overview'?' active':'')+'" onclick="setCoachFilterView(\'overview\')">Overview</div>';
-  h+='<div class="tab'+(coachFilterView==='coverage'?' active':'')+'" onclick="setCoachFilterView(\'coverage\')">Coaching-Abdeckung</div>';
+  h+='<div class="tab'+(coachFilterView==='coverage'?' active':'')+'" onclick="setCoachFilterView(\'coverage\')">Coverage</div>';
   if(coachList.length){
     coachList.forEach(function(c){
       h+='<div class="tab'+(coachFilterView===c.id?' active':'')+'" onclick="setCoachFilterView(\''+c.id+'\')">'+c.name.split(' ')[0]+'</div>';
