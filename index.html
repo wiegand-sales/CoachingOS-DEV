@@ -389,15 +389,15 @@ tr:hover td{background:var(--bg2);}
   </div>
   <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
     <div style="border-radius:var(--r-md);overflow:hidden">
-      <div style="background:#E8F5EE;padding:7px 12px;border-left:3px solid #2D7A4F"><span style="font-size:11px;font-weight:700;color:#2D7A4F">START</span> <span style="font-size:11px;color:#2D7A4F;opacity:0.7">– Was soll neu begonnen werden?</span></div>
+      <div style="background:var(--teal-bg);padding:7px 12px;border-left:3px solid var(--teal-dark)"><span style="font-size:11px;font-weight:700;color:var(--teal-dark)">START</span> <span style="font-size:11px;color:var(--teal-dark);opacity:0.7">– Was soll neu begonnen werden?</span></div>
       <textarea id="sess-start" rows="2" style="width:100%;box-sizing:border-box;padding:8px 12px;font-size:12px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);background:var(--bg);color:var(--text);resize:vertical"></textarea>
     </div>
     <div style="border-radius:var(--r-md);overflow:hidden">
-      <div style="background:#FDECEA;padding:7px 12px;border-left:3px solid #C0392B"><span style="font-size:11px;font-weight:700;color:#C0392B">STOP</span> <span style="font-size:11px;color:#C0392B;opacity:0.7">– Was soll aufgehört werden?</span></div>
+      <div style="background:var(--red-bg);padding:7px 12px;border-left:3px solid var(--red)"><span style="font-size:11px;font-weight:700;color:var(--red)">STOP</span> <span style="font-size:11px;color:var(--red);opacity:0.7">– Was soll aufgehört werden?</span></div>
       <textarea id="sess-stop" rows="2" style="width:100%;box-sizing:border-box;padding:8px 12px;font-size:12px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);background:var(--bg);color:var(--text);resize:vertical"></textarea>
     </div>
     <div style="border-radius:var(--r-md);overflow:hidden">
-      <div style="background:#FEF9E7;padding:7px 12px;border-left:3px solid #B8860B"><span style="font-size:11px;font-weight:700;color:#B8860B">CONTINUE</span> <span style="font-size:11px;color:#B8860B;opacity:0.7">– Was soll beibehalten werden?</span></div>
+      <div style="background:var(--amber-bg);padding:7px 12px;border-left:3px solid var(--amber-dark)"><span style="font-size:11px;font-weight:700;color:var(--amber-dark)">CONTINUE</span> <span style="font-size:11px;color:var(--amber-dark);opacity:0.7">– Was soll beibehalten werden?</span></div>
       <textarea id="sess-cont" rows="2" style="width:100%;box-sizing:border-box;padding:8px 12px;font-size:12px;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-md) var(--r-md);background:var(--bg);color:var(--text);resize:vertical"></textarea>
     </div>
     <div style="border-radius:var(--r-md);overflow:hidden">
@@ -2233,30 +2233,6 @@ function renderTab(){
 
   // ── TIMELINE TAB ──
   if(activeTab==='timeline'){
-    // KPI-Snapshot: Trend vs. Vormonat + Rollen-Benchmark
-    html+='<div class="sec-title" style="margin-bottom:10px">KPI-Snapshot <span style="font-weight:400;text-transform:none;letter-spacing:0">· dieser Monat vs. Vormonat · vs. Ø '+emp.role+'</span></div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">';
-    [{k:'crOEM',l:'CR OEM'},{k:'crTeilweise',l:'CR Teilweise'},{k:'crSuperYes',l:'CR Super Yes'},{k:'crMegaYes',l:'CR Mega Yes'}].forEach(function(d){
-      var cur=monthAvg(emp.id,d.k,0);
-      var prev=monthAvg(emp.id,d.k,1);
-      var bench=roleBenchmark(emp.id,d.k,30);
-      var trend=(cur!==null&&prev!==null)?cur-prev:null;
-      var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
-      var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
-      var vsRole=(cur!==null&&bench!==null)?cur-bench:null;
-      var vsRoleTxt=vsRole===null?'—':(vsRole>=0?'+':'')+vsRole.toFixed(1)+'% vs. Ø Rolle';
-      var vsRoleCol=vsRole===null?'var(--text3)':(vsRole>=0?'var(--teal-dark)':'var(--red)');
-      html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
-        +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">'+d.l.toUpperCase()+'</div>'
-        +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">'
-        +'<div style="font-size:20px;font-weight:700">'+(cur!==null?Math.round(cur)+'%':'—')+'</div>'
-        +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
-        +'</div>'
-        +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+'%':'—')+'</div>'
-        +'<div style="font-size:10.5px;color:'+vsRoleCol+';margin-top:2px;font-weight:600">'+vsRoleTxt+'</div>'
-        +'</div>';
-    });
-    html+='</div>';
 
     // Kombinierte Timeline: Sessions + Reviews + KPI-Meilensteine
     var tlEvents=[];
@@ -2964,9 +2940,9 @@ function renderTab(){
     ];
     // Gleiche Farben wie Coaching Tab
     var SCCAT={
-      skill: {col:'#534AB7',fill:'rgba(83,74,183,0.15)',  bg:'#EEEDFE', l:'Skill'},
-      will:  {col:'#C47A1E',fill:'rgba(196,122,30,0.15)', bg:'#FBEAE0', l:'Will'},
-      result:{col:'#0A6B55',fill:'rgba(10,107,85,0.15)',  bg:'#E1F5EE', l:'Result'}
+      skill: {col:'#206A72',fill:'rgba(32,106,114,0.15)',  bg:'var(--purple-bg)', l:'Skill'},
+      will:  {col:'#D94109',fill:'rgba(217,65,9,0.15)', bg:'var(--amber-bg)', l:'Will'},
+      result:{col:'#3f6c72',fill:'rgba(91,151,158,0.15)',  bg:'var(--teal-bg)', l:'Result'}
     };
     var sessions=(protocols[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
     var completedSessions=sessions.filter(function(s){return s.status!=='geplant';});
@@ -2978,6 +2954,31 @@ function renderTab(){
     var maxVal=Math.max(1,Math.max.apply(null,SDIMS.map(function(d){return tc[d.key];})));
     var catSum={skill:0,will:0,result:0};
     SDIMS.forEach(function(d){catSum[d.cat]+=tc[d.key];});
+
+    // ── KPI-Snapshot: Trend vs. Vormonat + Rollen-Benchmark ──
+    html+='<div class="sec-title" style="margin-bottom:10px">KPI-Snapshot <span style="font-weight:400;text-transform:none;letter-spacing:0">· dieser Monat vs. Vormonat · vs. Ø '+emp.role+'</span></div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">';
+    [{k:'crOEM',l:'CR OEM'},{k:'crTeilweise',l:'CR Teilweise'},{k:'crSuperYes',l:'CR Super Yes'},{k:'crMegaYes',l:'CR Mega Yes'}].forEach(function(d){
+      var cur=monthAvg(emp.id,d.k,0);
+      var prev=monthAvg(emp.id,d.k,1);
+      var bench=roleBenchmark(emp.id,d.k,30);
+      var trend=(cur!==null&&prev!==null)?cur-prev:null;
+      var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
+      var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
+      var vsRole=(cur!==null&&bench!==null)?cur-bench:null;
+      var vsRoleTxt=vsRole===null?'—':(vsRole>=0?'+':'')+vsRole.toFixed(1)+'% vs. Ø Rolle';
+      var vsRoleCol=vsRole===null?'var(--text3)':(vsRole>=0?'var(--teal-dark)':'var(--red)');
+      html+='<div class="card" style="padding:12px 14px;margin-bottom:0">'
+        +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">'+d.l.toUpperCase()+'</div>'
+        +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px">'
+        +'<div style="font-size:20px;font-weight:700">'+(cur!==null?Math.round(cur)+'%':'—')+'</div>'
+        +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
+        +'</div>'
+        +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+'%':'—')+'</div>'
+        +'<div style="font-size:10.5px;color:'+vsRoleCol+';margin-top:2px;font-weight:600">'+vsRoleTxt+'</div>'
+        +'</div>';
+    });
+    html+='</div>';
 
     // ── Coaching-Übersicht: EINE Karte, links Spinnendiagramm + Aktionen, rechts Zusammenfassung (oben) ──
     html+='<div class="card" style="margin-bottom:12px">';
@@ -3077,7 +3078,7 @@ function renderTab(){
         if(rm)html+='<span style="font-size:11px;font-weight:700;color:'+rm.c+';flex-shrink:0">'+s.rating+'</span>';
         html+='<span id="arr-'+eid+'" style="color:var(--text3);font-size:12px;flex-shrink:0;transition:transform .2s">▾</span></div>';
         html+='<div id="body-'+eid+'" style="display:none;border-top:1px solid var(--border)">';
-        [{key:'start',label:'START',col:'#2D7A4F'},{key:'stop',label:'STOP',col:'#C0392B'},{key:'cont',label:'CONTINUE',col:'#B8860B'},{key:'notes',label:'Notizen',col:'var(--text2)'}].forEach(function(f){
+        [{key:'start',label:'START',col:'var(--teal-dark)'},{key:'stop',label:'STOP',col:'var(--red)'},{key:'cont',label:'CONTINUE',col:'var(--amber-dark)'},{key:'notes',label:'Notizen',col:'var(--text2)'}].forEach(function(f){
           var val=s[f.key]||'';if(!val.trim())return;
           html+='<div style="padding:8px 14px;border-bottom:1px solid var(--border);border-left:3px solid '+f.col+'">';
           html+='<div style="font-size:10px;font-weight:700;color:'+f.col+';margin-bottom:3px">'+f.label+'</div>';
