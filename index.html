@@ -3525,7 +3525,7 @@ function renderTab(){
         else if(dueDays===1){dueLabel='Morgen fällig';}
         else{dueLabel='Fällig in '+dueDays+'d';}
       }
-      var statusBadge=t.status==='in_progress'?'<span style="font-size:10px;font-weight:700;color:#32A8B4;background:rgba(50,168,180,0.12);padding:2px 7px;border-radius:20px;margin-left:6px">in progress</span>':'';
+      var statusBadge=t.status==='in_progress'?'<span style="font-size:10px;font-weight:700;color:#32A8B4;background:rgba(50,168,180,0.12);padding:2px 7px;border-radius:20px;margin-left:6px">in Arbeit</span>':'';
       return '<div class="task-item'+(od?' overdue':'')+(t.done?' done-item':'')+'" id="task-'+t.id+'">'
         +'<div class="task-row" onclick="toggleTaskDetail(\''+t.id+'\')">'
         +'<div class="task-check'+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleTask(\''+t.id+'\')">'+(t.done?'<i class="ti ti-check" style="font-size:11px"></i>':'')+'</div>'
