@@ -2956,7 +2956,6 @@ function renderTab(){
     SDIMS.forEach(function(d){catSum[d.cat]+=tc[d.key];});
 
     // ── KPI-Snapshot: Trend vs. Vormonat + Rollen-Benchmark ──
-    html+='<div class="sec-title" style="margin-bottom:10px">KPI-Snapshot <span style="font-weight:400;text-transform:none;letter-spacing:0">· dieser Monat vs. Vormonat · vs. Ø '+emp.role+'</span></div>';
     html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">';
     [{k:'crOEM',l:'CR OEM'},{k:'crTeilweise',l:'CR Teilweise'},{k:'crSuperYes',l:'CR Super Yes'},{k:'crMegaYes',l:'CR Mega Yes'}].forEach(function(d){
       var cur=monthAvg(emp.id,d.k,0);
