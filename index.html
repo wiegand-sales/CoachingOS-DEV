@@ -583,6 +583,14 @@ function loadEmployeesFromSupabase(){
 var _appInitStarted = false;
 var currentCoach = null;      // {id,name,role} falls eingeloggter User ein Coach (SDM/SC) ist, sonst null (Admin/Overview)
 var coachFilterView = 'overview'; // 'overview' | employee-id des Coaches
+var coachCalYear=null, coachCalMonthIdx=null; // Kalender-Monatsnavigation SFP Coaching (init. beim ersten Rendern auf aktuellen Monat)
+function setCoachCalMonth(delta){
+  var d=new Date(coachCalYear,coachCalMonthIdx+delta,1);
+  if(d.getFullYear()<2026)return;
+  if(d.getFullYear()>2030||(d.getFullYear()===2030&&d.getMonth()>11))return;
+  coachCalYear=d.getFullYear();coachCalMonthIdx=d.getMonth();
+  renderCoachingAnsicht();
+}
 var SESSION_TYPES=['Call Shadowing Aktiv','Call Shadowing Passiv','1:1 Coaching','Calls Review','Gruppencoaching','Quiz','SolidRoad','Bemerkung','Sonstiges'];
 var SESSION_TOPICS=['Einwandsbehandlung','Bedarfsanalyse','Produktwissen','Gesprächsführung','Motivation','Coachability','Zuverlässigkeit','Teamfähigkeit','CR OEM','CR TW','CR SY','CR MY','Sonstiges'];
 var FOCUS_METRICS=[
@@ -706,11 +714,12 @@ function computeCoachEffectiveness(){
 function renderCoachingAnsicht(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var heute=today(),hD=new Date(heute+'T00:00:00');
+  if(coachCalYear===null){coachCalYear=hD.getFullYear();coachCalMonthIdx=hD.getMonth();}
   var liste=employees.filter(function(e){return e.active!==false;});
   var all=[];
   liste.forEach(function(emp){
     (protocols[emp.id]||[]).forEach(function(p){
-      all.push({eid:emp.id,en:emp.name,d:p.date,r:p.rating,f:p.focus||'',s:p.status||'abgeschlossen',t:p.type||p.typ||'',sid:p.id,uhrzeit:p.uhrzeit||'',coachId:p.coachId||null});
+      all.push({eid:emp.id,en:emp.name,d:p.date,r:p.rating,f:p.focus||'',s:p.status||'abgeschlossen',t:p.type||p.typ||'',sid:p.id,uhrzeit:p.uhrzeit||'',endUhrzeit:p.endUhrzeit||'',start:p.start||'',stop:p.stop||'',cont:p.cont||'',notes:p.notes||'',topics:p.topics||[],coachId:p.coachId||null});
     });
   });
   all.sort(function(a,b){return b.d.localeCompare(a.d);});
@@ -725,7 +734,15 @@ function renderCoachingAnsicht(){
   function mday(d){var dt=new Date(d+'T00:00:00'),m=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];return dt.getDate()+'. '+m[dt.getMonth()];}
   function tdiff(d){var df=Math.round((new Date(d+'T00:00:00')-hD)/86400000);return df===0?'Heute':df===1?'Morgen':df<0?Math.abs(df)+'d her':'in '+df+'d';}
   function sessIn(days){var cut=new Date(hD);cut.setDate(cut.getDate()-days);var cs=cut.toISOString().slice(0,10);return abg.filter(function(x){return x.d>=cs&&x.d<=heute;}).length;}
+  function sessPrev(days){var cutTo=new Date(hD);cutTo.setDate(cutTo.getDate()-days);var cutFrom=new Date(hD);cutFrom.setDate(cutFrom.getDate()-days*2);var csF=cutFrom.toISOString().slice(0,10),csT=cutTo.toISOString().slice(0,10);return abg.filter(function(x){return x.d>=csF&&x.d<csT;}).length;}
+  function trendInfo(cur,prev){
+    var d=cur-prev;
+    var arrow=d>0?'↑':d<0?'↓':'→';
+    var col=d>0?'var(--teal-dark)':d<0?'var(--red)':'var(--text2)';
+    return {arrow:arrow,col:col,txt:(d>0?'+':'')+d+' vs. vorherige Periode'};
+  }
   var s7=sessIn(7),s14=sessIn(14),s30=sessIn(30);
+  var t7=trendInfo(s7,sessPrev(7)),t14=trendInfo(s14,sessPrev(14)),t30=trendInfo(s30,sessPrev(30));
 
   // 30 Tage Daten für Linien-Chart
   var spark=[];
@@ -742,7 +759,7 @@ function renderCoachingAnsicht(){
     var W=900,H=120,padL=28,padR=12,padT=18,padB=28;
     var cW=W-padL-padR,cH=H-padT-padB;
     var days=[];
-    for(var i=-14;i<=14;i++){
+    for(var i=-90;i<=7;i++){
       var dt=new Date(hD);dt.setDate(dt.getDate()+i);
       var ds=dt.toISOString().slice(0,10);
       var cnt=i>0
@@ -754,7 +771,7 @@ function renderCoachingAnsicht(){
     var nD=days.length;
     function xP(idx){return padL+Math.round(idx/(nD-1)*cW);}
     function yP(n){return padT+cH-Math.round(n/maxN*cH);}
-    var hIdx=14,hX=xP(hIdx),bY=padT+cH;
+    var hIdx=90,hX=xP(hIdx),bY=padT+cH;
     var svg='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;overflow:visible">';
     for(var g=0;g<=maxN;g++){
       var gy=yP(g);
@@ -763,8 +780,8 @@ function renderCoachingAnsicht(){
     }
     svg+='<line x1="'+padL+'" y1="'+bY+'" x2="'+(W-padR)+'" y2="'+bY+'" stroke="var(--border)" stroke-width="1"/>';
     svg+='<defs>'+
-      '<linearGradient id="gPast" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#534AB7" stop-opacity="0.3"/><stop offset="100%" stop-color="#534AB7" stop-opacity="0.02"/></linearGradient>'+
-      '<linearGradient id="gFut" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#534AB7" stop-opacity="0.12"/><stop offset="100%" stop-color="#534AB7" stop-opacity="0"/></linearGradient>'+
+      '<linearGradient id="gPast" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#206A72" stop-opacity="0.28"/><stop offset="100%" stop-color="#206A72" stop-opacity="0.02"/></linearGradient>'+
+      '<linearGradient id="gFut" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#206A72" stop-opacity="0.12"/><stop offset="100%" stop-color="#206A72" stop-opacity="0"/></linearGradient>'+
       '</defs>';
     var pPts=days.slice(0,hIdx+1);
     var pArea='M '+xP(0)+' '+bY+' L '+xP(0)+' '+yP(pPts[0].n);
@@ -773,7 +790,7 @@ function renderCoachingAnsicht(){
     svg+='<path d="'+pArea+'" fill="url(#gPast)"/>';
     var pLine='M '+xP(0)+' '+yP(pPts[0].n);
     pPts.forEach(function(d,i){if(i===0)return;var px=xP(i-1),py=yP(pPts[i-1].n),cx=xP(i),cy=yP(d.n),mx=px+(cx-px)*0.5;pLine+=' C '+mx+' '+py+','+mx+' '+cy+','+cx+' '+cy;});
-    svg+='<path d="'+pLine+'" fill="none" stroke="#534AB7" stroke-width="2"/>';
+    svg+='<path d="'+pLine+'" fill="none" stroke="#206A72" stroke-width="2"/>';
     var fPts=days.slice(hIdx);
     var fArea='M '+hX+' '+bY+' L '+hX+' '+yP(fPts[0].n);
     fPts.forEach(function(d,i){if(i===0)return;var px=xP(hIdx+i-1),py=yP(fPts[i-1].n),cx=xP(hIdx+i),cy=yP(d.n),mx=px+(cx-px)*0.5;fArea+=' C '+mx+' '+py+','+mx+' '+cy+','+cx+' '+cy;});
@@ -781,19 +798,19 @@ function renderCoachingAnsicht(){
     svg+='<path d="'+fArea+'" fill="url(#gFut)"/>';
     var fLine='M '+hX+' '+yP(fPts[0].n);
     fPts.forEach(function(d,i){if(i===0)return;var px=xP(hIdx+i-1),py=yP(fPts[i-1].n),cx=xP(hIdx+i),cy=yP(d.n),mx=px+(cx-px)*0.5;fLine+=' C '+mx+' '+py+','+mx+' '+cy+','+cx+' '+cy;});
-    svg+='<path d="'+fLine+'" fill="none" stroke="#534AB7" stroke-width="2" stroke-dasharray="5,3" opacity="0.7"/>';
-    svg+='<line x1="'+hX+'" y1="'+padT+'" x2="'+hX+'" y2="'+bY+'" stroke="#E53935" stroke-width="2"/>';
-    svg+='<text x="'+hX+'" y="'+(padT-4)+'" text-anchor="middle" font-size="9" fill="#E53935" font-weight="600">Heute</text>';
+    svg+='<path d="'+fLine+'" fill="none" stroke="#206A72" stroke-width="2" stroke-dasharray="5,3" opacity="0.7"/>';
+    svg+='<line x1="'+hX+'" y1="'+padT+'" x2="'+hX+'" y2="'+bY+'" stroke="var(--border2)" stroke-width="1" stroke-dasharray="3,3"/>';
+    svg+='<text x="'+hX+'" y="'+(padT-4)+'" text-anchor="middle" font-size="8" fill="var(--text3)" font-weight="500">Heute</text>';
     days.forEach(function(d,i){
       if(d.n>0){
         var x=xP(i),y=yP(d.n);
-        svg+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="white" stroke="#534AB7" stroke-width="1.5" opacity="'+(d.future?0.65:1)+'"/>';
-        if(d.n>1)svg+='<text x="'+x+'" y="'+(y-8)+'" text-anchor="middle" font-size="9" fill="#534AB7" font-weight="600" opacity="'+(d.future?0.65:1)+'">'+d.n+'</text>';
+        svg+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="white" stroke="#206A72" stroke-width="1.5" opacity="'+(d.future?0.65:1)+'"/>';
+        if(d.n>1)svg+='<text x="'+x+'" y="'+(y-8)+'" text-anchor="middle" font-size="9" fill="#206A72" font-weight="600" opacity="'+(d.future?0.65:1)+'">'+d.n+'</text>';
       }
     });
     days.forEach(function(d,i){
-      if(i===0||i===7||i===14||i===21||i===28){
-        svg+='<text x="'+xP(i)+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="'+(d.isH?'#E53935':'var(--text3)')+'" font-weight="'+(d.isH?600:400)+'">'+d.day+'</text>';
+      if(i%14===0||i===nD-1){
+        svg+='<text x="'+xP(i)+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="'+(d.isH?'var(--purple-dark)':'var(--text3)')+'" font-weight="'+(d.isH?600:400)+'">'+d.day+'</text>';
       }
     });
     svg+='</svg>';
@@ -802,13 +819,23 @@ function renderCoachingAnsicht(){
 
   // Kalender
   function buildKal(){
-    var k='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">';
+    var mNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    var firstOfMonth=new Date(coachCalYear,coachCalMonthIdx,1);
+    var daysInMonth=new Date(coachCalYear,coachCalMonthIdx+1,0).getDate();
+    var atMin=(coachCalYear===2026&&coachCalMonthIdx===0);
+    var atMax=(coachCalYear===2030&&coachCalMonthIdx===11);
+    var k='<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px">';
+    k+='<button class="btn btn-sm" '+(atMin?'disabled style="opacity:0.35;cursor:default"':'onclick="setCoachCalMonth(-1)"')+'><i class="ti ti-chevron-left"></i></button>';
+    k+='<div style="font-size:14px;font-weight:700;min-width:150px;text-align:center">'+mNames[coachCalMonthIdx]+' '+coachCalYear+'</div>';
+    k+='<button class="btn btn-sm" '+(atMax?'disabled style="opacity:0.35;cursor:default"':'onclick="setCoachCalMonth(1)"')+'><i class="ti ti-chevron-right"></i></button>';
+    k+='</div>';
+    k+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">';
     ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(function(t){k+='<div style="font-size:10px;font-weight:600;color:var(--text3);text-align:center;padding:2px 0">'+t+'</div>';});
     k+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
-    var off=hD.getDay();off=off===0?6:off-1;
+    var off=firstOfMonth.getDay();off=off===0?6:off-1;
     for(var i=0;i<off;i++)k+='<div></div>';
-    for(var d=0;d<30;d++){
-      var dt=new Date(hD);dt.setDate(dt.getDate()+d);
+    for(var d=1;d<=daysInMonth;d++){
+      var dt=new Date(coachCalYear,coachCalMonthIdx,d);
       var ds=dt.toISOString().slice(0,10),isH=ds===heute;
       var sg=all.filter(function(x){return x.d===ds&&x.s==='geplant';});
       var sa=all.filter(function(x){return x.d===ds&&x.s!=='geplant';});
@@ -816,7 +843,7 @@ function renderCoachingAnsicht(){
       var bgCol=isH?'var(--purple-bg)':'var(--bg)';
       var ftCol=isH?'var(--purple)':'var(--text)';
       k+='<div data-d="'+ds+'" onclick="kalKlick(this.dataset.d)" style="cursor:pointer;border:1px solid '+bdrCol+';background:'+bgCol+';border-radius:5px;padding:5px;min-height:52px">';
-      k+='<div style="font-size:11px;font-weight:'+(isH?600:400)+';color:'+ftCol+';margin-bottom:3px">'+dt.getDate()+'</div>';
+      k+='<div style="font-size:11px;font-weight:'+(isH?600:400)+';color:'+ftCol+';margin-bottom:3px">'+d+'</div>';
       sg.slice(0,2).forEach(function(x){var c=ec(x.eid);k+='<div style="font-size:9px;background:'+c.bg+';color:'+c.text+';border-radius:2px;padding:1px 4px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+x.en.split(' ')[0]+'</div>';});
       sa.slice(0,3).forEach(function(x){var r2=x.r?RS[x.r]:null;k+='<span style="width:7px;height:7px;border-radius:50%;background:'+(r2?r2.bg:'var(--bg3)')+';display:inline-block;margin-right:2px" title="'+x.en+'"></span>';});
       k+='</div>';
@@ -841,10 +868,10 @@ function renderCoachingAnsicht(){
 
   // ══ ZEILE 1: 3 Stat-Kacheln + Linien-Chart (volle Breite) ══
   h+='<div style="display:grid;grid-template-columns:repeat(3,140px) 1fr;gap:12px;margin-bottom:16px;align-items:stretch">';
-  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--purple);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--purple);letter-spacing:.05em;margin-bottom:4px">7 TAGE</div><div style="font-size:20px;font-weight:700;color:var(--purple);line-height:1">'+s7+'</div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div></div>';
-  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--teal);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--teal);letter-spacing:.05em;margin-bottom:4px">14 TAGE</div><div style="font-size:20px;font-weight:700;color:var(--teal);line-height:1">'+s14+'</div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div></div>';
-  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--blue);letter-spacing:.05em;margin-bottom:4px">30 TAGE</div><div style="font-size:20px;font-weight:700;color:var(--blue);line-height:1">'+s30+'</div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div></div>';
-  h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.05em;margin-bottom:8px">SESSION-VERLAUF – LETZTE 30 TAGE</div>'+buildChart()+'</div>';
+  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--purple);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--purple);letter-spacing:.05em;margin-bottom:4px">7 TAGE</div><div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:20px;font-weight:700;color:var(--purple);line-height:1">'+s7+'</div><div style="font-size:12px;font-weight:700;color:'+t7.col+'">'+t7.arrow+'</div></div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div><div style="font-size:10px;color:'+t7.col+';margin-top:1px;font-weight:600">'+t7.txt+'</div></div>';
+  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--teal);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--teal);letter-spacing:.05em;margin-bottom:4px">14 TAGE</div><div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:20px;font-weight:700;color:var(--teal);line-height:1">'+s14+'</div><div style="font-size:12px;font-weight:700;color:'+t14.col+'">'+t14.arrow+'</div></div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div><div style="font-size:10px;color:'+t14.col+';margin-top:1px;font-weight:600">'+t14.txt+'</div></div>';
+  h+='<div style="background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:var(--r-lg);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--blue-dark);letter-spacing:.05em;margin-bottom:4px">30 TAGE</div><div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:20px;font-weight:700;color:var(--blue-dark);line-height:1">'+s30+'</div><div style="font-size:12px;font-weight:700;color:'+t30.col+'">'+t30.arrow+'</div></div><div style="font-size:10.5px;color:var(--text2);margin-top:3px">Sessions</div><div style="font-size:10px;color:'+t30.col+';margin-top:1px;font-weight:600">'+t30.txt+'</div></div>';
+  h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:12px 14px"><div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.05em;margin-bottom:8px">SESSION-VERLAUF – LETZTE 90 TAGE</div>'+buildChart()+'</div>';
   h+='</div>';
 
   // ══ Coach-Wirksamkeit (nur Overview, ab 2 Coaches sinnvoll) ══
@@ -879,25 +906,23 @@ function renderCoachingAnsicht(){
   // ══ ZEILE 2: Kalender volle Breite ══
   h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:16px 18px;margin-bottom:16px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">';
-  h+='<div class="sec-title" style="margin:0">Kalender – nächste 30 Tage <span style="font-weight:400;font-size:12px;color:var(--text3)">· Klick auf Tag = Session planen</span></div>';
+  h+='<div class="sec-title" style="margin:0">Kalender <span style="font-weight:400;font-size:12px;color:var(--text3)">· Klick auf Tag = Session planen</span></div>';
   h+='<div style="display:flex;gap:10px"><span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;border:1px solid var(--purple);background:var(--purple-bg);display:inline-block"></span>Heute</span><span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#EEEDFE;display:inline-block"></span>Geplant</span><span style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#9FE1CB;display:inline-block"></span>Abgeschlossen</span></div>';
   h+='</div>'+buildKal()+'</div>';
 
-  // ══ ZEILE 3: Geplante Sessions | Letzte Sessions ══
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch">';
-
-  // Geplante
-  h+='<div style="display:flex;flex-direction:column"><div class="sec-title" style="margin-bottom:10px">Geplante Sessions'+(gep.length?' <span style="background:var(--purple-bg);color:var(--purple);font-size:11px;padding:1px 8px;border-radius:20px;margin-left:6px">'+gep.length+'</span>':'')+'</div>';
+  // ══ Geplante Sessions (volle Breite, weiße Box) ══
+  h+='<div class="card" style="margin-bottom:22px">';
+  h+='<div class="card-title"><i class="ti ti-calendar-event"></i> Geplante Sessions'+(gep.length?' <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+gep.length+')</span>':'')+'</div>';
   if(!gep.length){
-    h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:28px;text-align:center;color:var(--text3);flex:1"><i class="ti ti-calendar-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Keine Sessions geplant<div style="margin-top:10px"><button class="btn btn-sm btn-primary" onclick="openSessionModal(0)"><i class="ti ti-plus"></i> Jetzt planen</button></div></div>';
+    h+='<div style="text-align:center;color:var(--text3);padding:28px"><i class="ti ti-calendar-off" style="font-size:28px;display:block;margin-bottom:8px"></i>Keine Sessions geplant<div style="margin-top:10px"><button class="btn btn-sm btn-primary" onclick="openSessionModal(0)"><i class="ti ti-plus"></i> Jetzt planen</button></div></div>';
   } else {
-    h+='<div style="display:flex;flex-direction:column;gap:8px;flex:1">';
+    h+='<div style="display:flex;flex-direction:column;gap:8px">';
     gep.forEach(function(x){
       var c=ec(x.eid),dt2=new Date(x.d+'T00:00:00'),df=Math.round((dt2-hD)/86400000);
-      var pTyp=(x.typ||x.t||'').replace(/[<>"']/g,'');
+      var pTyp=(x.t||'').replace(/[<>"']/g,'');
       var pFok=(x.f||'').replace(/[<>"']/g,'');
       var pUhr=(x.uhrzeit||'').replace(/[<>"']/g,'');
-      h+='<div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:var(--r-lg);padding:11px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openPlannedSession(\''+x.eid+'\',\''+x.sid+'\',\''+pTyp+'\',\''+pFok+'\',\''+x.d+'\',\''+pUhr+'\')">';
+      h+='<div style="background:rgba(0,0,0,0.045);border:1px solid var(--border2);border-radius:var(--r-lg);padding:11px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openPlannedSession(\''+x.eid+'\',\''+x.sid+'\',\''+pTyp+'\',\''+pFok+'\',\''+x.d+'\',\''+pUhr+'\')">';
       h+='<div style="min-width:46px;text-align:center;background:var(--purple-bg);border-radius:var(--r-md);padding:6px 8px;flex-shrink:0"><div style="font-size:10px;font-weight:600;color:var(--purple)">'+wday(x.d)+'</div><div style="font-size:21px;font-weight:700;color:var(--purple);line-height:1.1">'+dt2.getDate()+'</div></div>';
       h+='<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><div class="av" style="width:24px;height:24px;font-size:9px;background:'+c.bg+';color:'+c.text+';flex-shrink:0">'+ini(x.en)+'</div><span style="font-weight:600;font-size:13px;white-space:nowrap">'+x.en+'</span>'+(pUhr?'<span style="font-size:10px;color:var(--text2)"><i class="ti ti-clock" style="font-size:10px"></i> '+pUhr+'</span>':'')+' <span style="font-size:10px;padding:1px 6px;border-radius:20px;background:'+(df<=1?'var(--amber-bg)':'var(--bg2)')+';color:'+(df<=1?'var(--amber-dark)':'var(--text2)')+'">'+tdiff(x.d)+'</span></div><div style="font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(pTyp||'Coaching')+(pFok?' · '+pFok:'')+'</div></div>';
       h+='<button class="btn btn-sm" data-id="'+x.eid+'" data-d="'+x.d+'" data-f="'+pFok+'" onclick="event.stopPropagation();emailSession(this.dataset.id,this.dataset.d,this.dataset.f)" title="Termin-E-Mail" style="padding:6px 9px;flex-shrink:0"><i class="ti ti-mail"></i></button>';
@@ -907,24 +932,42 @@ function renderCoachingAnsicht(){
   }
   h+='</div>';
 
-  // Letzte Sessions
-  var let7=abg.slice(0,7);
-  h+='<div style="display:flex;flex-direction:column"><div class="sec-title" style="margin-bottom:10px">Letzte Sessions</div>';
+  // ══ Letzte Sessions (volle Breite, weiße Box, gleiches Tabellenformat wie Coaching-Historie) ══
+  var let7=abg.slice(0,10);
+  h+='<div class="card">';
+  h+='<div class="card-title"><i class="ti ti-history"></i> Letzte Sessions <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">('+let7.length+')</span></div>';
   if(!let7.length){
-    h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);padding:28px;text-align:center;color:var(--text3);flex:1"><i class="ti ti-history" style="font-size:28px;display:block;margin-bottom:8px"></i>Noch keine Sessions</div>';
+    h+='<div style="text-align:center;color:var(--text3);padding:28px"><i class="ti ti-history" style="font-size:28px;display:block;margin-bottom:8px"></i>Noch keine Sessions</div>';
   } else {
-    h+='<div style="background:var(--glass);border:1px solid var(--glass-edge);border-radius:var(--r-lg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);box-shadow:0 10px 24px rgba(15,61,66,0.06);overflow:hidden;flex:1">';
-    let7.forEach(function(x,i){
+    h+='<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;table-layout:fixed;border-collapse:collapse"><thead><tr>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap;width:14%">Mitarbeiter</th>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap;width:11%">Datum</th>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap;width:11%">Inhalt</th>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--teal-dark);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Start</th>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Stop</th>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--amber-dark);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Continue</th>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2)">Notizen</th>'
+      +'</tr></thead><tbody>';
+    var clampStyleT='display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;height:34px';
+    let7.forEach(function(x,idx){
       var c=ec(x.eid),r2=x.r?RS[x.r]:null;
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;'+(i?'border-top:1px solid var(--border)':'')+';cursor:pointer" onclick="selectEmp(\''+x.eid+'\')">';
-      h+='<div class="av" style="width:32px;height:32px;font-size:11px;background:'+c.bg+';color:'+c.text+';flex-shrink:0">'+ini(x.en)+'</div>';
-      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+x.en+'</div><div style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(x.f||x.t||'Session')+'</div></div>';
-      h+='<div style="text-align:right;flex-shrink:0">'+(r2?'<span class="badge" style="background:'+r2.bg+';color:'+r2.color+'">'+x.r+'</span>':'<span style="color:var(--text3)">—</span>')+'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+mday(x.d)+'</div></div>';
-      h+='</div>';
+      var _dur=sessionDuration(x.uhrzeit,x.endUhrzeit);
+      var rowBg=idx%2===1?'background:rgba(0,0,0,0.03);':'';
+      var tdStyle='padding:10px 14px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:top;height:1px';
+      h+='<tr style="'+rowBg+'">';
+      h+='<td style="'+tdStyle+'"><div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="selectEmp(\''+x.eid+'\')"><div class="av" style="width:22px;height:22px;font-size:9px;background:'+c.bg+';color:'+c.text+';flex-shrink:0">'+ini(x.en)+'</div><span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+x.en+'</span></div>'
+        +(r2?'<div style="margin-top:4px"><span class="badge" style="background:'+r2.bg+';color:'+r2.color+'">'+x.r+'</span></div>':'')+'</td>';
+      h+='<td style="'+tdStyle+';white-space:nowrap"><div style="font-weight:600">'+mday(x.d)+'</div>'
+        +'<div style="height:15px;font-size:10.5px;color:var(--text3);margin-top:2px">'+(x.uhrzeit?'<i class="ti ti-clock" style="font-size:10px"></i> '+x.uhrzeit+(x.endUhrzeit?'–'+x.endUhrzeit:'')+(_dur?' ('+formatDuration(_dur)+')':''):'')+'</div></td>';
+      h+='<td style="'+tdStyle+';color:var(--text2)"><div style="'+clampStyleT+'">'+(x.t||'Session')+(x.f?' · '+x.f:'')+'</div></td>';
+      h+='<td style="'+tdStyle+';color:var(--text)"><div style="'+clampStyleT+'">'+(x.start&&x.start.trim()?x.start:'<span style="color:var(--text3)">—</span>')+'</div></td>';
+      h+='<td style="'+tdStyle+';color:var(--text)"><div style="'+clampStyleT+'">'+(x.stop&&x.stop.trim()?x.stop:'<span style="color:var(--text3)">—</span>')+'</div></td>';
+      h+='<td style="'+tdStyle+';color:var(--text)"><div style="'+clampStyleT+'">'+(x.cont&&x.cont.trim()?x.cont:'<span style="color:var(--text3)">—</span>')+'</div></td>';
+      h+='<td style="'+tdStyle+';color:var(--text2);font-style:italic"><div style="'+clampStyleT+'">'+(x.notes&&x.notes.trim()?x.notes:'<span style="color:var(--text3);font-style:normal">—</span>')+'</div></td>';
+      h+='</tr>';
     });
-    h+='</div>';
+    h+='</tbody></table></div>';
   }
-  h+='</div>';
   h+='</div>';
 
   ma.innerHTML=h;
