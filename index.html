@@ -2053,7 +2053,8 @@ function buildOverviewTab(liste){
   if(!overviewEmpId||!visible.some(function(e){return e.id===overviewEmpId;}))overviewEmpId=visible[0].id;
   var emp=employees.find(function(e){return e.id===overviewEmpId;});
   var empT=empTargets(emp);
-  var perfAll=(performance[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var currentMonthKey=today().slice(0,7); // z.B. "2026-07"
+  var perfAll=(performance[emp.id]||[]).filter(function(x){return x.date.slice(0,7)===currentMonthKey;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
 
   var h='<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:14px">';
   h+='<select onchange="setOverviewEmp(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
@@ -2104,7 +2105,9 @@ function buildOverviewTab(liste){
   // Performance-Tabelle (Tag/Woche/Monat) für den gewählten Mitarbeiter
   h+='<div class="card">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-  h+='<div class="card-title" style="margin:0"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+'</span></div>';
+  var monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  var currentMonthLabel=monthNames[parseInt(currentMonthKey.slice(5,7),10)-1]+' '+currentMonthKey.slice(0,4);
+  h+='<div class="card-title" style="margin:0"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+' · '+currentMonthLabel+'</span></div>';
   h+='<div class="chart-toggle">';
   [{k:'day',l:'Tag'},{k:'week',l:'Woche'},{k:'month',l:'Monat'}].forEach(function(it){
     h+='<button class="'+(overviewPerfGroup===it.k?'active':'')+'" data-g="'+it.k+'" onclick="setOverviewPerfGroup(this.dataset.g)">'+it.l+'</button>';
@@ -2114,7 +2117,7 @@ function buildOverviewTab(liste){
   if(!perfAll.length){
     h+='<div style="text-align:center;color:var(--text3);padding:24px">'
       +'<i class="ti ti-file-upload" style="font-size:26px;display:block;margin-bottom:8px"></i>'
-      +'Noch keine Daten für '+emp.name+'</div>';
+      +'Noch keine Daten für '+emp.name+' in '+currentMonthLabel+'</div>';
   } else {
     var groupedRows=groupPerfRows(perfAll,overviewPerfGroup);
     var firstColLabel=overviewPerfGroup==='day'?'Datum':overviewPerfGroup==='week'?'Woche':'Monat';
