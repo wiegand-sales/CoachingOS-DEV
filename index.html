@@ -2053,17 +2053,23 @@ function buildOverviewTab(liste){
   var HIDDEN=['SDM','SC'];
   var visible=liste.filter(function(e){return HIDDEN.indexOf(e.role)<0;}).slice().sort(function(a,b){return a.name.localeCompare(b.name);});
   if(!visible.length)return '<div class="card" style="text-align:center;color:var(--text3);padding:40px">Keine Mitarbeiter vorhanden</div>';
-  if(!overviewEmpId||!visible.some(function(e){return e.id===overviewEmpId;}))overviewEmpId=visible[0].id;
-  var emp=employees.find(function(e){return e.id===overviewEmpId;});
-  var empT=empTargets(emp);
+  if(!overviewEmpId||(overviewEmpId!=='ALL'&&!visible.some(function(e){return e.id===overviewEmpId;})))overviewEmpId=visible[0].id;
+  var isAll=overviewEmpId==='ALL';
+  var emp=isAll?null:employees.find(function(e){return e.id===overviewEmpId;});
+  var empT=isAll?null:empTargets(emp);
   var currentMonthKey=today().slice(0,7); // z.B. "2026-07"
   var monthStart=currentMonthKey+'-01';
   var monthEnd=(function(){var d=new Date(today()+'T00:00:00');var last=new Date(d.getFullYear(),d.getMonth()+1,0);return last.toISOString().slice(0,10);})();
   var effFrom=overviewFromDate||monthStart;
   var effTo=overviewToDate||monthEnd;
-  var perfAll=(performance[emp.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var perfAll=isAll?[]:(performance[emp.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
 
   function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
+  var h='';
+
+  if(isAll){
+    h+='<div class="card" style="text-align:center;color:var(--text3);padding:16px;margin-bottom:22px;font-size:12px">Kacheln zeigen die KPIs eines einzelnen Mitarbeiters – bitte oben in der Tabelle einen Mitarbeiter statt "Alle" wählen, um sie zu sehen.</div>';
+  } else {
   var kpis=[
     {label:'CR OEM', key:'crOEM',      target:empT.crOEM.val,      dir:empT.crOEM.dir,      pct:true},
     {label:'CR TW',  key:'crTeilweise', target:empT.crTeilweise.val, dir:empT.crTeilweise.dir, pct:true},
@@ -2071,8 +2077,6 @@ function buildOverviewTab(liste){
     {label:'CR MY',  key:'crMegaYes',   target:empT.crMegaYes.val,   dir:empT.crMegaYes.dir,   pct:true},
     {label:'Conv. OEM',key:'convOEM',   target:null,                  dir:'gte',               pct:false},
   ];
-  var h='';
-
   h+='<div class="g5" style="margin-bottom:22px">';
   kpis.forEach(function(k){
     var cur=monthAvg(emp.id,k.key,0);
@@ -2104,15 +2108,17 @@ function buildOverviewTab(liste){
       +'</div>';
   });
   h+='</div>';
+  }
 
   // Performance-Tabelle (Tag/Woche/Monat) für den gewählten Mitarbeiter
   h+='<div class="card">';
   var monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   var currentMonthLabel=monthNames[parseInt(currentMonthKey.slice(5,7),10)-1]+' '+currentMonthKey.slice(0,4);
-  h+='<div class="card-title" style="margin-bottom:14px"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+' · '+fd(effFrom)+'–'+fd(effTo)+'</span></div>';
+  h+='<div class="card-title" style="margin-bottom:14px"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+(isAll?'Alle Mitarbeiter':emp.name)+' · '+fd(effFrom)+'–'+fd(effTo)+'</span></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
   h+='<select onchange="setOverviewEmp(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
-  visible.forEach(function(e){h+='<option value="'+e.id+'"'+(e.id===emp.id?' selected':'')+'>'+e.name+' ('+e.role+')</option>';});
+  h+='<option value="ALL"'+(isAll?' selected':'')+'>Alle</option>';
+  visible.forEach(function(e){h+='<option value="'+e.id+'"'+(!isAll&&e.id===emp.id?' selected':'')+'>'+e.name+' ('+e.role+')</option>';});
   h+='</select>';
   h+='<div class="chart-toggle">';
   [{k:'day',l:'Tag'},{k:'week',l:'Woche'},{k:'month',l:'Monat'}].forEach(function(it){
@@ -2128,13 +2134,24 @@ function buildOverviewTab(liste){
   h+=((overviewFromDate||overviewToDate)?'<button class="btn btn-sm" style="padding:4px 8px" onclick="setOverviewDateRange(null,null)" title="Zurück zum aktuellen Monat"><i class="ti ti-x"></i></button>':'');
   h+='</div>';
   h+='</div>';
-  if(!perfAll.length){
+  var combinedGroupedRows=[];
+  if(isAll){
+    visible.forEach(function(e){
+      var ePerf=(performance[e.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;});
+      if(!ePerf.length)return;
+      var eGrouped=groupPerfRows(ePerf,overviewPerfGroup);
+      eGrouped.forEach(function(g){combinedGroupedRows.push({g:g,emp:e,empT:empTargets(e)});});
+    });
+    combinedGroupedRows.sort(function(a,b){return a.emp.name.localeCompare(b.emp.name)||b.g.label.localeCompare(a.g.label);});
+  }
+  var hasAnyData=isAll?combinedGroupedRows.length>0:perfAll.length>0;
+  if(!hasAnyData){
     h+='<div style="text-align:center;color:var(--text3);padding:24px">'
       +'<i class="ti ti-file-upload" style="font-size:26px;display:block;margin-bottom:8px"></i>'
-      +'Noch keine Daten für '+emp.name+' im Zeitraum '+fd(effFrom)+'–'+fd(effTo)+'</div>';
+      +'Noch keine Daten für '+(isAll?'das Team':emp.name)+' im Zeitraum '+fd(effFrom)+'–'+fd(effTo)+'</div>';
   } else {
-    var groupedRows=groupPerfRows(perfAll,overviewPerfGroup);
     var firstColLabel=overviewPerfGroup==='day'?'Datum':overviewPerfGroup==='week'?'Woche':'Monat';
+    var rowsToRender=isAll?combinedGroupedRows:groupPerfRows(perfAll,overviewPerfGroup).map(function(g){return {g:g,emp:emp,empT:empT};});
     h+='<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;border-collapse:collapse"><thead><tr>'
       +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">Mitarbeiter</th>'
       +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">'+firstColLabel+'</th>'
@@ -2142,7 +2159,8 @@ function buildOverviewTab(liste){
         return '<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">'+hh+'</th>';
       }).join('')
       +'</tr></thead><tbody>';
-    groupedRows.forEach(function(g,ridx){
+    rowsToRender.forEach(function(item,ridx){
+      var g=item.g,rowEmp=item.emp,rowEmpT=item.empT;
       var row=g.row;
       var akt=row.aktivitaeten||row.calls||0;
       var convOEM=row.convOEM||0;
@@ -2155,7 +2173,7 @@ function buildOverviewTab(liste){
       function fc(v,t,dir){if(!t&&t!==0)return '';return(dir==='lte'?v<=t:v>=t)?'color:var(--teal-dark)':'color:var(--red)';}
       var rowBg=ridx%2===1?'background:rgba(0,0,0,0.03);':'';
       h+='<tr style="'+rowBg+'">'
-        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;cursor:pointer" onclick="selectEmp(\''+emp.id+'\')">'+emp.name+'</td>'
+        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;cursor:pointer" onclick="selectEmp(\''+rowEmp.id+'\')">'+rowEmp.name+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap">'+g.label+(overviewPerfGroup!=='day'?' <span style="font-weight:400;color:var(--text3);font-size:10.5px">('+g.count+' Tage)</span>':'')+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">'+akt+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">'+notR+'</td>'
@@ -2166,10 +2184,10 @@ function buildOverviewTab(liste){
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--blue-dark)">'+yes+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--purple)">'+sy+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--teal-dark)">'+my+'</td>'
-        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600;'+fc(crOEM,empT.crOEM.val,empT.crOEM.dir)+'">'+crOEM+'%</td>'
-        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crTW,empT.crTeilweise.val,empT.crTeilweise.dir)+'">'+crTW+'%</td>'
-        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crSY,empT.crSuperYes.val,empT.crSuperYes.dir)+'">'+crSY+'%</td>'
-        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crMY,empT.crMegaYes.val,empT.crMegaYes.dir)+'">'+crMY+'%</td>'
+        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600;'+fc(crOEM,rowEmpT.crOEM.val,rowEmpT.crOEM.dir)+'">'+crOEM+'%</td>'
+        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crTW,rowEmpT.crTeilweise.val,rowEmpT.crTeilweise.dir)+'">'+crTW+'%</td>'
+        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crSY,rowEmpT.crSuperYes.val,rowEmpT.crSuperYes.dir)+'">'+crSY+'%</td>'
+        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;'+fc(crMY,rowEmpT.crMegaYes.val,rowEmpT.crMegaYes.dir)+'">'+crMY+'%</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--blue-dark)">'+ups+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--blue-dark)">'+wka+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">'+optGes+'</td>'
