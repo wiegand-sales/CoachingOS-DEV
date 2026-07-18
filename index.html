@@ -586,6 +586,8 @@ var coachFilterView = 'overview'; // 'overview' | employee-id des Coaches
 var wiegandView='overview'; // 'overview' | 'team' (SFP Wiegand Tab-Navigation)
 var overviewEmpId=null; // aktuell in SFP Wiegand > Overview ausgewählter Mitarbeiter
 var overviewPerfGroup='day'; // 'day' | 'week' | 'month' – eigener Zustand, unabhängig vom Mitarbeiter-Tab
+var overviewShowAll=false; // false = nur aktueller Kalendermonat (Standard) | true = alle Daten
+function setOverviewShowAll(v){overviewShowAll=v;renderTeam();}
 function setOverviewEmp(id){overviewEmpId=id;renderTeam();}
 function setOverviewPerfGroup(g){overviewPerfGroup=g;renderTeam();}
 function setWiegandView(v){wiegandView=v;renderTeam();}
@@ -2054,7 +2056,7 @@ function buildOverviewTab(liste){
   var emp=employees.find(function(e){return e.id===overviewEmpId;});
   var empT=empTargets(emp);
   var currentMonthKey=today().slice(0,7); // z.B. "2026-07"
-  var perfAll=(performance[emp.id]||[]).filter(function(x){return x.date.slice(0,7)===currentMonthKey;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var perfAll=(performance[emp.id]||[]).filter(function(x){return overviewShowAll||x.date.slice(0,7)===currentMonthKey;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
 
   function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
   var kpis=[
@@ -2103,12 +2105,16 @@ function buildOverviewTab(liste){
   h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
   var monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   var currentMonthLabel=monthNames[parseInt(currentMonthKey.slice(5,7),10)-1]+' '+currentMonthKey.slice(0,4);
-  h+='<div class="card-title" style="margin:0"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+' · '+currentMonthLabel+'</span></div>';
+  h+='<div class="card-title" style="margin:0"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+' · '+(overviewShowAll?'alle Daten':currentMonthLabel)+'</span></div>';
   h+='<div style="display:flex;align-items:center;gap:8px">';
   h+='<div class="chart-toggle">';
   [{k:'day',l:'Tag'},{k:'week',l:'Woche'},{k:'month',l:'Monat'}].forEach(function(it){
     h+='<button class="'+(overviewPerfGroup===it.k?'active':'')+'" data-g="'+it.k+'" onclick="setOverviewPerfGroup(this.dataset.g)">'+it.l+'</button>';
   });
+  h+='</div>';
+  h+='<div class="chart-toggle">';
+  h+='<button class="'+(!overviewShowAll?'active':'')+'" onclick="setOverviewShowAll(false)">'+currentMonthLabel+'</button>';
+  h+='<button class="'+(overviewShowAll?'active':'')+'" onclick="setOverviewShowAll(true)">Alle Daten</button>';
   h+='</div>';
   h+='<select onchange="setOverviewEmp(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
   visible.forEach(function(e){h+='<option value="'+e.id+'"'+(e.id===emp.id?' selected':'')+'>'+e.name+' ('+e.role+')</option>';});
@@ -2118,7 +2124,7 @@ function buildOverviewTab(liste){
   if(!perfAll.length){
     h+='<div style="text-align:center;color:var(--text3);padding:24px">'
       +'<i class="ti ti-file-upload" style="font-size:26px;display:block;margin-bottom:8px"></i>'
-      +'Noch keine Daten für '+emp.name+' in '+currentMonthLabel+'</div>';
+      +'Noch keine Daten für '+emp.name+(overviewShowAll?'':' in '+currentMonthLabel)+'</div>';
   } else {
     var groupedRows=groupPerfRows(perfAll,overviewPerfGroup);
     var firstColLabel=overviewPerfGroup==='day'?'Datum':overviewPerfGroup==='week'?'Woche':'Monat';
