@@ -2338,7 +2338,19 @@ function buildOverviewTab(liste){
     var tKeys={crOEM:'crOEM',crTeilweise:'crTeilweise',crYes:'crYes',crSuperYes:'crSuperYes',crMegaYes:'crMegaYes'};
     var tk=tKeys[metric];
     var target=(tk&&KPI_TARGETS[tk])?KPI_TARGETS[tk].val:null;
-    var yS={min:0};
+    var validVals=vals.filter(function(v){return v!==null&&v!==undefined;});
+    var yS;
+    if(!validVals.length){
+      yS={min:0};
+    } else {
+      var dataMin=Math.min.apply(null,validVals),dataMax=Math.max.apply(null,validVals);
+      var range=dataMax-dataMin;
+      if(range<=0)range=dataMax>0?dataMax:1; // flache Linie: künstliche Spanne, damit Polsterung greift
+      var pad=range*0.6;
+      var yMin=Math.max(0,dataMin-pad);
+      var yMax=dataMax+pad;
+      yS={min:yMin,max:yMax};
+    }
     var datasets=[{
       label:m.l,data:vals,borderColor:m.c,backgroundColor:m.c+'22',
       fill:true,tension:0.35,pointRadius:labels.length<=10?4:2,
