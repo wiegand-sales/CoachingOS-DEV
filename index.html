@@ -2056,12 +2056,6 @@ function buildOverviewTab(liste){
   var currentMonthKey=today().slice(0,7); // z.B. "2026-07"
   var perfAll=(performance[emp.id]||[]).filter(function(x){return x.date.slice(0,7)===currentMonthKey;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
 
-  var h='<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:14px">';
-  h+='<select onchange="setOverviewEmp(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
-  visible.forEach(function(e){h+='<option value="'+e.id+'"'+(e.id===emp.id?' selected':'')+'>'+e.name+' ('+e.role+')</option>';});
-  h+='</select>';
-  h+='</div>';
-
   function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
   var kpis=[
     {label:'CR OEM', key:'crOEM',      target:empT.crOEM.val,      dir:empT.crOEM.dir,      pct:true},
@@ -2070,6 +2064,8 @@ function buildOverviewTab(liste){
     {label:'CR MY',  key:'crMegaYes',   target:empT.crMegaYes.val,   dir:empT.crMegaYes.dir,   pct:true},
     {label:'Conv. OEM',key:'convOEM',   target:null,                  dir:'gte',               pct:false},
   ];
+  var h='';
+
   h+='<div class="g5" style="margin-bottom:22px">';
   kpis.forEach(function(k){
     var cur=monthAvg(emp.id,k.key,0);
@@ -2108,10 +2104,15 @@ function buildOverviewTab(liste){
   var monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   var currentMonthLabel=monthNames[parseInt(currentMonthKey.slice(5,7),10)-1]+' '+currentMonthKey.slice(0,4);
   h+='<div class="card-title" style="margin:0"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+' · '+currentMonthLabel+'</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:8px">';
   h+='<div class="chart-toggle">';
   [{k:'day',l:'Tag'},{k:'week',l:'Woche'},{k:'month',l:'Monat'}].forEach(function(it){
     h+='<button class="'+(overviewPerfGroup===it.k?'active':'')+'" data-g="'+it.k+'" onclick="setOverviewPerfGroup(this.dataset.g)">'+it.l+'</button>';
   });
+  h+='</div>';
+  h+='<select onchange="setOverviewEmp(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
+  visible.forEach(function(e){h+='<option value="'+e.id+'"'+(e.id===emp.id?' selected':'')+'>'+e.name+' ('+e.role+')</option>';});
+  h+='</select>';
   h+='</div>';
   h+='</div>';
   if(!perfAll.length){
@@ -2122,6 +2123,7 @@ function buildOverviewTab(liste){
     var groupedRows=groupPerfRows(perfAll,overviewPerfGroup);
     var firstColLabel=overviewPerfGroup==='day'?'Datum':overviewPerfGroup==='week'?'Woche':'Monat';
     h+='<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;border-collapse:collapse"><thead><tr>'
+      +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">Mitarbeiter</th>'
       +'<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">'+firstColLabel+'</th>'
       +['Aktivitäten','NE','NM','NErr','Conv. OEM','TW','Yes','SY','MY','CR OEM%','CR TW%','CR SY%','CR MY%','Upsells','WKA','Opt. Ges.','Marge Ges.'].map(function(hh){
         return '<th style="background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap">'+hh+'</th>';
@@ -2140,6 +2142,7 @@ function buildOverviewTab(liste){
       function fc(v,t,dir){if(!t&&t!==0)return '';return(dir==='lte'?v<=t:v>=t)?'color:var(--teal-dark)':'color:var(--red)';}
       var rowBg=ridx%2===1?'background:rgba(0,0,0,0.03);':'';
       h+='<tr style="'+rowBg+'">'
+        +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;cursor:pointer" onclick="selectEmp(\''+emp.id+'\')">'+emp.name+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap">'+g.label+(overviewPerfGroup!=='day'?' <span style="font-weight:400;color:var(--text3);font-size:10.5px">('+g.count+' Tage)</span>':'')+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">'+akt+'</td>'
         +'<td style="padding:10px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">'+notR+'</td>'
