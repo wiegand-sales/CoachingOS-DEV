@@ -586,8 +586,9 @@ var coachFilterView = 'overview'; // 'overview' | employee-id des Coaches
 var wiegandView='overview'; // 'overview' | 'team' (SFP Wiegand Tab-Navigation)
 var overviewEmpId=null; // aktuell in SFP Wiegand > Overview ausgewählter Mitarbeiter
 var overviewPerfGroup='day'; // 'day' | 'week' | 'month' – eigener Zustand, unabhängig vom Mitarbeiter-Tab
-var overviewShowAll=false; // false = nur aktueller Kalendermonat (Standard) | true = alle Daten
-function setOverviewShowAll(v){overviewShowAll=v;renderTeam();}
+var overviewFromDate=null; // Von-Datum (Overview Performance-Tabelle), null = Standard (Monatsanfang)
+var overviewToDate=null;   // Bis-Datum (Overview Performance-Tabelle), null = Standard (Monatsende/heute)
+function setOverviewDateRange(from,to){overviewFromDate=from||null;overviewToDate=to||null;renderTeam();}
 function setOverviewEmp(id){overviewEmpId=id;renderTeam();}
 function setOverviewPerfGroup(g){overviewPerfGroup=g;renderTeam();}
 function setWiegandView(v){wiegandView=v;renderTeam();}
@@ -2056,7 +2057,11 @@ function buildOverviewTab(liste){
   var emp=employees.find(function(e){return e.id===overviewEmpId;});
   var empT=empTargets(emp);
   var currentMonthKey=today().slice(0,7); // z.B. "2026-07"
-  var perfAll=(performance[emp.id]||[]).filter(function(x){return overviewShowAll||x.date.slice(0,7)===currentMonthKey;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var monthStart=currentMonthKey+'-01';
+  var monthEnd=(function(){var d=new Date(today()+'T00:00:00');var last=new Date(d.getFullYear(),d.getMonth()+1,0);return last.toISOString().slice(0,10);})();
+  var effFrom=overviewFromDate||monthStart;
+  var effTo=overviewToDate||monthEnd;
+  var perfAll=(performance[emp.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
 
   function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
   var kpis=[
@@ -2102,29 +2107,31 @@ function buildOverviewTab(liste){
 
   // Performance-Tabelle (Tag/Woche/Monat) für den gewählten Mitarbeiter
   h+='<div class="card">';
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
   var monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
   var currentMonthLabel=monthNames[parseInt(currentMonthKey.slice(5,7),10)-1]+' '+currentMonthKey.slice(0,4);
-  h+='<div class="card-title" style="margin:0"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+' · '+(overviewShowAll?'alle Daten':currentMonthLabel)+'</span></div>';
-  h+='<div style="display:flex;align-items:center;gap:8px">';
+  h+='<div class="card-title" style="margin-bottom:14px"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+emp.name+' · '+fd(effFrom)+'–'+fd(effTo)+'</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
+  h+='<select onchange="setOverviewEmp(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
+  visible.forEach(function(e){h+='<option value="'+e.id+'"'+(e.id===emp.id?' selected':'')+'>'+e.name+' ('+e.role+')</option>';});
+  h+='</select>';
   h+='<div class="chart-toggle">';
   [{k:'day',l:'Tag'},{k:'week',l:'Woche'},{k:'month',l:'Monat'}].forEach(function(it){
     h+='<button class="'+(overviewPerfGroup===it.k?'active':'')+'" data-g="'+it.k+'" onclick="setOverviewPerfGroup(this.dataset.g)">'+it.l+'</button>';
   });
   h+='</div>';
-  h+='<div class="chart-toggle">';
-  h+='<button class="'+(!overviewShowAll?'active':'')+'" onclick="setOverviewShowAll(false)">'+currentMonthLabel+'</button>';
-  h+='<button class="'+(overviewShowAll?'active':'')+'" onclick="setOverviewShowAll(true)">Alle Daten</button>';
-  h+='</div>';
-  h+='<select onchange="setOverviewEmp(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
-  visible.forEach(function(e){h+='<option value="'+e.id+'"'+(e.id===emp.id?' selected':'')+'>'+e.name+' ('+e.role+')</option>';});
-  h+='</select>';
+  h+='<div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;border:1px solid var(--border2);border-radius:var(--r-md);margin-left:auto">';
+  h+='<span style="font-size:11px;color:var(--text2)">Von</span>';
+  h+='<input type="date" id="overviewFromDate" value="'+effFrom+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:112px">';
+  h+='<span style="font-size:11px;color:var(--text2)">Bis</span>';
+  h+='<input type="date" id="overviewToDate" value="'+effTo+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:112px">';
+  h+='<button class="btn btn-sm" style="padding:4px 8px" onclick="setOverviewDateRange(document.getElementById(\'overviewFromDate\').value,document.getElementById(\'overviewToDate\').value)"><i class="ti ti-check"></i></button>';
+  h+=((overviewFromDate||overviewToDate)?'<button class="btn btn-sm" style="padding:4px 8px" onclick="setOverviewDateRange(null,null)" title="Zurück zum aktuellen Monat"><i class="ti ti-x"></i></button>':'');
   h+='</div>';
   h+='</div>';
   if(!perfAll.length){
     h+='<div style="text-align:center;color:var(--text3);padding:24px">'
       +'<i class="ti ti-file-upload" style="font-size:26px;display:block;margin-bottom:8px"></i>'
-      +'Noch keine Daten für '+emp.name+(overviewShowAll?'':' in '+currentMonthLabel)+'</div>';
+      +'Noch keine Daten für '+emp.name+' im Zeitraum '+fd(effFrom)+'–'+fd(effTo)+'</div>';
   } else {
     var groupedRows=groupPerfRows(perfAll,overviewPerfGroup);
     var firstColLabel=overviewPerfGroup==='day'?'Datum':overviewPerfGroup==='week'?'Woche':'Monat';
