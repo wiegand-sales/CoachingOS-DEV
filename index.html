@@ -2174,11 +2174,13 @@ function buildOverviewTab(liste){
     ? visible.reduce(function(acc,e){return acc.concat((performance[e.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;}));},[])
     : (performance[emp.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;});
   h+='<div class="card" style="margin-bottom:22px">';
-  h+='<div class="card-title" style="margin-bottom:12px">Performance Trend <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+(isAll?'Alle Mitarbeiter':emp.name)+'</span></div>';
-  h+='<div class="chart-toggle" style="margin-bottom:10px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+  h+='<div class="card-title" style="margin:0">Performance Trend <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+(isAll?'Alle Mitarbeiter':emp.name)+'</span></div>';
+  h+='<select onchange="setOverviewChartMetric(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
   [{k:'aktivitaeten',l:'Aktivitäten'},{k:'convOEM',l:'Conv. OEM'},{k:'crOEM',l:'CR OEM'},{k:'crTeilweise',l:'CR TW'},{k:'crYes',l:'CR Yes'},{k:'crSuperYes',l:'CR SY'},{k:'crMegaYes',l:'CR MY'},{k:'margeGesamt',l:'Marge'}].forEach(function(it){
-    h+='<button class="'+(overviewChartMetric===it.k?'active':'')+'" data-m="'+it.k+'" onclick="setOverviewChartMetric(this.dataset.m)">'+it.l+'</button>';
+    h+='<option value="'+it.k+'"'+(overviewChartMetric===it.k?' selected':'')+'>'+it.l+'</option>';
   });
+  h+='</select>';
   h+='</div>';
   h+='<canvas id="overviewPerfChart" height="80"></canvas>';
   h+='</div>';
@@ -2294,9 +2296,13 @@ function buildOverviewTab(liste){
     });
     var dates=Object.keys(byDate).sort();
     if(!dates.length)return;
+    var sumMetrics=['aktivitaeten','margeGesamt'];
+    var useSum=sumMetrics.indexOf(metric)>=0;
     var vals=dates.map(function(d){
       var arr=byDate[d];
-      return arr.length?+(arr.reduce(function(a,b){return a+b;},0)/arr.length).toFixed(1):null;
+      if(!arr.length)return null;
+      var total=arr.reduce(function(a,b){return a+b;},0);
+      return +(useSum?total:total/arr.length).toFixed(1);
     });
     var labels=dates.map(function(d){return fd(d);});
     var tKeys={crOEM:'crOEM',crTeilweise:'crTeilweise',crYes:'crYes',crSuperYes:'crSuperYes',crMegaYes:'crMegaYes'};
