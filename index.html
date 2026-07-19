@@ -602,6 +602,8 @@ var overviewChartMetric='crOEM';
 var settingsView='kpi'; // 'kpi' | 'integrations' | 'data' | 'log'
 var activityFilterPerson='ALL'; // 'ALL' | employee-id (Coach)
 var activityFilterDays=7;
+var empSettingsSubTab='stammdaten'; // 'stammdaten' | 'kpi' | 'historie' | 'verwaltung'
+function setEmpSettingsSubTab(v){empSettingsSubTab=v;renderTab();}
 function setActivityFilterPerson(v){activityFilterPerson=v;renderActivity();}
 function setActivityFilterDays(d){activityFilterDays=d;renderActivity();}
 function setSettingsView(v){settingsView=v;renderEinstellungen();}
@@ -4225,6 +4227,13 @@ function renderTab(){
     var teamOpts=allTeams().map(function(tm){return '<option'+(tm===emp.team?' selected':'')+'>'+tm+'</option>';}).join('')+'<option value="__new__">+ Neues Team...</option>';
     var ROLLEN=['Vertriebsmitarbeiter','Senior Vertriebsmitarbeiter','Sales Coach'];
 
+    html+='<div class="chart-toggle" style="margin-bottom:22px">';
+    [{k:'stammdaten',l:'Stammdaten'},{k:'kpi',l:'KPI-Ziele'},{k:'historie',l:'Historie & Dokumente'},{k:'verwaltung',l:'Verwaltung'}].forEach(function(it){
+      html+='<button class="'+(empSettingsSubTab===it.k?'active':'')+'" data-k="'+it.k+'" onclick="setEmpSettingsSubTab(this.dataset.k)">'+it.l+'</button>';
+    });
+    html+='</div>';
+
+    if(empSettingsSubTab==='stammdaten'){
     html+='<div class="card"><div class="card-title"><i class="ti ti-user"></i> Stammdaten</div>';
     html+='<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">';
     html+='<div><label>Vollständiger Name</label><input type="text" id="es-name" value="'+emp.name+'"></div>';
@@ -4256,7 +4265,9 @@ function renderTab(){
       +'<textarea id="es-notes" rows="3" style="width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);resize:vertical" placeholder="z. B. sehr motiviert, will perspektivisch ins Teamlead-Track, hat Stärken im Erstgespräch...">'+(emp.notes||'')+'</textarea></div>';
     html+='<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveEmpEinstellungen()"><i class="ti ti-check"></i> Änderungen speichern</button>';
     html+='</div>';
+    }
 
+    if(empSettingsSubTab==='kpi'){
       html+='<div class="card"><div class="card-title"><i class="ti ti-target"></i> Individuelle KPI-Ziele</div>'
       html+='<p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Diese Werte überschreiben die globalen Standards für diesen Mitarbeiter und werden in allen Alerts und der Teamübersicht verwendet.</p>'
       
@@ -4317,7 +4328,9 @@ function renderTab(){
 
       html+='<button class="btn btn-primary btn-sm" style="width:auto;margin-top:12px" onclick="saveEmpZiele()"><i class="ti ti-check"></i> Ziele speichern</button>';
       html+='</div>'; // close KPI card
+    }
 
+    if(empSettingsSubTab==='historie'){
       // ── Team-/Rollenwechsel-Historie ──
       var hist=(employeeHistory[emp.id]||[]);
       html+='<div class="card"><div class="card-title"><i class="ti ti-history"></i> Team-/Rollenwechsel-Historie</div>';
@@ -4361,12 +4374,15 @@ function renderTab(){
         html+='</div>';
       }
       html+='</div>';
+    } // Ende historie
 
+    if(empSettingsSubTab==='verwaltung'){
       html+='<div class="card" style="border-top:2px solid var(--amber)">'
       html+='<div class="card-title" style="color:var(--amber-dark)"><i class="ti ti-user-off"></i> Mitarbeiter deaktivieren</div>'
       html+='<p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Deaktivierte Mitarbeiter werden in der Sidebar und Teamübersicht ausgeblendet. Alle Daten bleiben vollständig erhalten und können jederzeit wiederhergestellt werden.</p>'
       html+='<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber-dark);border-color:var(--amber)" onclick="mitarbeiterDeaktivieren()"><i class="ti ti-user-off"></i> '+emp.name+' deaktivieren</button>'
       html+='</div>';
+    } // Ende verwaltung
   }
 
   tc2.innerHTML=html;
