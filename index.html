@@ -4652,7 +4652,9 @@ var CATEGORY_META={
   stammdaten:{label:'STAMMDATEN',col:'var(--red)',bg:'rgba(189,45,41,0.12)'},
   kpi_target:{label:'KPI-ZIEL',col:'var(--purple)',bg:'var(--purple-bg)'},
   employee:{label:'MITARBEITER',col:'var(--red)',bg:'rgba(189,45,41,0.12)'},
-  document:{label:'DOKUMENT',col:'var(--text2)',bg:'var(--bg2)'}
+  document:{label:'DOKUMENT',col:'var(--text2)',bg:'var(--bg2)'},
+  solidroad:{label:'SOLIDROAD',col:'var(--purple)',bg:'var(--purple-bg)'},
+  criteria:{label:'QA-KRITERIUM',col:'#5FBAC4',bg:'rgba(95,186,196,0.15)'}
 };
 function renderActivity(){
   var ma=document.getElementById('mainArea');if(!ma)return;
@@ -5167,6 +5169,8 @@ function saveSRSim(){
     var r=res.data;
     if(!solidroadData[selectedEmp])solidroadData[selectedEmp]={simulations:[]};
     solidroadData[selectedEmp].simulations.unshift({id:r.id,date:r.date,name:r.name,score:r.score,status:r.status,tags:r.tags||[]});
+    var e0=employees.find(function(x){return x.id===selectedEmp;});
+    logActivity('solidroad','created','SolidRoad-Simulation erfasst: "'+name+'" (Score '+score+')',selectedEmp,e0?e0.name:'');
     renderTab();
   }).catch(function(err){
     alert('Unerwarteter Fehler: '+err.message);
@@ -5183,6 +5187,7 @@ function saveRatingCriterion(){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
     var r=res.data;
     ratingCriteria.push({id:r.id,name:r.name,cat:r.category,target:r.target,desc:r.description||''});
+    logActivity('criteria','created','Neues QA-Bewertungskriterium angelegt: "'+name+'" ('+cat+')',null,'Ziel: '+target+'%');
     closeModal('ratingModal');
     renderTab();
   }).catch(function(err){
@@ -6240,7 +6245,7 @@ function zieleSpeichern(){
   renderEinstellungen();
   sb.from('kpi_targets').upsert(updates,{onConflict:'metric_key'}).then(function(res){
     if(res.error){alert('Fehler beim Speichern: '+res.error.message);return;}
-    if(changes.length)logAdminAction('kpi_target_global',changes.join(' · '));
+    if(changes.length){logAdminAction('kpi_target_global',changes.join(' · '));logActivity('kpi_target','updated','Globale KPI-Ziele geändert: '+changes.join(' · '),null,null);}
     var zs=document.getElementById('ziele-status');if(zs){zs.textContent='✓ Gespeichert';setTimeout(function(){zs.textContent='';},3000);}
     var btn=document.querySelector('[onclick="zieleSpeichern()"]');
     if(btn){
