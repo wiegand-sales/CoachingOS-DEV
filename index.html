@@ -716,10 +716,8 @@ function computeCoachEffectiveness(){
     var fullPerf=(performance[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
     if(!fullPerf.length)return;
     function avgWindow(centerDate,daysBefore,daysAfter,metricKey){
-      var c=new Date(centerDate+'T00:00:00');
-      var from=new Date(c);from.setDate(from.getDate()-daysBefore);
-      var to=new Date(c);to.setDate(to.getDate()+daysAfter);
-      var fromS=from.toISOString().slice(0,10),toS=to.toISOString().slice(0,10);
+      var fromS=addDaysUTC(centerDate,-daysBefore);
+      var toS=addDaysUTC(centerDate,daysAfter);
       var rows=fullPerf.filter(function(p){return p.date>=fromS&&p.date<toS;});
       var vals=rows.map(function(p){return p[metricKey];}).filter(function(v){return v!==undefined&&v!==null;});
       return vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
@@ -763,7 +761,7 @@ function buildCoachingAbdeckungTab(liste,hD,heute){
     var vals=visible.map(function(e){return tageSeitLetzterSession(e.id);}).filter(function(v){return v!==null;});
     return vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
   })();
-  var qaCutoff60=(function(){var d=new Date(heute+'T00:00:00');d.setDate(d.getDate()-60);return d.toISOString().slice(0,10);})();
+  var qaCutoff60=addDaysUTC(heute,-60);
   var qaDueListe=visible.map(function(e){
     var cnt=(callRatings[e.id]||[]).filter(function(r){return r.date>=qaCutoff60;}).length;
     return {e:e,cnt:cnt};
@@ -971,12 +969,12 @@ function renderCoachingAnsicht(){
     var cW=W-padL-padR,cH=H-padT-padB;
     var days=[];
     for(var i=-45;i<=45;i++){
-      var dt=new Date(hD);dt.setDate(dt.getDate()+i);
-      var ds=dt.toISOString().slice(0,10);
+      var ds=addDaysUTC(heute,i);
+      var dt=new Date(ds+'T00:00:00Z');
       var cnt=i>0
         ?all.filter(function(x){return x.d===ds&&x.s==='geplant';}).length
         :abg.filter(function(x){return x.d===ds;}).length;
-      days.push({ds:ds,n:cnt,day:dt.getDate(),dateLabel:('0'+dt.getDate()).slice(-2)+'.'+('0'+(dt.getMonth()+1)).slice(-2)+'.',future:i>0,isH:i===0});
+      days.push({ds:ds,n:cnt,day:dt.getUTCDate(),dateLabel:('0'+dt.getUTCDate()).slice(-2)+'.'+('0'+(dt.getUTCMonth()+1)).slice(-2)+'.',future:i>0,isH:i===0});
     }
     var maxN=20;
     var nD=days.length;
@@ -1062,7 +1060,7 @@ function renderCoachingAnsicht(){
       k+='<div style="display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--text3);background:var(--bg2);border-radius:4px">'+kwLabel+'</div>';
       weekCells.forEach(function(d){
         if(d===null){k+='<div></div>';return;}
-        var dt=new Date(coachCalYear,coachCalMonthIdx,d);
+        var dt=new Date(Date.UTC(coachCalYear,coachCalMonthIdx,d));
         var ds=dt.toISOString().slice(0,10),isH=ds===heute;
         var sg=all.filter(function(x){return x.d===ds&&x.s==='geplant';});
         var sa=all.filter(function(x){return x.d===ds&&x.s!=='geplant';});
@@ -1326,7 +1324,7 @@ function exportTeamReport(){
   var days=teamRange||7;
   var fromBound,toBound;
   if(customActive){fromBound=teamCustomFrom;toBound=teamCustomTo;}
-  else{var _fd=new Date(today()+'T00:00:00');_fd.setDate(_fd.getDate()-days);fromBound=_fd.toISOString().slice(0,10);toBound=today();}
+  else{fromBound=addDaysUTC(today(),-days);toBound=today();}
   var periodLabel=customActive?(fd(fromBound)+' – '+fd(toBound)):(days+' Tage');
 
   function perfInRange(id){
@@ -1835,6 +1833,31 @@ function fd(d){
   return wd+', '+p[2]+'.'+p[1]+'.'+p[0];
 }
 function today(){return new Date().toISOString().slice(0,10);}
+// UTC-sichere Datumsberechnung: vermeidet den Bug, dass new Date(dateStr+'T00:00:00') lokale Zeit
+// interpretiert und .toISOString() dann in Zeitzonen mit positivem UTC-Offset (z.B. Deutschland)
+// auf den Vortag zurückrutscht. Immer nutzen, wenn ein berechnetes Datum mit echten
+// gespeicherten Datums-Strings (z.B. createdAt, performance.date) verglichen wird.
+function addDaysUTC(dateStr,delta){
+  var p=dateStr.split('-').map(Number);
+  var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));
+  d.setUTCDate(d.getUTCDate()+delta);
+  return d.toISOString().slice(0,10);
+}
+function addMonthsUTC(dateStr,delta){
+  var p=dateStr.split('-').map(Number);
+  var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));
+  d.setUTCMonth(d.getUTCMonth()+delta);
+  return d.toISOString().slice(0,10);
+}
+function monthBoundsUTC(dateStr,monthsAgo){
+  var p=dateStr.split('-').map(Number);
+  var d=new Date(Date.UTC(p[0],p[1]-1,1));
+  d.setUTCMonth(d.getUTCMonth()-(monthsAgo||0));
+  var from=d.toISOString().slice(0,10);
+  var toD=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));
+  var to=toD.toISOString().slice(0,10);
+  return {from:from,to:to,ym:from.slice(0,7)};
+}
 function avgSkill(id){var p=protocols[id];if(!p||!p.length||!p[0].skills)return null;var v=Object.values(p[0].skills);return Math.round(v.reduce(function(a,b){return a+b;},0)/v.length);}
 function lastRating(id){var p=protocols[id];return(p&&p.length)?p[0].rating:null;}
 function scoreColor(s){return s>=85?'var(--teal)':s>=70?'var(--purple)':'var(--amber)';}
@@ -2055,11 +2078,8 @@ function roleBenchmark(empId,metricKey,days){
   return vals.reduce(function(a,b){return a+b;},0)/vals.length;
 }
 function monthAvg(empId,metricKey,monthsAgo){
-  var now=new Date(today()+'T00:00:00');
-  var m=new Date(now.getFullYear(),now.getMonth()-monthsAgo,1);
-  var from=new Date(m.getFullYear(),m.getMonth(),1).toISOString().slice(0,10);
-  var to=new Date(m.getFullYear(),m.getMonth()+1,0).toISOString().slice(0,10);
-  var p=(performance[empId]||[]).filter(function(x){return x.date>=from&&x.date<=to;});
+  var mb=monthBoundsUTC(today(),monthsAgo);
+  var p=(performance[empId]||[]).filter(function(x){return x.date>=mb.from&&x.date<=mb.to;});
   if(!p.length)return null;
   return p.reduce(function(a,x){return a+(x[metricKey]||0);},0)/p.length;
 }
@@ -2111,7 +2131,7 @@ function buildOverviewTab(liste){
   var empT=isAll?null:empTargets(emp);
   var currentMonthKey=today().slice(0,7); // z.B. "2026-07"
   var monthStart=currentMonthKey+'-01';
-  var monthEnd=(function(){var d=new Date(today()+'T00:00:00');var last=new Date(d.getFullYear(),d.getMonth()+1,0);return last.toISOString().slice(0,10);})();
+  var monthEnd=monthBoundsUTC(today(),0).to;
   var effFrom=overviewFromDate||monthStart;
   var effTo=overviewToDate||monthEnd;
   var perfAll=isAll?[]:(performance[emp.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
@@ -2121,8 +2141,7 @@ function buildOverviewTab(liste){
 
   if(isAll){
     function teamMonthAvg(key,monthsAgo){
-      var d=new Date(today()+'T00:00:00');d.setMonth(d.getMonth()-monthsAgo);
-      var ym=d.toISOString().slice(0,7);
+      var ym=monthBoundsUTC(today(),monthsAgo).ym;
       var vals=[];
       selectedEmps.forEach(function(e){
         (performance[e.id]||[]).forEach(function(x){
@@ -2197,7 +2216,7 @@ function buildOverviewTab(liste){
     var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
     var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
     var _perfAllK=(performance[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
-    var _cutoff7K=(function(){var dd=new Date(today()+'T00:00:00');dd.setDate(dd.getDate()-7);return dd.toISOString().slice(0,10);})();
+    var _cutoff7K=addDaysUTC(today(),-7);
     var _spark7srcK=_perfAllK.filter(function(x){return x.date>=_cutoff7K;});
     if(_spark7srcK.length<2)_spark7srcK=_perfAllK.slice(-7);
     var spark7K=_spark7srcK.map(function(x){return x[k.key];});
@@ -2462,7 +2481,7 @@ function renderTeam(){
   var customActive=!!(teamCustomFrom&&teamCustomTo);
   var fromBound,toBound;
   if(customActive){fromBound=teamCustomFrom;toBound=teamCustomTo;}
-  else{var _fd=new Date(today()+'T00:00:00');_fd.setDate(_fd.getDate()-days);fromBound=_fd.toISOString().slice(0,10);toBound=today();}
+  else{fromBound=addDaysUTC(today(),-days);toBound=today();}
   var periodLabel=customActive?(fd(fromBound)+' – '+fd(toBound)):(days+' Tage');
   function getPerfRange(id,from,to){
     var p=performance[id]||[];
@@ -2653,7 +2672,7 @@ function renderTeam(){
   coverageHtml+='</div>';
 
   // Spalte 5: QA-Bewertungen fällig – Ziel: mind. 5 bewertete Calls pro 60 Tage
-  var qaCutoff60=(function(){var d=new Date(today()+'T00:00:00');d.setDate(d.getDate()-60);return d.toISOString().slice(0,10);})();
+  var qaCutoff60=addDaysUTC(today(),-60);
   var qaDueListe=list.map(function(e){
     var cnt=(callRatings[e.id]||[]).filter(function(r){return r.date>=qaCutoff60;}).length;
     return {e:e,cnt:cnt};
@@ -3018,7 +3037,7 @@ function qaCatSparkline(empId,cat,n){
 // QA-Bewertungspflicht: Ziel 5 Calls / 60 Tage. Gibt {due, cnt, target} zurück.
 function qaCallsDue(empId){
   var target=5;
-  var cutoff=(function(){var d=new Date(today()+'T00:00:00');d.setDate(d.getDate()-60);return d.toISOString().slice(0,10);})();
+  var cutoff=addDaysUTC(today(),-60);
   var cnt=(callRatings[empId]||[]).filter(function(r){return r.date>=cutoff;}).length;
   return {due:Math.max(0,target-cnt),cnt:cnt,target:target};
 }
@@ -3211,7 +3230,7 @@ function renderTab(){
       var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
       var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
       var _perfAllK=(performance[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
-      var _cutoff7K=(function(){var dd=new Date(today()+'T00:00:00');dd.setDate(dd.getDate()-7);return dd.toISOString().slice(0,10);})();
+      var _cutoff7K=addDaysUTC(today(),-7);
       var _spark7srcK=_perfAllK.filter(function(x){return x.date>=_cutoff7K;});
       if(_spark7srcK.length<2)_spark7srcK=_perfAllK.slice(-7);
       var spark7K=_spark7srcK.map(function(x){return x[k.key];});
@@ -3578,7 +3597,7 @@ function renderTab(){
       var vsRoleTxt=vsRole===null?'—':(vsRole>=0?'+':'')+vsRole.toFixed(1)+(d.pct?'%':'')+' vs. Ø Rolle';
       var vsRoleCol=vsRole===null?'var(--text3)':(vsRole>=0?'var(--teal-dark)':'var(--red)');
       var _perfAll=(performance[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
-      var _cutoff7=(function(){var dd=new Date(today()+'T00:00:00');dd.setDate(dd.getDate()-7);return dd.toISOString().slice(0,10);})();
+      var _cutoff7=addDaysUTC(today(),-7);
       var _spark7src=_perfAll.filter(function(x){return x.date>=_cutoff7;});
       if(_spark7src.length<2)_spark7src=_perfAll.slice(-7);
       var spark7=_spark7src.map(function(x){return x[d.k];});
@@ -3844,7 +3863,7 @@ function renderTab(){
       var vsRoleTxt=vsRole===null?'—':(vsRole>=0?'+':'')+vsRole.toFixed(1)+(d.pct?'%':'')+' vs. Ø Rolle';
       var vsRoleCol=vsRole===null?'var(--text3)':(vsRole>=0?'var(--teal-dark)':'var(--red)');
       var _perfAll=(performance[emp.id]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
-      var _cutoff7=(function(){var dd=new Date(today()+'T00:00:00');dd.setDate(dd.getDate()-7);return dd.toISOString().slice(0,10);})();
+      var _cutoff7=addDaysUTC(today(),-7);
       var _spark7src=_perfAll.filter(function(x){return x.date>=_cutoff7;});
       if(_spark7src.length<2)_spark7src=_perfAll.slice(-7); // Fallback: letzte verfügbaren Datenpunkte, falls in den letzten 7 Kalendertagen zu wenige Werte vorliegen
       var spark7=_spark7src.map(function(x){return x[d.k];});
@@ -4599,10 +4618,8 @@ function renderTab(){
         var relevant=(protocols[selectedEmp]||[]).filter(function(s){return s.status!=='geplant'&&s.focusMetric===perfMetric;});
         var fullPerf=(performance[selectedEmp]||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
         function avgWindow(centerDate,daysBefore,daysAfter){
-          var c=new Date(centerDate+'T00:00:00');
-          var from=new Date(c);from.setDate(from.getDate()-daysBefore);
-          var to=new Date(c);to.setDate(to.getDate()+daysAfter);
-          var fromS=from.toISOString().slice(0,10),toS=to.toISOString().slice(0,10);
+          var fromS=addDaysUTC(centerDate,-daysBefore);
+          var toS=addDaysUTC(centerDate,daysAfter);
           var rows=fullPerf.filter(function(p){return p.date>=fromS&&p.date<toS;});
           var vals=rows.map(function(p){return p[m.f];}).filter(function(v){return v!==undefined&&v!==null;});
           return vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
@@ -4668,7 +4685,7 @@ var CATEGORY_META={
 function renderActivity(){
   var ma=document.getElementById('mainArea');if(!ma)return;
   var coachList=employees.filter(function(e){return (e.role==='SDM'||e.role==='SC')&&e.active!==false;});
-  var cutoff=(function(){var d=new Date(today()+'T00:00:00');d.setDate(d.getDate()-activityFilterDays);return d.toISOString().slice(0,10);})();
+  var cutoff=(function(){var d=new Date(today()+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-activityFilterDays);return d.toISOString().slice(0,10);})();
   var filtered=activityLog.filter(function(a){
     if(activityFilterPerson!=='ALL'){
       if(activityFilterPerson.indexOf('NAME:')===0){
@@ -4685,9 +4702,9 @@ function renderActivity(){
   filtered.forEach(function(a){var d=(a.createdAt||'').slice(0,10);byDate[d]=(byDate[d]||0)+1;});
   var days=[];
   for(var i=activityFilterDays-1;i>=0;i--){
-    var d=new Date(today()+'T00:00:00');d.setDate(d.getDate()-i);
+    var d=new Date(today()+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-i);
     var ds=d.toISOString().slice(0,10);
-    days.push({ds:ds,n:byDate[ds]||0,wd:['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]});
+    days.push({ds:ds,n:byDate[ds]||0,wd:['So','Mo','Di','Mi','Do','Fr','Sa'][d.getUTCDay()]});
   }
   var maxN=Math.max.apply(null,days.map(function(d){return d.n;}).concat([1]));
 
