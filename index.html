@@ -1089,7 +1089,7 @@ function renderCoachingAnsicht(){
   }
 
   var h='<div class="topbar"><div class="tb-left">'+
-    '<div style="width:40px;height:40px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:17px"><i class="ti ti-calendar-event"></i></div>'+
+    '<div style="width:40px;height:40px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:16px"><i class="ti ti-calendar-event"></i></div>'+
     '<div><div class="tb-name">SFP Coaching</div><div class="tb-meta">'+liste.length+' Mitarbeiter · '+gep.length+' geplant · '+abg.length+' abgeschlossen</div></div></div>'+
     '<button class="btn btn-primary" onclick="openSessionModal(0)"><i class="ti ti-plus"></i> Session planen</button>'+
     '</div>';
@@ -2676,7 +2676,7 @@ function renderTeam(){
 
   // ── RENDER ──
   ma.innerHTML='<div class="topbar">'
-    +'<div class="tb-left"><div class="av" style="width:40px;height:40px;font-size:17px;background:var(--purple-bg);color:var(--purple-dark)"><i class="ti ti-layout-grid"></i></div>'
+    +'<div class="tb-left"><div class="av" style="width:40px;height:40px;font-size:16px;background:var(--purple-bg);color:var(--purple-dark)"><i class="ti ti-layout-grid"></i></div>'
     +'<div><div class="tb-name">SFP Wiegand</div>'
     +'<div class="tb-meta">'+list.length+' Mitarbeiter · <span class="ftp-badge"><i class="ti ti-refresh" style="font-size:11px"></i> FTP sync aktiv</span></div></div></div>'
     +'<button class="btn btn-primary" onclick="exportTeamReport()"><i class="ti ti-file-description"></i> Team-Report (PDF)</button>'
@@ -4690,7 +4690,7 @@ function renderActivity(){
   var maxN=Math.max.apply(null,days.map(function(d){return d.n;}).concat([1]));
 
   var h='<div class="topbar"><div class="tb-left">'
-    +'<div style="width:40px;height:40px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:17px"><i class="ti ti-activity"></i></div>'
+    +'<div style="width:40px;height:40px;border-radius:50%;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:16px"><i class="ti ti-activity"></i></div>'
     +'<div><div class="tb-name">Aktivität</div><div class="tb-meta">Änderungsprotokoll · alle Nutzer</div></div></div>'
     +'</div>'
     +'<div class="content">';
@@ -4786,7 +4786,7 @@ function renderEinstellungen(){
   }
 
   ma.innerHTML='<div class="topbar"><div class="tb-left">'
-    +'<div style="width:40px;height:40px;border-radius:50%;background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:17px"><i class="ti ti-settings"></i></div>'
+    +'<div style="width:40px;height:40px;border-radius:50%;background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:16px"><i class="ti ti-settings"></i></div>'
     +'<div><div class="tb-name">Einstellungen</div><div class="tb-meta">Integrationen · Daten · KPI-Konfiguration</div></div>'
     +'</div></div>'
     +'<div class="tab-bar">'
