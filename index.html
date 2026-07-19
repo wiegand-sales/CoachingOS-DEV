@@ -664,14 +664,20 @@ function formatDuration(min){
   var h=Math.floor(min/60),m=min%60;
   return h+' Std'+(m?' '+m+' Min.':'');
 }
+var currentAuthUser=null; // {id,email} des eingeloggten Auth-Users, unabhängig davon ob er ein employees-Match hat
+var ADMIN_NAME_MAP={ // bekannte Admin-Logins ohne employees-Eintrag -> Anzeigename fürs Aktivitätsprotokoll
+  'p.rode@wiegand-gmbh.de':'Peter Rode'
+};
 function resolveCurrentCoach(){
   return sb.auth.getUser().then(function(res){
     var uid = res.data && res.data.user ? res.data.user.id : null;
+    var email = res.data && res.data.user ? res.data.user.email : null;
+    currentAuthUser = uid ? {id:uid,email:email} : null;
     if(!uid){currentCoach=null;return;}
     var match = employees.find(function(e){return e.auth_user_id===uid;});
     currentCoach = match || null;
     coachFilterView = currentCoach ? currentCoach.id : 'overview';
-  }).catch(function(){currentCoach=null;});
+  }).catch(function(){currentCoach=null;currentAuthUser=null;});
 }
 function initAppAfterLogin(){
   if(_appInitStarted)return;   // verhindert doppelten Init durch ueberlappende Auth-Events
@@ -1799,7 +1805,7 @@ var activityLog=[]; // [{id, createdAt, actorId, category, action, description, 
 function loadActivityLogFromSupabase(){
   return sb.from('activity_log').select('*').order('created_at',{ascending:false}).limit(500).then(function(res){
     if(res.error){console.warn('activity_log load failed:',res.error);return false;}
-    activityLog=(res.data||[]).map(function(r){return {id:r.id,createdAt:r.created_at,actorId:r.actor_id,category:r.category,action:r.action,description:r.description,targetEmployeeId:r.target_employee_id,targetLabel:r.target_label};});
+    activityLog=(res.data||[]).map(function(r){return {id:r.id,createdAt:r.created_at,actorId:r.actor_id,actorName:r.actor_name,category:r.category,action:r.action,description:r.description,targetEmployeeId:r.target_employee_id,targetLabel:r.target_label};});
     return true;
   });
 }
@@ -1807,11 +1813,12 @@ function loadActivityLogFromSupabase(){
 // Feuert asynchron (kein await nötig), fügt lokal sofort ein optimistisches Eintrag hinzu.
 function logActivity(category,action,description,targetEmployeeId,targetLabel){
   var actorId=currentCoach?currentCoach.id:null;
-  var payload={actor_id:actorId,category:category,action:action,description:description,target_employee_id:targetEmployeeId||null,target_label:targetLabel||null};
+  var actorName=currentCoach?null:(currentAuthUser&&currentAuthUser.email?(ADMIN_NAME_MAP[currentAuthUser.email]||currentAuthUser.email):null);
+  var payload={actor_id:actorId,actor_name:actorName,category:category,action:action,description:description,target_employee_id:targetEmployeeId||null,target_label:targetLabel||null};
   sb.from('activity_log').insert(payload).select().single().then(function(res){
     if(res.error){console.warn('activity_log insert failed:',res.error);return;}
     var r=res.data;
-    activityLog.unshift({id:r.id,createdAt:r.created_at,actorId:r.actor_id,category:r.category,action:r.action,description:r.description,targetEmployeeId:r.target_employee_id,targetLabel:r.target_label});
+    activityLog.unshift({id:r.id,createdAt:r.created_at,actorId:r.actor_id,actorName:r.actor_name,category:r.category,action:r.action,description:r.description,targetEmployeeId:r.target_employee_id,targetLabel:r.target_label});
   });
 }
 var employeeDocuments={}; // {empId: [{id, filename, storagePath, description, uploadedBy, uploadedAt}]}
@@ -4661,7 +4668,13 @@ function renderActivity(){
   var coachList=employees.filter(function(e){return (e.role==='SDM'||e.role==='SC')&&e.active!==false;});
   var cutoff=(function(){var d=new Date(today()+'T00:00:00');d.setDate(d.getDate()-activityFilterDays);return d.toISOString().slice(0,10);})();
   var filtered=activityLog.filter(function(a){
-    if(activityFilterPerson!=='ALL'&&a.actorId!==activityFilterPerson)return false;
+    if(activityFilterPerson!=='ALL'){
+      if(activityFilterPerson.indexOf('NAME:')===0){
+        if(a.actorId||a.actorName!==activityFilterPerson.slice(5))return false;
+      } else if(a.actorId!==activityFilterPerson){
+        return false;
+      }
+    }
     return (a.createdAt||'').slice(0,10)>=cutoff;
   });
 
@@ -4690,6 +4703,9 @@ function renderActivity(){
   h+='<select onchange="setActivityFilterPerson(this.value)" style="width:auto;height:34px;font-size:12px;font-weight:500;padding:0 12px;border:1px solid var(--border2);border-radius:var(--r-md);background:var(--bg);color:var(--text);cursor:pointer">';
   h+='<option value="ALL"'+(activityFilterPerson==='ALL'?' selected':'')+'>Alle Personen</option>';
   coachList.forEach(function(c){h+='<option value="'+c.id+'"'+(activityFilterPerson===c.id?' selected':'')+'>'+c.name+'</option>';});
+  var adminNames=[];
+  activityLog.forEach(function(a){if(!a.actorId&&a.actorName&&adminNames.indexOf(a.actorName)<0)adminNames.push(a.actorName);});
+  adminNames.forEach(function(nm){var val='NAME:'+nm;h+='<option value="'+val+'"'+(activityFilterPerson===val?' selected':'')+'>'+nm+'</option>';});
   h+='</select>';
   h+='<div style="display:flex;border:1px solid var(--border2);border-radius:var(--r-md);overflow:hidden;height:34px">';
   [7,30,90].forEach(function(d){
@@ -4725,7 +4741,8 @@ function renderActivity(){
     h+='<div style="display:flex;flex-direction:column;gap:8px">';
     filtered.slice(0,100).forEach(function(a){
       var actor=a.actorId?employees.find(function(e){return e.id===a.actorId;}):null;
-      var c=actor?COLORS[actor.color%COLORS.length]:{bg:'var(--bg2)',text:'var(--text3)'};
+      var displayName=actor?actor.name:(a.actorName||null);
+      var c=actor?COLORS[actor.color%COLORS.length]:{bg:'var(--purple-bg)',text:'var(--purple)'};
       var meta=CATEGORY_META[a.category]||{label:a.category.toUpperCase(),col:'var(--text2)',bg:'var(--bg2)'};
       var dt=new Date(a.createdAt);
       var timeStr=isNaN(dt)?'':dt.toLocaleString('de-DE',{hour:'2-digit',minute:'2-digit'});
@@ -4733,9 +4750,10 @@ function renderActivity(){
       var isToday=a.createdAt&&a.createdAt.slice(0,10)===today();
       h+='<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:rgba(0,0,0,0.03);border:1px solid var(--border2);border-radius:var(--r-md)">';
       h+='<div style="width:70px;flex-shrink:0;font-size:11px;color:var(--text3);padding-top:2px">'+(isToday?timeStr:dateStr)+'</div>';
-      h+='<div class="av" style="width:26px;height:26px;font-size:10px;background:'+c.bg+';color:'+c.text+';flex-shrink:0">'+(actor?ini(actor.name):'?')+'</div>';
+      h+='<div class="av" style="width:26px;height:26px;font-size:10px;background:'+c.bg+';color:'+c.text+';flex-shrink:0" title="'+(displayName||'Unbekannt')+'">'+(displayName?ini(displayName):'?')+'</div>';
       h+='<div style="flex:1;min-width:0">';
       h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">';
+      h+='<span style="font-size:12px;font-weight:600">'+(displayName||'Unbekannt')+'</span>';
       h+='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+meta.bg+';color:'+meta.col+'">'+meta.label+'</span>';
       h+='<span style="font-size:12.5px;color:var(--text2)">'+a.description+'</span>';
       h+='</div>';
