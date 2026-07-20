@@ -391,7 +391,7 @@ tr:hover td{background:var(--bg2);}
   </div>
   <div class="f2" style="margin-bottom:10px">
     <div><label>Art des Coachings</label><select id="sess-type"></select></div>
-    <div><label>Inhalt des Coachings</label><select id="sess-topic-sel"><option value="">— Bitte wählen —</option></select></div>
+    <div><label>Inhalt des Coachings</label><select id="sess-topic-sel" onchange="syncSessFocusMetric()"><option value="">— Bitte wählen —</option></select></div>
   </div>
   <div style="margin-bottom:10px"><label>Ziel-KPI <span style="font-weight:400;color:var(--text3);font-size:11px">(worauf soll dieses Coaching einzahlen?)</span></label>
     <select id="sess-focus-metric"><option value="">— Kein spezifisches KPI —</option></select>
@@ -5182,6 +5182,17 @@ function toggleSessCard(eid){
   if(arr)arr.style.transform=open?'rotate(180deg)':'rotate(0deg)';
 }
 
+// Setzt die Fokus-KPI automatisch, wenn das gewählte Thema eindeutig einem KPI entspricht
+// (z.B. Thema "CR MY" -> Fokus-KPI "crMegaYes"). Verhindert, dass Coachs ein KPI-Thema
+// waehlen, aber die separate Fokus-KPI-Auswahl vergessen (-> Impact Coaching bleibt sonst leer).
+var TOPIC_TO_METRIC={'CR OEM':'crOEM','CR TW':'crTeilweise','CR SY':'crSuperYes','CR MY':'crMegaYes'};
+function syncSessFocusMetric(){
+  var topicEl=document.getElementById('sess-topic-sel');
+  var fmEl=document.getElementById('sess-focus-metric');
+  if(!topicEl||!fmEl)return;
+  var mapped=TOPIC_TO_METRIC[topicEl.value];
+  fmEl.value=mapped||'';
+}
 function saveSession(empId){
   var date=document.getElementById('sess-date').value;
   if(!date){alert('Bitte Datum eingeben.');return;}
