@@ -604,8 +604,8 @@ var overviewEmpDropdownOpen=false;
 function toggleOverviewEmpDropdown(){overviewEmpDropdownOpen=!overviewEmpDropdownOpen;renderTeam();}
 document.addEventListener('click',function(e){
   if(!overviewEmpDropdownOpen)return;
-  var wrap=document.getElementById('overviewEmpDropdownWrap');
-  if(wrap&&!wrap.contains(e.target)){overviewEmpDropdownOpen=false;renderTeam();}
+  if(e.target.closest&&e.target.closest('#overviewEmpDropdownWrap'))return;
+  overviewEmpDropdownOpen=false;renderTeam();
 });
 function toggleOverviewEmpId(id){
   if(!overviewSelectedIds)overviewSelectedIds=[];
