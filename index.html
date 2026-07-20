@@ -5367,11 +5367,29 @@ function downloadCSVVorlage(){
   a.click();
 }
 
+// Lädt eine komplette Tabelle unabhängig von der Standard-1000-Zeilen-Grenze von Supabase.
+// orderCol optional (für stabile Reihenfolge über Seiten hinweg empfohlen, aber nicht zwingend).
+function selectAllPaginated(table,orderCol,ascending){
+  var PAGE=1000;
+  var allRows=[];
+  function fetchPage(from){
+    var q=sb.from(table).select('*');
+    if(orderCol)q=q.order(orderCol,{ascending:ascending!==false});
+    return q.range(from,from+PAGE-1).then(function(res){
+      if(res.error)return res;
+      allRows=allRows.concat(res.data||[]);
+      if(res.data&&res.data.length===PAGE)return fetchPage(from+PAGE);
+      return {data:allRows,error:null};
+    });
+  }
+  return fetchPage(0);
+}
+
 function loadPerformanceFromSupabase(){
-  return sb.from('performance').select('*').then(function(res){
+  return selectAllPaginated('performance').then(function(res){
     if(res.error){console.warn('performance load failed:',res.error);return false;}
     var byEmp={};
-    res.data.forEach(function(r){
+    (res.data||[]).forEach(function(r){
       if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
       byEmp[r.employee_id].push({
         date:r.date,notReached:r.not_reached,notPossible:r.not_possible,notSuccessful:r.not_successful,
@@ -5388,10 +5406,10 @@ function loadPerformanceFromSupabase(){
 }
 
 function loadProtocolsFromSupabase(){
-  return sb.from('protocols').select('*').then(function(res){
+  return selectAllPaginated('protocols').then(function(res){
     if(res.error){console.warn('protocols load failed:',res.error);return false;}
     var byEmp={};
-    res.data.forEach(function(r){
+    (res.data||[]).forEach(function(r){
       if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
       byEmp[r.employee_id].push({
         id:r.id,date:r.date,uhrzeit:r.uhrzeit?r.uhrzeit.slice(0,5):'',endUhrzeit:r.end_uhrzeit?r.end_uhrzeit.slice(0,5):'',type:r.art,rating:r.rating,
@@ -5506,10 +5524,10 @@ function loadReviewsFromSupabase(){
 }
 
 function loadTasksFromSupabase(){
-  return sb.from('tasks').select('*').then(function(res){
+  return selectAllPaginated('tasks').then(function(res){
     if(res.error){console.warn('tasks load failed:',res.error);return false;}
     var byEmp={};
-    res.data.forEach(function(r){
+    (res.data||[]).forEach(function(r){
       if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
       byEmp[r.employee_id].push({
         id:r.id,text:r.text,description:r.description||'',done:r.done,
@@ -5524,7 +5542,7 @@ function loadTasksFromSupabase(){
 }
 
 function loadEmployeeHistoryFromSupabase(){
-  return sb.from('employee_history').select('*').order('changed_at',{ascending:false}).then(function(res){
+  return selectAllPaginated('employee_history','changed_at',false).then(function(res){
     if(res.error){console.warn('employee_history load failed:',res.error);return false;}
     var byEmp={};
     (res.data||[]).forEach(function(r){
@@ -5536,7 +5554,7 @@ function loadEmployeeHistoryFromSupabase(){
   });
 }
 function loadGoalsFromSupabase(){
-  return sb.from('goals').select('*').order('created_at',{ascending:false}).then(function(res){
+  return selectAllPaginated('goals','created_at',false).then(function(res){
     if(res.error){console.warn('goals load failed:',res.error);return false;}
     var byEmp={};
     (res.data||[]).forEach(function(r){
@@ -5562,7 +5580,7 @@ function loadAdminAuditLogFromSupabase(){
   });
 }
 function loadEmployeeDocumentsFromSupabase(){
-  return sb.from('employee_documents').select('*').order('uploaded_at',{ascending:false}).then(function(res){
+  return selectAllPaginated('employee_documents','uploaded_at',false).then(function(res){
     if(res.error){console.warn('employee_documents load failed:',res.error);return false;}
     var byEmp={};
     (res.data||[]).forEach(function(r){
@@ -5575,8 +5593,8 @@ function loadEmployeeDocumentsFromSupabase(){
 }
 function loadCallRatingsFromSupabase(){
   return Promise.all([
-    sb.from('call_ratings').select('*'),
-    sb.from('call_rating_scores').select('*')
+    selectAllPaginated('call_ratings'),
+    selectAllPaginated('call_rating_scores')
   ]).then(function(results){
     var ratingsRes=results[0],scoresRes=results[1];
     if(ratingsRes.error){console.warn('call_ratings load failed:',ratingsRes.error);return false;}
@@ -5587,7 +5605,7 @@ function loadCallRatingsFromSupabase(){
       scoresByRating[s.call_rating_id][s.item_key]=s.value;
     });
     var byEmp={};
-    ratingsRes.data.forEach(function(r){
+    (ratingsRes.data||[]).forEach(function(r){
       if(!byEmp[r.employee_id])byEmp[r.employee_id]=[];
       byEmp[r.employee_id].push({
         id:r.id,date:r.date,auftragsnr:r.auftragsnr||'',bewertetVon:r.bewertet_von||'',
