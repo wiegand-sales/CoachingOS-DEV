@@ -2501,7 +2501,7 @@ function buildOverviewTab(liste){
     window._overviewChartData={labels:labels,datasets:datasets,yS:yS};
   })(chartRows,overviewChartMetric,overviewPerfGroup);
 
-  setTimeout(function(){
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
     if(!window._overviewChartData)return;
     var d=window._overviewChartData;
     var canvas=document.getElementById('overviewPerfChart');
@@ -2519,7 +2519,7 @@ function buildOverviewTab(liste){
         }
       }
     });
-  },150);
+  });});
 
   return h;
 }
