@@ -588,7 +588,8 @@ function loadEmployeesFromSupabase(){
         id: e.id, name: e.name, role: e.role, phase: e.phase,
         color: e.color_index, startDate: e.start_date, endDate: e.end_date || null,
         team: e.team, contract: e.contract, hours: e.hours, active: e.active,
-        auth_user_id: e.auth_user_id || null, notes: e.notes || ''
+        auth_user_id: e.auth_user_id || null, notes: e.notes || '',
+        isPureCoach: e.is_pure_coach===true
       };
     });
     return true;
@@ -789,7 +790,7 @@ function computeCoachEffectiveness(){
 // ── Coaching-Abdeckung: eigener, ausgebauter Tab mit mehr Informationen ──
 function buildCoachingAbdeckungTab(liste,hD,heute){
   var HIDDEN=[];
-  var visible=liste.filter(function(e){return HIDDEN.indexOf(e.role)<0;});
+  var visible=liste.filter(function(e){return HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   var coachEmps=employees.filter(function(e){return (e.role==='SDM'||e.role==='SC')&&e.active!==false;});
 
   // ── Kennzahlen oben ──
@@ -1359,7 +1360,7 @@ function exportEmpSummary(empId){
 }
 function exportTeamReport(){
   var HIDDEN=[];
-  var list=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0;});
+  var list=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   var customActive=!!(teamCustomFrom&&teamCustomTo);
   var days=teamRange||7;
   var fromBound,toBound;
@@ -1967,7 +1968,7 @@ function renderSidebar(){
   var na=document.getElementById('nav-activity');if(na)na.classList.toggle('active',view==='activity');
   if(view==='settings')document.getElementById('nav-settings').classList.add('active');
   var HIDDEN=[];
-  var visible=employees.filter(function(e){return e.active!==false&&HIDDEN.indexOf(e.role)<0;});
+  var visible=employees.filter(function(e){return e.active!==false&&HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   // Mitarbeiter in Onboarding-Phase kommen alle in eine Gruppe -- AUSSER VLC (Valencia):
   // VLC wird immer als eigener Standort gefuehrt, unabhaengig vom Onboarding-Status
   var onboardingEmps=visible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
@@ -2160,7 +2161,7 @@ function setTeamFilter(k){teamFilter=k;renderMain();}
 // ── SFP Wiegand > Overview: 5 Kacheln + Performance-Tabelle für einen wählbaren Mitarbeiter ──
 function buildOverviewTab(liste){
   var HIDDEN=[];
-  var visible=liste.filter(function(e){return HIDDEN.indexOf(e.role)<0;}).slice().sort(function(a,b){return a.name.localeCompare(b.name);});
+  var visible=liste.filter(function(e){return HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;}).slice().sort(function(a,b){return a.name.localeCompare(b.name);});
   if(!visible.length)return '<div class="card" style="text-align:center;color:var(--text3);padding:40px">Keine Mitarbeiter vorhanden</div>';
   if(!overviewSelectedIds){overviewSelectedIds=[visible[0].id];}
   overviewSelectedIds=overviewSelectedIds.filter(function(id){return visible.some(function(e){return e.id===id;});});
@@ -2540,8 +2541,8 @@ function renderTeam(){
   }
   function teamGetPerf(id){return customActive?getPerfRange(id,fromBound,toBound):getPerf(id,days);}
   var HIDDEN=[];
-  var allVisible=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0;});
-  var inactiveAll=employees.filter(function(e){return e.active===false&&HIDDEN.indexOf(e.role)<0;});
+  var allVisible=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
+  var inactiveAll=employees.filter(function(e){return e.active===false&&HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   var onboardingEmpsT=allVisible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
   var FDEFS=[
     {key:'ALL',    label:'Alle',       n:allVisible.length},
