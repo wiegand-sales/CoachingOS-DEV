@@ -1986,8 +1986,6 @@ function renderSidebar(){
     el.appendChild(hdr);el.appendChild(body);
   }
   groups.forEach(makeGroup);
-  var inactive=employees.filter(function(e){return e.active===false&&HIDDEN.indexOf(e.team)<0;});
-  if(inactive.length)makeGroup({key:'INAKTIV',label:'Inaktiv',members:inactive});
 }
 
 function setTeamRange(d){teamRange=d;teamCustomFrom=null;teamCustomTo=null;renderTeam();}
