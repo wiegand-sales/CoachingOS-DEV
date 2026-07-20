@@ -5333,12 +5333,23 @@ function saveNewEmp(){
     if(res.error){alert('Fehler beim Speichern in Supabase: '+res.error.message);return;}
     var e=res.data;
     logActivity('employee','created','Neuer Mitarbeiter angelegt: '+name,e.id,role+' · '+phase);
-    var ne={id:e.id,name:e.name,role:e.role,phase:e.phase,color:e.color_index,startDate:e.start_date,team:e.team,contract:e.contract,hours:e.hours,active:e.active};
+    var STANDARD_TARGETS=[
+      {rk:'crOEM',val:55,dir:'gte'},
+      {rk:'crTW',val:25,dir:'lte'},
+      {rk:'crSuperYes',val:12,dir:'gte'},
+      {rk:'crMegaYes',val:8,dir:'gte'},
+      {rk:'optPerH',val:2.0,dir:'gte'}
+    ];
+    var ne={id:e.id,name:e.name,role:e.role,phase:e.phase,color:e.color_index,startDate:e.start_date,team:e.team,contract:e.contract,hours:e.hours,active:e.active,targets:{}};
+    STANDARD_TARGETS.forEach(function(t){ne.targets[t.rk]=t.val;ne.targets[t.rk+'Dir']=t.dir;});
     employees.push(ne);
     protocols[ne.id]=[];
     performance[ne.id]=[];
     if(typeof solidroadData!=='undefined')solidroadData[ne.id]={simulations:[]};
     if(typeof tasks!=='undefined')tasks[ne.id]=[];
+    sb.from('employee_kpi_targets').insert(STANDARD_TARGETS.map(function(t){return {employee_id:e.id,metric_key:t.rk,val:t.val,dir:t.dir};})).then(function(res2){
+      if(res2.error)console.warn('Standard-KPI-Ziele konnten nicht angelegt werden:',res2.error);
+    });
     closeModal('addEmpModal');
     renderSidebar();renderMain();
   }).catch(function(err){
