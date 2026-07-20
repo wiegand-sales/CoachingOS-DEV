@@ -5672,18 +5672,32 @@ function importCSV(file){
         if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Keine gültigen Zeilen. Unbekannte Mitarbeiter: '+(notFound.join(', ')||'-');}
         return;
       }
-      sb.from('performance').upsert(payload,{onConflict:'employee_id,date'}).then(function(res){
-        if(res.error){
-          if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Fehler: '+res.error.message;}
+      // Große Importe in 300er-Päckchen aufteilen, damit keine Zeilen an einem
+      // Server-/Payload-Limit stillschweigend abgeschnitten werden.
+      var CHUNK=300;
+      var chunks=[];
+      for(var ci=0;ci<payload.length;ci+=CHUNK)chunks.push(payload.slice(ci,ci+CHUNK));
+      var imported=0,failedChunks=[];
+      function importNextChunk(idx){
+        if(idx>=chunks.length){
+          var msg='✓ Import erfolgreich: '+imported+' von '+payload.length+' Zeile(n).';
+          if(failedChunks.length)msg=' ⚠ '+imported+' von '+payload.length+' Zeile(n) importiert. Fehlgeschlagene Päckchen: '+failedChunks.join(', ');
+          if(notFound.length)msg+=' · Unbekannte Mitarbeiter übersprungen: '+notFound.join(', ');
+          if(statusEl){statusEl.style.color=failedChunks.length?'#b91c1c':'var(--teal)';statusEl.textContent=msg;}
+          loadPerformanceFromSupabase().then(function(){renderTab();});
           return;
         }
-        var msg='✓ Import erfolgreich: '+payload.length+' Zeile(n).';
-        if(notFound.length)msg+=' Unbekannte Mitarbeiter übersprungen: '+notFound.join(', ');
-        if(statusEl){statusEl.style.color='var(--teal)';statusEl.textContent=msg;}
-        loadPerformanceFromSupabase().then(function(){renderTab();});
-      }).catch(function(err){
-        if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Unerwarteter Fehler: '+err.message;}
-      });
+        if(statusEl)statusEl.textContent='Importiere… ('+(idx*CHUNK)+' / '+payload.length+')';
+        sb.from('performance').upsert(chunks[idx],{onConflict:'employee_id,date'}).then(function(res){
+          if(res.error){failedChunks.push('#'+(idx+1)+' ('+res.error.message+')');}
+          else{imported+=chunks[idx].length;}
+          importNextChunk(idx+1);
+        }).catch(function(err){
+          failedChunks.push('#'+(idx+1)+' ('+err.message+')');
+          importNextChunk(idx+1);
+        });
+      }
+      importNextChunk(0);
     }catch(ex){
       if(statusEl){statusEl.style.color='#b91c1c';statusEl.textContent='Fehler beim Verarbeiten: '+ex.message;}
     }
