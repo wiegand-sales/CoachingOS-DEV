@@ -5933,7 +5933,7 @@ function saveEmpEinstellungen(){
   sb.from('employees').update({
     name:emp.name,role:emp.role,phase:emp.phase,team:emp.team,
     start_date:emp.startDate||null,end_date:emp.endDate||null,
-    contract:emp.contract,hours:emp.hours,notes:emp.notes||null
+    contract:emp.contract,hours:emp.hours,notes:emp.notes||null,color_index:emp.color
   }).eq('id',emp.id).then(function(res){
     if(res.error){alert('Fehler beim Speichern in Supabase: '+res.error.message+'\n\nDie Änderung ist lokal sichtbar, aber NICHT gespeichert -- bitte nochmal versuchen.');return;}
     var stammChanges=[];
@@ -6248,8 +6248,18 @@ if(!hasData){
 function setEmpColor(colorIdx){
   var emp=employees.find(function(e){return e.id===selectedEmp;});
   if(!emp)return;
+  var oldColor=emp.color;
   emp.color=colorIdx;
   renderTab();
+  lsSave();
+  sb.from('employees').update({color_index:colorIdx}).eq('id',emp.id).then(function(res){
+    if(res.error){
+      alert('Fehler beim Speichern der Avatar-Farbe: '+res.error.message+'\n\nDie Änderung ist lokal sichtbar, aber NICHT gespeichert.');
+      emp.color=oldColor;renderTab();
+    } else {
+      logActivity('stammdaten','updated','Avatar-Farbe geändert',emp.id,emp.name);
+    }
+  });
 }
 
 
