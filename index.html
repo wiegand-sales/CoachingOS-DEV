@@ -199,7 +199,7 @@ tr:hover td{background:var(--bg2);}
 .sb-group-body{overflow:hidden;transition:max-height .25s ease;}</style>
 </head>
 <body>
-<div id="stg-banner" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#BA7517;color:#fff;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit">⚠ STAGING · <a href="https://wiegand-sales.github.io/CoachingOS/" style="color:#fff;text-decoration:underline">→ Live</a></div><style>#stg-banner~*{margin-top:32px!important}.sidebar{top:32px!important;height:calc(100vh - 32px)!important}</style>
+<div id="stg-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#BA7517;color:#fff;text-align:center;padding:6px 12px;font-size:12px;font-weight:600;font-family:inherit">⚠ STAGING · <a href="https://wiegand-sales.github.io/CoachingOS/" style="color:#fff;text-decoration:underline">→ Live</a></div><style id="stg-banner-style"></style>
 
 
 
@@ -546,6 +546,16 @@ tr:hover td{background:var(--bg2);}
 var SUPABASE_URL = 'https://kjlkneodyvfqgaukdjvb.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_6C8m6s4zxS2lQKFGEMd_yw_fnEBGN8k';
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Staging-Banner nur einblenden, wenn dies die DEV-Datenbank ist (nicht Live)
+if(SUPABASE_URL.indexOf('kjlkneodyvfqgaukdjvb')>=0){
+  var stgBanner=document.getElementById('stg-banner');
+  if(stgBanner){
+    stgBanner.style.display='block';
+    var stgStyle=document.getElementById('stg-banner-style');
+    if(stgStyle)stgStyle.textContent='#stg-banner~*{margin-top:32px!important}.sidebar{top:32px!important;height:calc(100vh - 32px)!important}';
+  }
+}
 
 function logout(){
   sb.auth.signOut().then(function(){
