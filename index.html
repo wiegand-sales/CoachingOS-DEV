@@ -668,7 +668,8 @@ function formatDuration(min){
 }
 var currentAuthUser=null; // {id,email} des eingeloggten Auth-Users, unabhängig davon ob er ein employees-Match hat
 var ADMIN_NAME_MAP={ // bekannte Admin-Logins ohne employees-Eintrag -> Anzeigename fürs Aktivitätsprotokoll
-  'p.rode@wiegand-gmbh.de':'Peter Rode'
+  'p.rode@wiegand-gmbh.de':'Peter Rode',
+  'n.hojdem@wiegand-gmbh.de':'Niklas Hojdem'
 };
 function resolveCurrentCoach(){
   return sb.auth.getUser().then(function(res){
