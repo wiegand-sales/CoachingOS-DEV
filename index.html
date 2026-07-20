@@ -2292,7 +2292,7 @@ function buildOverviewTab(liste){
   });
   h+='</select>';
   h+='</div>';
-  h+='<canvas id="overviewPerfChart" height="80"></canvas>';
+  h+='<div style="height:280px;position:relative"><canvas id="overviewPerfChart"></canvas></div>';
   h+='</div>';
 
   // Performance-Tabelle (Tag/Woche/Monat) für den gewählten Mitarbeiter
@@ -2512,6 +2512,7 @@ function buildOverviewTab(liste){
       data:{labels:d.labels,datasets:d.datasets},
       options:{
         responsive:true,
+        maintainAspectRatio:false,
         plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:20,padding:12}}},
         scales:{
           x:{ticks:{font:{size:11},maxTicksLimit:12},grid:{display:false}},
