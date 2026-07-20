@@ -5335,10 +5335,15 @@ function saveNewEmp(){
     logActivity('employee','created','Neuer Mitarbeiter angelegt: '+name,e.id,role+' · '+phase);
     var STANDARD_TARGETS=[
       {rk:'crOEM',val:55,dir:'gte'},
-      {rk:'crTW',val:25,dir:'lte'},
-      {rk:'crSuperYes',val:12,dir:'gte'},
-      {rk:'crMegaYes',val:8,dir:'gte'},
-      {rk:'optPerH',val:2.0,dir:'gte'}
+      {rk:'crTW',val:15,dir:'lte'},
+      {rk:'crYes',val:40,dir:'lte'},
+      {rk:'crSuperYes',val:40,dir:'gte'},
+      {rk:'crMegaYes',val:20,dir:'gte'},
+      {rk:'aktivitaeten',val:100,dir:'gte'},
+      {rk:'convOEM',val:24,dir:'gte'},
+      {rk:'optGesamt',val:28,dir:'gte'},
+      {rk:'optPerH',val:3.0,dir:'gte'},
+      {rk:'margeGesamt',val:1500.00,dir:'gte'}
     ];
     var ne={id:e.id,name:e.name,role:e.role,phase:e.phase,color:e.color_index,startDate:e.start_date,team:e.team,contract:e.contract,hours:e.hours,active:e.active,targets:{}};
     STANDARD_TARGETS.forEach(function(t){ne.targets[t.rk]=t.val;ne.targets[t.rk+'Dir']=t.dir;});
