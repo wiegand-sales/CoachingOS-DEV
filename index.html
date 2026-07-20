@@ -602,6 +602,11 @@ var wiegandView='overview'; // 'overview' | 'team' (SFP Wiegand Tab-Navigation)
 var overviewSelectedIds=null; // Array ausgewählter Mitarbeiter-IDs in SFP Wiegand > Overview (Mehrfachauswahl)
 var overviewEmpDropdownOpen=false;
 function toggleOverviewEmpDropdown(){overviewEmpDropdownOpen=!overviewEmpDropdownOpen;renderTeam();}
+document.addEventListener('click',function(e){
+  if(!overviewEmpDropdownOpen)return;
+  var wrap=document.getElementById('overviewEmpDropdownWrap');
+  if(wrap&&!wrap.contains(e.target)){overviewEmpDropdownOpen=false;renderTeam();}
+});
 function toggleOverviewEmpId(id){
   if(!overviewSelectedIds)overviewSelectedIds=[];
   var idx=overviewSelectedIds.indexOf(id);
@@ -622,6 +627,30 @@ function setSettingsView(v){settingsView=v;renderEinstellungen();}
 function setOverviewChartMetric(m){overviewChartMetric=m;renderTeam();}
 var overviewToDate=null;   // Bis-Datum (Overview Performance-Tabelle), null = Standard (Monatsende/heute)
 function setOverviewDateRange(from,to){overviewFromDate=from||null;overviewToDate=to||null;renderTeam();}
+function applyOverviewWeek(){
+  var el=document.getElementById('overviewWeekInput');
+  if(!el||!el.value)return;
+  var parts=el.value.split('-W'); // "2026-W29"
+  var year=parseInt(parts[0],10),week=parseInt(parts[1],10);
+  // Montag der ISO-Woche berechnen
+  var simple=new Date(Date.UTC(year,0,1+(week-1)*7));
+  var dow=simple.getUTCDay()||7; // Sonntag=0 -> 7
+  var monday=new Date(simple);
+  monday.setUTCDate(simple.getUTCDate()-dow+1);
+  var sunday=new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate()+6);
+  setOverviewDateRange(monday.toISOString().slice(0,10),sunday.toISOString().slice(0,10));
+}
+function applyOverviewMonth(){
+  var el=document.getElementById('overviewMonthInput');
+  if(!el||!el.value)return;
+  var parts=el.value.split('-'); // "2026-07"
+  var year=parseInt(parts[0],10),month=parseInt(parts[1],10);
+  var from=year+'-'+('0'+month).slice(-2)+'-01';
+  var lastDay=new Date(Date.UTC(year,month,0)).getUTCDate();
+  var to=year+'-'+('0'+month).slice(-2)+'-'+('0'+lastDay).slice(-2);
+  setOverviewDateRange(from,to);
+}
 function setOverviewPerfGroup(g){overviewPerfGroup=g;renderTeam();}
 function setWiegandView(v){wiegandView=v;renderTeam();}
 var coachCalYear=null, coachCalMonthIdx=null; // Kalender-Monatsnavigation SFP Coaching (init. beim ersten Rendern auf aktuellen Monat)
@@ -2272,7 +2301,7 @@ function buildOverviewTab(liste){
   var currentMonthLabel=monthNames[parseInt(currentMonthKey.slice(5,7),10)-1]+' '+currentMonthKey.slice(0,4);
   h+='<div class="card-title" style="margin-bottom:14px"><i class="ti ti-table"></i> Performance <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+selLabel+' · '+fd(effFrom)+'–'+fd(effTo)+'</span></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
-  h+='<div style="position:relative">';
+  h+='<div style="position:relative" id="overviewEmpDropdownWrap">';
   h+='<button class="btn btn-sm" style="height:34px;padding:0 12px;font-weight:500" onclick="toggleOverviewEmpDropdown()"><i class="ti ti-users"></i> '+selLabel+' <i class="ti ti-chevron-down" style="font-size:11px"></i></button>';
   if(overviewEmpDropdownOpen){
     h+='<div style="position:absolute;top:38px;left:0;z-index:20;background:var(--bg-solid);border:1px solid var(--border2);border-radius:var(--r-md);box-shadow:0 10px 24px rgba(15,61,66,0.14);padding:8px;min-width:220px;max-height:280px;overflow-y:auto">';
@@ -2295,13 +2324,23 @@ function buildOverviewTab(liste){
     h+='<button class="'+(overviewPerfGroup===it.k?'active':'')+'" data-g="'+it.k+'" onclick="setOverviewPerfGroup(this.dataset.g)">'+it.l+'</button>';
   });
   h+='</div>';
-  h+='<div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;border:1px solid var(--border2);border-radius:var(--r-md);margin-left:auto">';
+  h+='<div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;border:1px solid var(--border2);border-radius:var(--r-md)">';
   h+='<span style="font-size:11px;color:var(--text2)">Von</span>';
   h+='<input type="date" id="overviewFromDate" value="'+effFrom+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:112px">';
   h+='<span style="font-size:11px;color:var(--text2)">Bis</span>';
   h+='<input type="date" id="overviewToDate" value="'+effTo+'" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:112px">';
   h+='<button class="btn btn-sm" style="padding:4px 8px" onclick="setOverviewDateRange(document.getElementById(\'overviewFromDate\').value,document.getElementById(\'overviewToDate\').value)"><i class="ti ti-check"></i></button>';
   h+=((overviewFromDate||overviewToDate)?'<button class="btn btn-sm" style="padding:4px 8px" onclick="setOverviewDateRange(null,null)" title="Zurück zum aktuellen Monat"><i class="ti ti-x"></i></button>':'');
+  h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;border:1px solid var(--border2);border-radius:var(--r-md);margin-left:auto">';
+  h+='<span style="font-size:11px;color:var(--text2)">KW</span>';
+  h+='<input type="week" id="overviewWeekInput" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:118px">';
+  h+='<button class="btn btn-sm" style="padding:4px 8px" onclick="applyOverviewWeek()"><i class="ti ti-check"></i></button>';
+  h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;border:1px solid var(--border2);border-radius:var(--r-md)">';
+  h+='<span style="font-size:11px;color:var(--text2)">Monat</span>';
+  h+='<input type="month" id="overviewMonthInput" style="border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--text);padding:0;width:118px">';
+  h+='<button class="btn btn-sm" style="padding:4px 8px" onclick="applyOverviewMonth()"><i class="ti ti-check"></i></button>';
   h+='</div>';
   h+='</div>';
   var combinedGroupedRows=[];
@@ -2707,6 +2746,8 @@ function renderTeam(){
   coverageHtml+='</div></div>';
 
   // ── RENDER ──
+  var _prevContentEl=ma.querySelector('.content');
+  var _prevScrollTop=_prevContentEl?_prevContentEl.scrollTop:0;
   ma.innerHTML='<div class="topbar">'
     +'<div class="tb-left"><div class="av" style="width:40px;height:40px;font-size:16px;background:var(--purple-bg);color:var(--purple-dark)"><i class="ti ti-layout-grid"></i></div>'
     +'<div><div class="tb-name">SFP Wiegand</div>'
@@ -2852,6 +2893,8 @@ function renderTeam(){
     +'</div>'
     ):(buildOverviewTab(allVisible)))
     +'</div>';
+  var _newContentEl=ma.querySelector('.content');
+  if(_newContentEl&&_prevScrollTop)_newContentEl.scrollTop=_prevScrollTop;
   // ── Team Performance Trend Chart.js ──
   window._teamChartData=null;
   (function(allRows,metric,days,kpiTargets){
