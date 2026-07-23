@@ -5154,11 +5154,12 @@ function renderEinstellungen(){
       var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;}).sort(function(a,b){return a.name.localeCompare(b.name);});
       var rec=zielStore[zielMonth]||{};
       var teamDaysSum=0,teamTargetSum=0,margeVals=[];
+      var ZIEL_WK_COL=64;
       var weekHeaderCells=weeksMeta.map(function(wm){
         var isHol=wm.holidayNames.length>0;
-        return '<th style="font-size:10px;text-transform:uppercase;letter-spacing:.02em;color:'+(isHol?'var(--amber-dark)':'var(--text2)')+';font-weight:700;text-align:center;padding:0 6px 12px;border-bottom:2px solid var(--purple);white-space:nowrap"'
+        return '<th style="width:'+ZIEL_WK_COL+'px;min-width:'+ZIEL_WK_COL+'px;max-width:'+ZIEL_WK_COL+'px;font-size:10px;text-transform:uppercase;letter-spacing:.02em;color:'+(isHol?'var(--amber-dark)':'var(--text2)')+';font-weight:700;text-align:center;padding:0 2px 12px;border-bottom:2px solid var(--purple);white-space:nowrap"'
           +(isHol?' title="'+wm.holidayNames.join(', ')+'"':'')
-          +'>KW '+wm.kw+'<br><span style="font-weight:500;color:var(--text3);text-transform:none">('+wm.defaultDays+' Tage)</span></th>';
+          +'>KW '+wm.kw+'<br><span style="font-weight:500;color:var(--text3);text-transform:none">('+wm.defaultDays+')</span></th>';
       }).join('');
       var rowsHtml=visibleEmps.map(function(e,idx){
         var r=rec[e.id]||{};
@@ -5171,7 +5172,7 @@ function renderEinstellungen(){
         var c=COLORS[e.color%COLORS.length];
         var weekCells=weeksMeta.map(function(wm,i){
           var isHol=wm.holidayNames.length>0;
-          return '<td style="border-bottom:1px solid var(--border);padding:10px 6px"><input type="number" min="0" max="7" value="'+weeks[i]+'" onchange="updateZielField(\''+e.id+'\',\'week\','+i+',this.value)" style="width:52px;padding:6px 4px;text-align:center'+(isHol?';border-color:var(--amber)':'')+'"></td>';
+          return '<td style="width:'+ZIEL_WK_COL+'px;min-width:'+ZIEL_WK_COL+'px;max-width:'+ZIEL_WK_COL+'px;border-bottom:1px solid var(--border);padding:10px 2px;text-align:center"><input type="number" min="0" max="7" value="'+weeks[i]+'" onchange="updateZielField(\''+e.id+'\',\'week\','+i+',this.value)" style="width:48px;padding:6px 2px;text-align:center'+(isHol?';border-color:var(--amber)':'')+'"></td>';
         }).join('');
         return '<tr style="'+(idx%2===1?'background:rgba(32,106,114,0.025)':'')+'">'
           +'<td style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding:12px 10px;white-space:nowrap"><div class="av" style="width:28px;height:28px;font-size:10.5px;background:'+c.bg+';color:'+c.text+'">'+ini(e.name)+'</div><div><div style="font-weight:700;font-size:13px">'+e.name+'</div><div style="font-size:10.5px;color:var(--text3)">'+e.role+'</div></div></td>'
