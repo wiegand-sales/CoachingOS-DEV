@@ -39,7 +39,7 @@ body{font-family:'Inter',sans-serif;background:linear-gradient(155deg,#f2f3f0 0%
 .sb-nav{padding:8px 10px 4px;}
 .sb-item{display:flex;align-items:center;gap:9px;padding:6px 10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);border-radius:8px;margin-bottom:2px;transition:all .12s;}
 .sb-item:hover{background:rgba(32,106,114,0.08);color:var(--text);}
-.sb-item.active{background:rgba(32,106,114,0.14);color:var(--purple-dark);font-weight:600;}.sb-navsub{padding:6px 10px 6px 41px;font-size:12.5px;}
+.sb-item.active{background:rgba(32,106,114,0.14);color:var(--purple-dark);font-weight:600;}.sb-navsub{padding:6px 10px 6px 20px;font-size:12.5px;}.wiegand-subnav{margin:2px 0 4px 14px;padding-left:6px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:1px;}.wiegand-subnav.hidden{display:none;}
 .sb-item i{font-size:15px;color:inherit;}
 .sb-icon{width:26px;height:26px;border-radius:8px;background:linear-gradient(180deg,#27808a 0%,#206A72 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;box-shadow:0 2px 6px rgba(32,106,114,.22);}
 .sb-divider{height:1px;background:var(--border);margin:8px 14px;}
@@ -257,9 +257,11 @@ tr:hover td{background:var(--bg2);}
     <button onclick="logout()" title="Abmelden" style="position:absolute;top:0;right:0;background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px"><i class="ti ti-logout"></i></button>
   </div>
   <div class="sb-nav">
-    <div class="sb-item" id="nav-team" onclick="selectWiegandSub(wiegandView)"><div class="sb-icon"><i class="ti ti-layout-grid"></i></div> SFP Wiegand</div>
-    <div class="sb-item sb-navsub" id="nav-team-overview" onclick="selectWiegandSub('overview')">Overview</div>
-    <div class="sb-item sb-navsub" id="nav-team-team" onclick="selectWiegandSub('team')">Team</div>
+    <div class="sb-item" id="nav-team" onclick="toggleWiegandNav()"><div class="sb-icon"><i class="ti ti-layout-grid"></i></div> SFP Wiegand <i class="ti ti-chevron-up" id="wiegandNavChevron" style="margin-left:auto;font-size:13px;color:var(--text3)"></i></div>
+    <div id="wiegandSubNav" class="wiegand-subnav">
+      <div class="sb-item sb-navsub" id="nav-team-overview" onclick="selectWiegandSub('overview')">Overview</div>
+      <div class="sb-item sb-navsub" id="nav-team-team" onclick="selectWiegandSub('team')">Team</div>
+    </div>
     <div class="sb-item" id="nav-coaching" onclick="showView('coaching')"><div class="sb-icon"><i class="ti ti-calendar-event"></i></div> SFP Coaching</div>
     <div class="sb-item" id="nav-activity" onclick="showView('activity')"><div class="sb-icon"><i class="ti ti-activity"></i></div> Aktivität</div>
     <div class="sb-item" id="nav-settings" onclick="showView('settings')"><div class="sb-icon"><i class="ti ti-settings"></i></div> Settings</div>
@@ -2066,6 +2068,13 @@ function applyTeamCustomRange(){
 function clearTeamCustomRange(){teamCustomFrom=null;teamCustomTo=null;renderTeam();}
 function setTeamMetric(m){teamPerfMetric=m;renderTeam();}
 function showView(v){view=v;renderSidebar();renderMain();}
+var wiegandNavOpen=true;
+function toggleWiegandNav(){
+  wiegandNavOpen=!wiegandNavOpen;
+  var sub=document.getElementById('wiegandSubNav');if(sub)sub.classList.toggle('hidden',!wiegandNavOpen);
+  var chev=document.getElementById('wiegandNavChevron');if(chev)chev.className='ti ti-chevron-'+(wiegandNavOpen?'up':'down');
+  selectWiegandSub(wiegandView);
+}
 function selectWiegandSub(v){wiegandView=v;view='team';renderSidebar();renderMain();}
 function renderMain(){if(view==='team')renderTeam();else if(view==='coaching')renderCoachingAnsicht();else if(view==='activity')renderActivity();else if(view==='settings')renderEinstellungen();else renderEmpDetail();}
 
