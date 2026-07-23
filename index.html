@@ -5181,9 +5181,10 @@ function renderEinstellungen(){
       var ZIEL_MARGE_COL=90;   // Marge/Opt. == Ø Marge/Opt.
       var ZIEL_NL_COL=120;     // Ziel NL Marge/Mon. (manuell, nur Monatszeile)
       var weeksMeta=getMonthWeeksZiel(zielMonth);
-      var weekGridTemplate=ZIEL_NAME_COL+'px repeat('+weeksMeta.length+','+ZIEL_WK_COL+'px) '+ZIEL_SUM_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px 1fr';
+      var ZIEL_TARGET_COL=150;
+      var weekGridTemplate=ZIEL_NAME_COL+'px repeat('+weeksMeta.length+','+ZIEL_WK_COL+'px) '+ZIEL_SUM_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px minmax('+ZIEL_TARGET_COL+'px,1fr)';
       var ZIEL_SUMWIDE_COL=ZIEL_WK_COL*weeksMeta.length+ZIEL_SUM_COL;
-      var yearGridTemplate=ZIEL_NAME_COL+'px '+ZIEL_SUMWIDE_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px 1fr '+ZIEL_NL_COL+'px 150px';
+      var yearGridTemplate=ZIEL_NAME_COL+'px '+ZIEL_SUMWIDE_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px '+ZIEL_NL_COL+'px minmax('+ZIEL_TARGET_COL+'px,1fr)';
 
       // ── Aufgeklappter Wochen-Detailblick fuer den aktuell gewaehlten Monat (wird unter dessen Monatszeile eingehaengt) ──
       var weekDetailHtml=(function(){
@@ -5282,7 +5283,6 @@ function renderEinstellungen(){
           +'<div style="'+GD+';justify-content:center;font-weight:600">'+mDaysSum+'</div>'
           +'<div style="'+GD+';justify-content:center;color:var(--text2)">'+(mAvgOpt||'–')+'</div>'
           +'<div style="'+GD+';justify-content:center;color:var(--text2)">'+(mAvgMarge?'€ '+mAvgMarge:'–')+'</div>'
-          +'<div></div>'
           +'<div style="'+GD+'" onclick="event.stopPropagation()"><input type="number" min="0" value="'+mNl+'" onchange="updateZielNlTarget(\''+mk+'\',this.value)" style="text-align:right" placeholder="0"></div>'
           +'<div style="'+GD+';justify-content:flex-end;font-weight:600;color:var(--purple)">€ '+Math.round(mTargetSum).toLocaleString('de-DE')+'</div>'
           +'</div>');
@@ -5293,7 +5293,6 @@ function renderEinstellungen(){
         +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">'+yearDaysSum+'</div>'
         +'<div style="padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">–</div>'
         +'<div style="padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">–</div>'
-        +'<div style="border-top:2px solid var(--purple)"></div>'
         +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(yearNlSum).toLocaleString('de-DE')+'</div>'
         +'<div style="font-weight:800;color:var(--purple-dark);padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(yearTargetSum).toLocaleString('de-DE')+'</div>'
         +'</div>';
@@ -5312,7 +5311,6 @@ function renderEinstellungen(){
         +'<div style="'+GHW+';justify-content:center;text-align:center">Σ Einsatztage</div>'
         +'<div style="'+GHW+';justify-content:center;text-align:center">Ø Opt./Tag</div>'
         +'<div style="'+GHW+';justify-content:center;text-align:center">Ø Marge/Opt.</div>'
-        +'<div></div>'
         +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel NL Marge/Mon.</div>'
         +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel Marge/Mon.</div>'
         +'</div>'
