@@ -1983,6 +1983,9 @@ function loadZielvereinbarungFromSupabase(){
     return true;
   });
 }
+var zielYearView=today().slice(0,4);
+function setZielYearView(delta){zielYearView=(+zielYearView+delta)+'';renderEinstellungen();}
+function jumpToZielMonth(monthKey){zielMonth=monthKey;renderEinstellungen();}
 function setZielMonth(delta){
   var y=+zielMonth.slice(0,4),m=+zielMonth.slice(5,7);
   m+=delta;if(m<1){m=12;y--;}else if(m>12){m=1;y++;}
@@ -5149,6 +5152,57 @@ function renderEinstellungen(){
 
     // ══ ZIELVEREINBARUNG ══
     +(settingsView==='ziel'?(function(){
+      // ── Jahresübersicht: Team-Summen je Monat, mit eigenem Jahres-Filter ──
+      var yearHtml=(function(){
+        var year=zielYearView;
+        var monthRows=[];
+        for(var m=1;m<=12;m++){
+          var mk=year+'-'+(m<10?'0'+m:m);
+          var wMeta=getMonthWeeksZiel(mk);
+          var mRec=zielStore[mk]||{};
+          var mVisible=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;});
+          var mDaysSum=0,mTargetSum=0,mMargeVals=[],mOptVals=[];
+          mVisible.forEach(function(e){
+            var r=mRec[e.id]||{};
+            var weeks=wMeta.map(function(wm,i){return(r.weeks&&r.weeks[i]!=null)?r.weeks[i]:wm.defaultDays;});
+            var monthSum=weeks.reduce(function(a,b){return a+b;},0);
+            var optTag=r.optTag!=null?r.optTag:0;
+            var margeOpt=r.margeOpt!=null?r.margeOpt:0;
+            mDaysSum+=monthSum;mTargetSum+=monthSum*optTag*margeOpt;
+            if(margeOpt)mMargeVals.push(margeOpt);
+            if(optTag)mOptVals.push(optTag);
+          });
+          var mAvgMarge=mMargeVals.length?Math.round(mMargeVals.reduce(function(a,b){return a+b;},0)/mMargeVals.length):0;
+          var mAvgOpt=mOptVals.length?Math.round(mOptVals.reduce(function(a,b){return a+b;},0)/mOptVals.length):0;
+          var isCurrent=mk===zielMonth;
+          monthRows.push('<tr style="cursor:pointer'+(isCurrent?';background:var(--purple-bg)':'')+'" onclick="jumpToZielMonth(\''+mk+'\')">'
+            +'<td style="padding:9px 10px;border-bottom:1px solid var(--border);font-weight:'+(isCurrent?'800':'600')+'">'+MONTH_NAMES_ZIEL[m-1]+'</td>'
+            +'<td style="padding:9px 10px;border-bottom:1px solid var(--border);text-align:center;font-weight:700">'+mDaysSum+'</td>'
+            +'<td style="padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--text2)">'+(mAvgOpt||'–')+'</td>'
+            +'<td style="padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--text2)">'+(mAvgMarge?'€ '+mAvgMarge:'–')+'</td>'
+            +'<td style="padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:800;color:var(--purple-dark)">€ '+Math.round(mTargetSum).toLocaleString('de-DE')+'</td>'
+            +'</tr>');
+        }
+        return '<div class="card" style="margin-bottom:22px">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+          +'<div class="card-title" style="margin:0"><i class="ti ti-calendar-stats"></i> Jahresübersicht</div>'
+          +'<div style="display:flex;align-items:center;gap:10px">'
+          +'<button class="btn btn-sm" onclick="setZielYearView(-1)">◀</button>'
+          +'<div style="font-size:14px;font-weight:700;min-width:60px;text-align:center">'+year+'</div>'
+          +'<button class="btn btn-sm" onclick="setZielYearView(1)">▶</button>'
+          +'</div></div>'
+          +'<table style="width:100%;border-collapse:collapse">'
+          +'<tr><th style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:600;text-align:left;padding:0 10px 10px;border-bottom:1px solid var(--border)">Monat</th>'
+          +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:600;text-align:center;padding:0 10px 10px;border-bottom:1px solid var(--border)">Σ Einsatztage</th>'
+          +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:600;text-align:right;padding:0 10px 10px;border-bottom:1px solid var(--border)">Ø Opt./Tag</th>'
+          +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:600;text-align:right;padding:0 10px 10px;border-bottom:1px solid var(--border)">Ø Marge/Opt.</th>'
+          +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3);font-weight:600;text-align:right;padding:0 10px 10px;border-bottom:1px solid var(--border)">Ziel Marge/Mon.</th></tr>'
+          +monthRows.join('')
+          +'</table>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:10px">Zeile anklicken, um in den Wochen-Detailblick unten zu springen.</div>'
+          +'</div>';
+      })();
+
       var weeksMeta=getMonthWeeksZiel(zielMonth);
       var monthLabel=MONTH_NAMES_ZIEL[+zielMonth.slice(5,7)-1]+' '+zielMonth.slice(0,4);
       var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;}).sort(function(a,b){return a.name.localeCompare(b.name);});
@@ -5187,9 +5241,9 @@ function renderEinstellungen(){
       }).join('');
       var avgMarge=margeVals.length?Math.round(margeVals.reduce(function(a,b){return a+b;},0)/margeVals.length):0;
       var weekTotalCells=weeksMeta.map(function(){return '<td style="width:'+ZIEL_WK_COL+'px;min-width:'+ZIEL_WK_COL+'px;max-width:'+ZIEL_WK_COL+'px;padding:12px 2px;border-top:2px solid var(--purple)"></td>';}).join('');
-      return '<div class="card">'
+      return yearHtml+'<div class="card">'
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">'
-        +'<div style="font-size:14px;font-weight:700">Zielvereinbarung</div>'
+        +'<div class="card-title" style="margin:0"><i class="ti ti-target"></i> Zielvereinbarung</div>'
         +'<div style="display:flex;align-items:center;gap:10px">'
         +'<button class="btn btn-sm" onclick="setZielMonth(-1)">◀</button>'
         +'<div style="font-size:14px;font-weight:700;min-width:130px;text-align:center">'+monthLabel+'</div>'
