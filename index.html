@@ -2812,12 +2812,7 @@ function renderTeam(){
   // ── RENDER ──
   var _prevContentEl=ma.querySelector('.content');
   var _prevScrollTop=_prevContentEl?_prevContentEl.scrollTop:0;
-  ma.innerHTML='<div class="topbar">'
-    +'<div class="tb-left"><div class="av" style="width:40px;height:40px;font-size:16px;background:var(--purple-bg);color:var(--purple-dark)"><i class="ti ti-layout-grid"></i></div>'
-    +'<div><div class="tb-name">SFP Wiegand</div>'
-    +'<div class="tb-meta">'+list.length+' Mitarbeiter · <span class="ftp-badge"><i class="ti ti-refresh" style="font-size:11px"></i> FTP sync aktiv</span></div></div></div>'
-    +'<button class="btn btn-primary" onclick="exportTeamReport()"><i class="ti ti-file-description"></i> Team-Report (PDF)</button>'
-    +'</div>'
+  ma.innerHTML=''
     +'<div class="content">'
     +(wiegandView==='team'?(''
     // KPI Kacheln (reiches Format wie Coaching Sessions: Trend-Pfeil + Sparkline)
