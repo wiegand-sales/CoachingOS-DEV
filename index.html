@@ -5182,7 +5182,7 @@ function renderEinstellungen(){
       var ZIEL_NL_COL=120;     // Ziel NL Marge/Mon. (manuell, nur Monatszeile)
       var weeksMeta=getMonthWeeksZiel(zielMonth);
       var ZIEL_TARGET_COL=150;
-      var weekGridTemplate=ZIEL_NAME_COL+'px repeat('+weeksMeta.length+','+ZIEL_WK_COL+'px) '+ZIEL_SUM_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px minmax('+ZIEL_TARGET_COL+'px,1fr)';
+      var weekGridTemplate=ZIEL_NAME_COL+'px repeat('+weeksMeta.length+','+ZIEL_WK_COL+'px) '+ZIEL_SUM_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px minmax(0,1fr) '+ZIEL_NL_COL+'px '+ZIEL_TARGET_COL+'px';
       var ZIEL_SUMWIDE_COL=ZIEL_WK_COL*weeksMeta.length+ZIEL_SUM_COL;
       var yearGridTemplate=ZIEL_NAME_COL+'px '+ZIEL_SUMWIDE_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px minmax(0,1fr) '+ZIEL_NL_COL+'px '+ZIEL_TARGET_COL+'px';
 
@@ -5221,6 +5221,8 @@ function renderEinstellungen(){
             +'<div style="'+GD+';justify-content:center;font-weight:600">'+monthSum+'</div>'
             +'<div style="'+GD+'"><input type="number" min="0" value="'+optTag+'" onchange="updateZielField(\''+e.id+'\',\'optTag\',null,this.value)" style="text-align:right"></div>'
             +'<div style="'+GD+'"><input type="number" min="0" value="'+margeOpt+'" onchange="updateZielField(\''+e.id+'\',\'margeOpt\',null,this.value)" style="text-align:right"></div>'
+            +'<div></div>'
+            +'<div style="'+GD+'"></div>'
             +'<div style="'+GD+';justify-content:flex-end;font-weight:600;color:var(--purple)">€ '+Math.round(target).toLocaleString('de-DE')+'</div>'
             +'</div>';
         }).join('');
@@ -5236,6 +5238,8 @@ function renderEinstellungen(){
           +'<div style="'+GHW+';justify-content:center;text-align:center">Σ Mon.</div>'
           +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Opt./Tag</div>'
           +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Marge/Opt.</div>'
+          +'<div></div>'
+          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel NL Marge/Mon.</div>'
           +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel Marge/Mon.</div>'
           +'</div>'
           +rowsHtml
@@ -5245,6 +5249,8 @@ function renderEinstellungen(){
           +'<div style="font-weight:700;text-align:center;padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:center">'+teamDaysSum+'</div>'
           +'<div style="padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:flex-end">–</div>'
           +'<div style="font-weight:700;padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:flex-end">Ø € '+avgMarge+'</div>'
+          +'<div style="border-top:1px solid var(--border2)"></div>'
+          +'<div style="padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center"><input type="number" min="0" value="'+(zielNlTargets[zielMonth]!=null?zielNlTargets[zielMonth]:0)+'" onchange="updateZielNlTarget(\''+zielMonth+'\',this.value)" style="text-align:right" placeholder="0"></div>'
           +'<div style="font-weight:700;color:var(--purple);padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(teamTargetSum).toLocaleString('de-DE')+'</div>'
           +'</div>'
           +'</div></div>'
