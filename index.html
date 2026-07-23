@@ -768,7 +768,7 @@ function initAppAfterLogin(){
   loadEmployeesFromSupabase().then(function(){
     return resolveCurrentCoach();
   }).then(function(){
-    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase(), loadEmployeeHistoryFromSupabase(), loadEmployeeDocumentsFromSupabase(), loadGoalsFromSupabase(), loadAdminAuditLogFromSupabase(), loadActivityLogFromSupabase()]).then(function(){
+    Promise.all([loadPerformanceFromSupabase(), loadProtocolsFromSupabase(), loadCallRatingsFromSupabase(), loadTasksFromSupabase(), loadReviewsFromSupabase(), loadKpiTargetsFromSupabase(), loadRatingCriteriaFromSupabase(), loadSettingsFromSupabase(), loadAdminSecretsFromSupabase(), loadEmployeeKpiTargetsFromSupabase(), loadSolidroadFromSupabase(), loadEmployeeHistoryFromSupabase(), loadEmployeeDocumentsFromSupabase(), loadGoalsFromSupabase(), loadAdminAuditLogFromSupabase(), loadActivityLogFromSupabase(), loadZielvereinbarungFromSupabase()]).then(function(){
       lsLoad();               // Rest der Daten (protocols, ...) bleibt vorerst lokal
       runAppInit();
     });
@@ -1971,9 +1971,18 @@ function getMonthWeeksZiel(monthKey){
 }
 var MONTH_NAMES_ZIEL=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 var zielMonth=today().slice(0,7);
-var ZIEL_LS_KEY='sfp_zielvereinbarung';
-var zielStore={};try{zielStore=JSON.parse(localStorage.getItem(ZIEL_LS_KEY)||'{}');}catch(ex){}
-function saveZielStoreLS(){try{localStorage.setItem(ZIEL_LS_KEY,JSON.stringify(zielStore));}catch(ex){}}
+var zielStore={};
+function loadZielvereinbarungFromSupabase(){
+  return sb.from('zielvereinbarung').select('*').then(function(res){
+    if(res.error){console.warn('zielvereinbarung load failed:',res.error);return false;}
+    zielStore={};
+    res.data.forEach(function(r){
+      if(!zielStore[r.month])zielStore[r.month]={};
+      zielStore[r.month][r.employee_id]={weeks:[r.week1,r.week2,r.week3,r.week4,r.week5],optTag:r.opt_per_tag,margeOpt:r.marge_per_opt};
+    });
+    return true;
+  });
+}
 function setZielMonth(delta){
   var y=+zielMonth.slice(0,4),m=+zielMonth.slice(5,7);
   m+=delta;if(m<1){m=12;y--;}else if(m>12){m=1;y++;}
@@ -1990,9 +1999,25 @@ function updateZielField(empId,field,weekIdx,value){
   renderEinstellungen();
 }
 function saveZielvereinbarung(){
-  saveZielStoreLS();
   var st=document.getElementById('ziel-status');
-  if(st)st.textContent='Gespeichert (lokal im Browser) · '+new Date().toLocaleTimeString('de-DE');
+  if(st)st.textContent='Speichere...';
+  var weeksMeta=getMonthWeeksZiel(zielMonth);
+  var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;});
+  var rec=zielStore[zielMonth]||{};
+  var rows=visibleEmps.map(function(e){
+    var r=rec[e.id]||{};
+    var weeks=weeksMeta.map(function(wm,i){return(r.weeks&&r.weeks[i]!=null)?r.weeks[i]:wm.defaultDays;});
+    return {
+      employee_id:e.id,month:zielMonth,
+      week1:weeks[0],week2:weeks[1],week3:weeks[2],week4:weeks[3],week5:weeks[4],
+      opt_per_tag:r.optTag!=null?r.optTag:0,
+      marge_per_opt:r.margeOpt!=null?r.margeOpt:0
+    };
+  });
+  sb.from('zielvereinbarung').upsert(rows,{onConflict:'employee_id,month'}).then(function(res){
+    if(res.error){console.warn('zielvereinbarung save failed:',res.error);if(st)st.textContent='Fehler beim Speichern — siehe Konsole';return;}
+    if(st)st.textContent='Gespeichert · '+new Date().toLocaleTimeString('de-DE');
+  });
 }
 function ini(n){return n.split(' ').map(function(x){return x[0];}).join('').toUpperCase().slice(0,2);}
 function fd(d){
