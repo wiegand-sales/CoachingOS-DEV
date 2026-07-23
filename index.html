@@ -5170,6 +5170,7 @@ function renderEinstellungen(){
     // ══ ZIELVEREINBARUNG ══
     +(settingsView==='ziel'?(function(){
       var GH='background:var(--bg2);padding:9px 14px;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap;display:flex;align-items:center';
+      var GHW='background:var(--bg2);padding:9px 6px;font-size:9.5px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em;border-bottom:1px solid var(--border2);white-space:normal;line-height:1.25;display:flex;align-items:center;overflow:hidden';
       var GD='padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;min-width:0';
       // Gemeinsame feste Spaltenbreiten (CSS Grid), damit die Spalten der aufgeklappten Wochenansicht
       // exakt unter die Monatszeilen-Spalten passen
@@ -5231,10 +5232,10 @@ function renderEinstellungen(){
           +'<div style="display:grid;grid-template-columns:'+weekGridTemplate+'">'
           +'<div style="'+GH+'">Mitarbeiter</div>'
           +weekHeaderCells
-          +'<div style="'+GH+';justify-content:center">Σ Mon.</div>'
-          +'<div style="'+GH+';justify-content:flex-end">Opt./Tag</div>'
-          +'<div style="'+GH+';justify-content:flex-end">Marge/Opt.</div>'
-          +'<div style="'+GH+';justify-content:flex-end">Ziel Marge/Mon.</div>'
+          +'<div style="'+GHW+';justify-content:center;text-align:center">Σ Mon.</div>'
+          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Opt./Tag</div>'
+          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Marge/Opt.</div>'
+          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel Marge/Mon.</div>'
           +'</div>'
           +rowsHtml
           +'<div style="display:grid;grid-template-columns:'+weekGridTemplate+';background:var(--bg2)">'
@@ -5308,12 +5309,12 @@ function renderEinstellungen(){
         +'<div style="min-width:fit-content">'
         +'<div style="display:grid;grid-template-columns:'+yearGridTemplate+'">'
         +'<div style="'+GH+'">Monat</div>'
-        +'<div style="'+GH+';justify-content:center">Σ Einsatztage</div>'
-        +'<div style="'+GH+';justify-content:center">Ø Opt./Tag</div>'
-        +'<div style="'+GH+';justify-content:center">Ø Marge/Opt.</div>'
+        +'<div style="'+GHW+';justify-content:center;text-align:center">Σ Einsatztage</div>'
+        +'<div style="'+GHW+';justify-content:center;text-align:center">Ø Opt./Tag</div>'
+        +'<div style="'+GHW+';justify-content:center;text-align:center">Ø Marge/Opt.</div>'
         +'<div></div>'
-        +'<div style="'+GH+';justify-content:flex-end">Ziel NL Marge/Mon.</div>'
-        +'<div style="'+GH+';justify-content:flex-end">Ziel Marge/Mon.</div>'
+        +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel NL Marge/Mon.</div>'
+        +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel Marge/Mon.</div>'
         +'</div>'
         +monthRows.join('')
         +yearTotalRow
