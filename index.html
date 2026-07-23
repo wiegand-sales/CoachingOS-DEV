@@ -5218,23 +5218,15 @@ function renderEinstellungen(){
     // ══ ZIELVEREINBARUNG ══
     +(settingsView==='ziel'?(function(){
       var GH='background:var(--bg2);padding:9px 14px;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap;display:flex;align-items:center';
-      var GHW='background:var(--bg2);padding:9px 8px;font-size:9.5px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em;border-bottom:1px solid var(--border2);white-space:normal;line-height:1.25;display:flex;align-items:center;overflow:hidden';
       var GD='padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;min-width:0';
-      // Feste Spaltenbreiten. Die "Σ"-Spalte selbst waechst (minmax), um die volle Kartenbreite zu
-      // fuellen - dadurch entsteht KEINE separate leere Luecke, sondern eine echte Datenspalte wird
-      // breiter. Ziel NL Marge/Mon. und Ziel Marge/Mon. bleiben fest und sitzen direkt nebeneinander
-      // ganz rechts.
-      var ZIEL_WK_COL=64;
-      var ZIEL_NAME_COL=210;
-      var ZIEL_SUM_COL=76;
-      var ZIEL_OPT_COL=90;
-      var ZIEL_MARGE_COL=100;
-      var ZIEL_NL_COL=130;
-      var ZIEL_TARGET_COL=150;
+      // Zwei strukturell unterschiedliche Tabellen (Monats-Aggregat vs. Mitarbeiter-Wochendetail) -
+      // jede bekommt ihre EIGENE, in sich sinnvolle Spaltenverteilung. Kein erzwungenes
+      // Pixel-Matching zwischen beiden mehr (das erzeugte nur eine haessliche Luecke). Beide fuellen
+      // die volle Kartenbreite ueber fr-Anteile, keine separate Leerspalte.
+      var ZIEL_WK_COL=64; // KW-Felder bleiben fest, brauchen konsistente lesbare Breite
       var weeksMeta=getMonthWeeksZiel(zielMonth);
-      var weekGridTemplate=ZIEL_NAME_COL+'px repeat('+weeksMeta.length+','+ZIEL_WK_COL+'px) '+ZIEL_SUM_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px minmax(0,1fr) '+ZIEL_NL_COL+'px '+ZIEL_TARGET_COL+'px';
-      var ZIEL_SUMWIDE_COL=ZIEL_WK_COL*weeksMeta.length+ZIEL_SUM_COL;
-      var yearGridTemplate=ZIEL_NAME_COL+'px '+ZIEL_SUMWIDE_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px minmax(0,1fr) '+ZIEL_NL_COL+'px '+ZIEL_TARGET_COL+'px';
+      var weekGridTemplate='2.2fr repeat('+weeksMeta.length+','+ZIEL_WK_COL+'px) 0.8fr 0.9fr 1fr 1.3fr';
+      var yearGridTemplate='1.6fr 1fr 0.9fr 1fr 1.2fr 1.3fr';
 
       // ── Aufgeklappter Wochen-Detailblick fuer den aktuell gewaehlten Monat (wird unter dessen Monatszeile eingehaengt) ──
       var weekDetailHtml=(function(){
@@ -5271,8 +5263,6 @@ function renderEinstellungen(){
             +'<div style="'+GD+';justify-content:center;font-weight:600">'+monthSum+'</div>'
             +'<div style="'+GD+'"><input type="number" min="0" value="'+optTag+'" onchange="updateZielField(\''+e.id+'\',\'optTag\',null,this.value)" style="text-align:right"></div>'
             +'<div style="'+GD+'"><input type="number" min="0" value="'+margeOpt+'" onchange="updateZielField(\''+e.id+'\',\'margeOpt\',null,this.value)" style="text-align:right"></div>'
-            +'<div></div>'
-            +'<div style="'+GD+'"></div>'
             +'<div style="'+GD+';justify-content:flex-end;font-weight:600;color:var(--purple)">€ '+Math.round(target).toLocaleString('de-DE')+'</div>'
             +'</div>';
         }).join('');
@@ -5284,12 +5274,10 @@ function renderEinstellungen(){
           +'<div style="display:grid;grid-template-columns:'+weekGridTemplate+'">'
           +'<div style="'+GH+'">Mitarbeiter</div>'
           +weekHeaderCells
-          +'<div style="'+GHW+';justify-content:center;text-align:center">Σ Mon.</div>'
-          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Opt./Tag</div>'
-          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Marge/Opt.</div>'
-          +'<div></div>'
-          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel NL Marge/Mon.</div>'
-          +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel Marge/Mon.</div>'
+          +'<div style="'+GH+';justify-content:center">Σ Mon.</div>'
+          +'<div style="'+GH+';justify-content:flex-end">Opt./Tag</div>'
+          +'<div style="'+GH+';justify-content:flex-end">Marge/Opt.</div>'
+          +'<div style="'+GH+';justify-content:flex-end">Ziel Marge/Mon.</div>'
           +'</div>'
           +rowsHtml
           +'<div style="display:grid;grid-template-columns:'+weekGridTemplate+';background:var(--bg2)">'
@@ -5298,8 +5286,6 @@ function renderEinstellungen(){
           +'<div style="font-weight:700;text-align:center;padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:center">'+teamDaysSum+'</div>'
           +'<div style="padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:flex-end">–</div>'
           +'<div style="font-weight:700;padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:flex-end">Ø € '+avgMarge+'</div>'
-          +'<div style="border-top:1px solid var(--border2)"></div>'
-          +'<div style="padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center"><input type="number" min="0" value="'+(zielNlTargets[zielMonth]!=null?zielNlTargets[zielMonth]:0)+'" onchange="updateZielNlTarget(\''+zielMonth+'\',this.value)" style="text-align:right" placeholder="0"></div>'
           +'<div style="font-weight:700;color:var(--purple);padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(teamTargetSum).toLocaleString('de-DE')+'</div>'
           +'</div>'
           +'</div>'
@@ -5335,10 +5321,9 @@ function renderEinstellungen(){
         var rowBg=isCurrent?'background:var(--purple-bg);':(m%2===0?'background:rgba(0,0,0,0.03);':'');
         monthRows.push('<div style="display:grid;grid-template-columns:'+yearGridTemplate+';cursor:pointer;'+rowBg+(isCurrent?'border-left:3px solid var(--purple);':'')+'" onclick="toggleZielMonth(\''+mk+'\')">'
           +'<div style="'+GD+';font-weight:'+(isCurrent?'700':'600')+'"><i class="ti ti-chevron-'+(isCurrent?'down':'right')+'" style="font-size:12px;margin-right:6px;color:var(--text3)"></i>'+MONTH_NAMES_ZIEL[m-1]+'</div>'
-          +'<div style="'+GD+';justify-content:flex-end;font-weight:600">'+mDaysSum+'</div>'
+          +'<div style="'+GD+';justify-content:center;font-weight:600">'+mDaysSum+'</div>'
           +'<div style="'+GD+';justify-content:center;color:var(--text2)">'+(mAvgOpt||'–')+'</div>'
           +'<div style="'+GD+';justify-content:center;color:var(--text2)">'+(mAvgMarge?'€ '+mAvgMarge:'–')+'</div>'
-          +'<div></div>'
           +'<div style="'+GD+'" onclick="event.stopPropagation()"><input type="number" min="0" value="'+mNl+'" onchange="updateZielNlTarget(\''+mk+'\',this.value)" style="text-align:right" placeholder="0"></div>'
           +'<div style="'+GD+';justify-content:flex-end;font-weight:600;color:var(--purple)">€ '+Math.round(mTargetSum).toLocaleString('de-DE')+'</div>'
           +'</div>');
@@ -5346,10 +5331,9 @@ function renderEinstellungen(){
       }
       var yearTotalRow='<div style="display:grid;grid-template-columns:'+yearGridTemplate+';background:var(--bg2)">'
         +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center">Jahresergebnis</div>'
-        +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:flex-end">'+yearDaysSum+'</div>'
+        +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">'+yearDaysSum+'</div>'
         +'<div style="padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">–</div>'
         +'<div style="padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">–</div>'
-        +'<div style="border-top:2px solid var(--purple)"></div>'
         +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(yearNlSum).toLocaleString('de-DE')+'</div>'
         +'<div style="font-weight:800;color:var(--purple-dark);padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(yearTargetSum).toLocaleString('de-DE')+'</div>'
         +'</div>';
@@ -5364,12 +5348,11 @@ function renderEinstellungen(){
         +'<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)">'
         +'<div style="display:grid;grid-template-columns:'+yearGridTemplate+'">'
         +'<div style="'+GH+'">Monat</div>'
-        +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Σ Einsatztage</div>'
-        +'<div style="'+GHW+';justify-content:center;text-align:center">Ø Opt./Tag</div>'
-        +'<div style="'+GHW+';justify-content:center;text-align:center">Ø Marge/Opt.</div>'
-        +'<div></div>'
-        +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel NL Marge/Mon.</div>'
-        +'<div style="'+GHW+';justify-content:flex-end;text-align:right">Ziel Marge/Mon.</div>'
+        +'<div style="'+GH+';justify-content:center">Σ Einsatztage</div>'
+        +'<div style="'+GH+';justify-content:center">Ø Opt./Tag</div>'
+        +'<div style="'+GH+';justify-content:center">Ø Marge/Opt.</div>'
+        +'<div style="'+GH+';justify-content:flex-end">Ziel NL Marge/Mon.</div>'
+        +'<div style="'+GH+';justify-content:flex-end">Ziel Marge/Mon.</div>'
         +'</div>'
         +monthRows.join('')
         +yearTotalRow
