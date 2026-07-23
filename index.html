@@ -294,7 +294,14 @@ tr:hover td{background:var(--bg2);}
     </div>
     <div class="sb-item" id="nav-coaching" onclick="showView('coaching')"><div class="sb-icon"><i class="ti ti-calendar-event"></i></div> SFP Coaching</div>
     <div class="sb-item" id="nav-activity" onclick="showView('activity')"><div class="sb-icon"><i class="ti ti-activity"></i></div> Aktivität</div>
-    <div class="sb-item" id="nav-settings" onclick="showView('settings')"><div class="sb-icon"><i class="ti ti-settings"></i></div> Settings</div>
+    <div class="sb-item" id="nav-settings" onclick="toggleSettingsNav()"><div class="sb-icon"><i class="ti ti-settings"></i></div> Settings <i class="ti ti-chevron-up" id="settingsNavChevron" style="margin-left:auto;font-size:13px;color:var(--text3)"></i></div>
+    <div id="settingsSubNav" class="wiegand-subnav">
+      <div class="sb-item sb-navsub" id="nav-settings-kpi" onclick="selectSettingsSub('kpi')">KPI-Ziele</div>
+      <div class="sb-item sb-navsub" id="nav-settings-ziel" onclick="selectSettingsSub('ziel')">Zielvereinbarung</div>
+      <div class="sb-item sb-navsub" id="nav-settings-integrations" onclick="selectSettingsSub('integrations')">Integrationen</div>
+      <div class="sb-item sb-navsub" id="nav-settings-data" onclick="selectSettingsSub('data')">Daten & Backup</div>
+      <div class="sb-item sb-navsub" id="nav-settings-log" onclick="selectSettingsSub('log')">Protokoll</div>
+    </div>
   </div>
   <div class="sb-divider"></div>
   <div class="sb-section">Staff</div>
@@ -673,6 +680,15 @@ var activityFilterDays=7;
 function setActivityFilterPerson(v){activityFilterPerson=v;renderActivity();}
 function setActivityFilterDays(d){activityFilterDays=d;renderActivity();}
 function setSettingsView(v){settingsView=v;renderEinstellungen();}
+var settingsNavOpen=true;
+function toggleSettingsNav(){
+  settingsNavOpen=!settingsNavOpen;
+  var sub=document.getElementById('settingsSubNav');if(sub)sub.classList.toggle('hidden',!settingsNavOpen);
+  var chev=document.getElementById('settingsNavChevron');if(chev)chev.className='ti ti-chevron-'+(settingsNavOpen?'up':'down');
+  if(settingsNavOpen)closeWiegandSubnav();
+  selectSettingsSub(settingsView);
+}
+function selectSettingsSub(v){settingsView=v;view='settings';renderSidebar();renderMain();}
 function setOverviewChartMetric(m){overviewChartMetric=m;renderTeam();}
 var overviewToDate=null;   // Bis-Datum (Overview Performance-Tabelle), null = Standard (Monatsende/heute)
 function setOverviewDateRange(from,to){overviewFromDate=from||null;overviewToDate=to||null;renderTeam();}
@@ -2215,6 +2231,9 @@ function renderSidebar(){
   var nc=document.getElementById('nav-coaching');if(nc)nc.classList.toggle('active',view==='coaching');
   var na=document.getElementById('nav-activity');if(na)na.classList.toggle('active',view==='activity');
   if(view==='settings')document.getElementById('nav-settings').classList.add('active');
+  ['kpi','ziel','integrations','data','log'].forEach(function(sv){
+    var el=document.getElementById('nav-settings-'+sv);if(el)el.classList.toggle('active',view==='settings'&&settingsView===sv);
+  });
   var HIDDEN=[];
   var visible=employees.filter(function(e){return e.active!==false&&HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   // Mitarbeiter in Onboarding-Phase kommen alle in eine Gruppe -- AUSSER VLC (Valencia):
@@ -2289,12 +2308,28 @@ function applyTeamCustomRange(){
 }
 function clearTeamCustomRange(){teamCustomFrom=null;teamCustomTo=null;renderTeam();}
 function setTeamMetric(m){teamPerfMetric=m;renderTeam();}
-function showView(v){view=v;renderSidebar();renderMain();}
+function showView(v){
+  view=v;
+  if(v!=='team')closeWiegandSubnav();
+  if(v!=='settings')closeSettingsSubnav();
+  renderSidebar();renderMain();
+}
+function closeWiegandSubnav(){
+  wiegandNavOpen=false;
+  var sub=document.getElementById('wiegandSubNav');if(sub)sub.classList.add('hidden');
+  var chev=document.getElementById('wiegandNavChevron');if(chev)chev.className='ti ti-chevron-down';
+}
+function closeSettingsSubnav(){
+  settingsNavOpen=false;
+  var sub=document.getElementById('settingsSubNav');if(sub)sub.classList.add('hidden');
+  var chev=document.getElementById('settingsNavChevron');if(chev)chev.className='ti ti-chevron-down';
+}
 var wiegandNavOpen=true;
 function toggleWiegandNav(){
   wiegandNavOpen=!wiegandNavOpen;
   var sub=document.getElementById('wiegandSubNav');if(sub)sub.classList.toggle('hidden',!wiegandNavOpen);
   var chev=document.getElementById('wiegandNavChevron');if(chev)chev.className='ti ti-chevron-'+(wiegandNavOpen?'up':'down');
+  if(wiegandNavOpen)closeSettingsSubnav();
   selectWiegandSub(wiegandView);
 }
 function selectWiegandSub(v){wiegandView=v;view='team';renderSidebar();renderMain();}
@@ -5188,13 +5223,6 @@ function renderEinstellungen(){
     +'<div style="width:40px;height:40px;border-radius:9px;background:var(--bg2);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:16px"><i class="ti ti-settings"></i></div>'
     +'<div><div class="tb-name">Einstellungen</div><div class="tb-meta">Integrationen · Daten · KPI-Konfiguration</div></div>'
     +'</div></div>'
-    +'<div class="tab-bar">'
-    +'<div class="tab'+(settingsView==='kpi'?' active':'')+'" onclick="setSettingsView(\'kpi\')">KPI-Ziele</div>'
-    +'<div class="tab'+(settingsView==='ziel'?' active':'')+'" onclick="setSettingsView(\'ziel\')">Zielvereinbarung</div>'
-    +'<div class="tab'+(settingsView==='integrations'?' active':'')+'" onclick="setSettingsView(\'integrations\')">Integrationen</div>'
-    +'<div class="tab'+(settingsView==='data'?' active':'')+'" onclick="setSettingsView(\'data\')">Daten & Backup</div>'
-    +'<div class="tab'+(settingsView==='log'?' active':'')+'" onclick="setSettingsView(\'log\')">Protokoll</div>'
-    +'</div>'
     +'<div class="content" style="max-width:100%">'
 
     // ══ KPI-ZIELE ══
