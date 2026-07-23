@@ -2356,6 +2356,31 @@ function buildOverviewTab(liste){
   h+='<div style="height:280px;position:relative"><canvas id="overviewPerfChart"></canvas></div>';
   h+='</div>';
 
+  // ── Conversion-Mix (OEM/Upsells/WKA) & CR-Verteilung (TW/Yes/SY/MY) — Entwurf B, Donut mit Zentrums-Zahl ──
+  h+='<div class="g2" style="margin-bottom:22px">';
+  h+='<div class="card"><div class="card-title" style="margin-bottom:14px">Conversion-Mix <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+selLabel+'</span></div>';
+  h+='<div style="position:relative;width:160px;height:160px;margin:0 auto 14px"><canvas id="overviewMixChart" width="160" height="160"></canvas>'
+    +'<div id="overviewMixCenter" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">'
+    +'<div style="font-size:24px;font-weight:800;color:var(--purple-dark)" id="overviewMixCenterN">–</div>'
+    +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Gesamt</div></div></div>';
+  h+='<div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;font-size:12px">'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#0F3D42;display:inline-block"></span>OEM <span id="overviewMixOEM" style="font-weight:700;margin-left:2px">–</span></div>'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#32A8B4;display:inline-block"></span>Upsells <span id="overviewMixUpsells" style="font-weight:700;margin-left:2px">–</span></div>'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#9FE1E8;display:inline-block"></span>WKA <span id="overviewMixWKA" style="font-weight:700;margin-left:2px">–</span></div>'
+    +'</div></div>';
+  h+='<div class="card"><div class="card-title" style="margin-bottom:14px">CR-Verteilung <span style="font-weight:400;font-size:12px;color:var(--text3);text-transform:none;letter-spacing:0">· '+selLabel+'</span></div>';
+  h+='<div style="position:relative;width:160px;height:160px;margin:0 auto 14px"><canvas id="overviewCrChart" width="160" height="160"></canvas>'
+    +'<div id="overviewCrCenter" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">'
+    +'<div style="font-size:24px;font-weight:800;color:var(--purple-dark)" id="overviewCrCenterN">–</div>'
+    +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">CR OEM Ø</div></div></div>';
+  h+='<div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;font-size:12px">'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#0F3D42;display:inline-block"></span>TW <span id="overviewCrTW" style="font-weight:700;margin-left:2px">–</span></div>'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#206A72;display:inline-block"></span>Yes <span id="overviewCrYes" style="font-weight:700;margin-left:2px">–</span></div>'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#5FBAC4;display:inline-block"></span>SY <span id="overviewCrSY" style="font-weight:700;margin-left:2px">–</span></div>'
+    +'<div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:#9FE1E8;display:inline-block"></span>MY <span id="overviewCrMY" style="font-weight:700;margin-left:2px">–</span></div>'
+    +'</div></div>';
+  h+='</div>';
+
   // Performance-Tabelle (Tag/Woche/Monat) für den gewählten Mitarbeiter
   h+='<div class="card">';
   var monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
@@ -2583,6 +2608,44 @@ function buildOverviewTab(liste){
       }
     });
     reapplyChartGradient(canvas._ci,canvas,0.55,0.05);
+
+    // ── Conversion-Mix & CR-Verteilung Donuts ──
+    (function(){
+      var oemSum=0,upsSum=0,wkaSum=0,crTWs=[],crYess=[],crSYs=[],crMYs=[];
+      chartRows.forEach(function(x){
+        oemSum+=x.convOEM||0; upsSum+=x.upsells||0; wkaSum+=x.wka||0;
+        if(x.crTeilweise!=null)crTWs.push(x.crTeilweise);
+        if(x.crYes!=null)crYess.push(x.crYes);
+        if(x.crSuperYes!=null)crSYs.push(x.crSuperYes);
+        if(x.crMegaYes!=null)crMYs.push(x.crMegaYes);
+      });
+      function avg(arr){return arr.length?+(arr.reduce(function(a,b){return a+b;},0)/arr.length).toFixed(0):0;}
+      var crTW=avg(crTWs),crYes=avg(crYess),crSY=avg(crSYs),crMY=avg(crMYs);
+      var mixTotal=oemSum+upsSum+wkaSum;
+
+      var elN=document.getElementById('overviewMixCenterN');if(elN)elN.textContent=mixTotal.toLocaleString('de-DE');
+      var elO=document.getElementById('overviewMixOEM');if(elO)elO.textContent=oemSum;
+      var elU=document.getElementById('overviewMixUpsells');if(elU)elU.textContent=upsSum;
+      var elW=document.getElementById('overviewMixWKA');if(elW)elW.textContent=wkaSum;
+
+      var crAvgOEM=avg(chartRows.map(function(x){return x.crOEM;}).filter(function(v){return v!=null;}));
+      var elCN=document.getElementById('overviewCrCenterN');if(elCN)elCN.textContent=crAvgOEM+'%';
+      var elTW=document.getElementById('overviewCrTW');if(elTW)elTW.textContent=crTW+'%';
+      var elYes=document.getElementById('overviewCrYes');if(elYes)elYes.textContent=crYes+'%';
+      var elSY=document.getElementById('overviewCrSY');if(elSY)elSY.textContent=crSY+'%';
+      var elMY=document.getElementById('overviewCrMY');if(elMY)elMY.textContent=crMY+'%';
+
+      var mixCanvas=document.getElementById('overviewMixChart');
+      if(mixCanvas){
+        if(mixCanvas._ci){try{mixCanvas._ci.destroy();}catch(e){}}
+        mixCanvas._ci=new Chart(mixCanvas,{type:'doughnut',data:{labels:['OEM','Upsells','WKA'],datasets:[{data:[oemSum,upsSum,wkaSum],backgroundColor:['#0F3D42','#32A8B4','#9FE1E8'],borderWidth:3,borderColor:'#fff'}]},options:{cutout:'72%',plugins:{legend:{display:false}}}});
+      }
+      var crCanvas=document.getElementById('overviewCrChart');
+      if(crCanvas){
+        if(crCanvas._ci){try{crCanvas._ci.destroy();}catch(e){}}
+        crCanvas._ci=new Chart(crCanvas,{type:'doughnut',data:{labels:['TW','Yes','SY','MY'],datasets:[{data:[crTW,crYes,crSY,crMY],backgroundColor:['#0F3D42','#206A72','#5FBAC4','#9FE1E8'],borderWidth:3,borderColor:'#fff'}]},options:{cutout:'72%',plugins:{legend:{display:false}}}});
+      }
+    })();
   });});
 
   return h;
