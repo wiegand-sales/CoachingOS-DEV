@@ -1904,6 +1904,96 @@ function logActivity(category,action,description,targetEmployeeId,targetLabel){
 var employeeDocuments={}; // {empId: [{id, filename, storagePath, description, uploadedBy, uploadedAt}]}
 
 // ── HELPERS ──
+// ── Zielvereinbarung: Feiertagsberechnung Bayern (Gauss-Osterformel + fixe/bewegliche Feiertage) ──
+function easterSundayUTC(year){
+  var a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,
+      f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
+      i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+      month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+  return new Date(Date.UTC(year,month-1,day));
+}
+function addUTCDaysToDate(d,n){var r=new Date(d);r.setUTCDate(r.getUTCDate()+n);return r;}
+function bayernFeiertage(year){
+  var ostern=easterSundayUTC(year);
+  var liste=[
+    {d:new Date(Date.UTC(year,0,1)),n:'Neujahr'},
+    {d:new Date(Date.UTC(year,0,6)),n:'Heilige Drei Könige'},
+    {d:addUTCDaysToDate(ostern,-2),n:'Karfreitag'},
+    {d:addUTCDaysToDate(ostern,1),n:'Ostermontag'},
+    {d:new Date(Date.UTC(year,4,1)),n:'Tag der Arbeit'},
+    {d:addUTCDaysToDate(ostern,39),n:'Christi Himmelfahrt'},
+    {d:addUTCDaysToDate(ostern,50),n:'Pfingstmontag'},
+    {d:addUTCDaysToDate(ostern,60),n:'Fronleichnam'},
+    {d:new Date(Date.UTC(year,7,15)),n:'Mariä Himmelfahrt'},
+    {d:new Date(Date.UTC(year,9,3)),n:'Tag der Deutschen Einheit'},
+    {d:new Date(Date.UTC(year,10,1)),n:'Allerheiligen'},
+    {d:new Date(Date.UTC(year,11,25)),n:'1. Weihnachtsfeiertag'},
+    {d:new Date(Date.UTC(year,11,26)),n:'2. Weihnachtsfeiertag'}
+  ];
+  var map={};
+  liste.forEach(function(h){map[h.d.toISOString().slice(0,10)]=h.n;});
+  return map;
+}
+function isoWeekNum(d){
+  var dt=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+  var dayNum=dt.getUTCDay()||7;
+  dt.setUTCDate(dt.getUTCDate()+4-dayNum);
+  var yearStart=new Date(Date.UTC(dt.getUTCFullYear(),0,1));
+  return Math.ceil((((dt-yearStart)/86400000)+1)/7);
+}
+// Liefert je Kalenderwoche im Monat: KW-Nummer, Standard-Werktage (Mo-Fr im Monat, abzgl. Feiertage), Feiertagsnamen fuer Tooltip
+function getMonthWeeksZiel(monthKey){
+  var year=+monthKey.slice(0,4),month=+monthKey.slice(5,7);
+  var firstDay=new Date(Date.UTC(year,month-1,1));
+  var lastDay=new Date(Date.UTC(year,month,0));
+  var feiertage=bayernFeiertage(year);
+  if(month===12)Object.assign(feiertage,bayernFeiertage(year+1));
+  if(month===1)Object.assign(feiertage,bayernFeiertage(year-1));
+  var d=new Date(firstDay);
+  var dow=d.getUTCDay()||7;
+  d.setUTCDate(d.getUTCDate()-(dow-1));
+  var weeks=[];
+  while(d<=lastDay){
+    var weekStart=new Date(d);
+    var days=0,holidayNames=[];
+    for(var i=0;i<5;i++){
+      var day=new Date(weekStart);day.setUTCDate(day.getUTCDate()+i);
+      if(day.getUTCFullYear()===year&&day.getUTCMonth()+1===month){
+        var key=day.toISOString().slice(0,10);
+        if(feiertage[key])holidayNames.push(feiertage[key]);
+        else days++;
+      }
+    }
+    weeks.push({kw:isoWeekNum(weekStart),defaultDays:days,holidayNames:holidayNames});
+    d.setUTCDate(d.getUTCDate()+7);
+  }
+  return weeks;
+}
+var MONTH_NAMES_ZIEL=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+var zielMonth=today().slice(0,7);
+var ZIEL_LS_KEY='sfp_zielvereinbarung';
+var zielStore={};try{zielStore=JSON.parse(localStorage.getItem(ZIEL_LS_KEY)||'{}');}catch(ex){}
+function saveZielStoreLS(){try{localStorage.setItem(ZIEL_LS_KEY,JSON.stringify(zielStore));}catch(ex){}}
+function setZielMonth(delta){
+  var y=+zielMonth.slice(0,4),m=+zielMonth.slice(5,7);
+  m+=delta;if(m<1){m=12;y--;}else if(m>12){m=1;y++;}
+  zielMonth=y+'-'+(m<10?'0'+m:m);
+  renderEinstellungen();
+}
+function updateZielField(empId,field,weekIdx,value){
+  if(!zielStore[zielMonth])zielStore[zielMonth]={};
+  if(!zielStore[zielMonth][empId])zielStore[zielMonth][empId]={};
+  var rec=zielStore[zielMonth][empId];
+  var num=parseFloat(value);if(isNaN(num))num=0;
+  if(field==='week'){if(!rec.weeks)rec.weeks=[];rec.weeks[weekIdx]=num;}
+  else{rec[field]=num;}
+  renderEinstellungen();
+}
+function saveZielvereinbarung(){
+  saveZielStoreLS();
+  var st=document.getElementById('ziel-status');
+  if(st)st.textContent='Gespeichert (lokal im Browser) · '+new Date().toLocaleTimeString('de-DE');
+}
 function ini(n){return n.split(' ').map(function(x){return x[0];}).join('').toUpperCase().slice(0,2);}
 function fd(d){
   if(!d)return '';
@@ -5007,6 +5097,7 @@ function renderEinstellungen(){
     +'</div></div>'
     +'<div class="tab-bar">'
     +'<div class="tab'+(settingsView==='kpi'?' active':'')+'" onclick="setSettingsView(\'kpi\')">KPI-Ziele</div>'
+    +'<div class="tab'+(settingsView==='ziel'?' active':'')+'" onclick="setSettingsView(\'ziel\')">Zielvereinbarung</div>'
     +'<div class="tab'+(settingsView==='integrations'?' active':'')+'" onclick="setSettingsView(\'integrations\')">Integrationen</div>'
     +'<div class="tab'+(settingsView==='data'?' active':'')+'" onclick="setSettingsView(\'data\')">Daten & Backup</div>'
     +'<div class="tab'+(settingsView==='log'?' active':'')+'" onclick="setSettingsView(\'log\')">Protokoll</div>'
@@ -5030,6 +5121,69 @@ function renderEinstellungen(){
     +'<span id="ziele-status" style="font-size:12px;color:var(--teal)"></span>'
     +'</div></div>'
     ):'')
+
+    // ══ ZIELVEREINBARUNG ══
+    +(settingsView==='ziel'?(function(){
+      var weeksMeta=getMonthWeeksZiel(zielMonth);
+      var monthLabel=MONTH_NAMES_ZIEL[+zielMonth.slice(5,7)-1]+' '+zielMonth.slice(0,4);
+      var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;}).sort(function(a,b){return a.name.localeCompare(b.name);});
+      var rec=zielStore[zielMonth]||{};
+      var teamDaysSum=0,teamTargetSum=0,margeVals=[];
+      var rowsHtml=visibleEmps.map(function(e){
+        var r=rec[e.id]||{};
+        var weeks=weeksMeta.map(function(wm,i){return(r.weeks&&r.weeks[i]!=null)?r.weeks[i]:wm.defaultDays;});
+        var monthSum=weeks.reduce(function(a,b){return a+b;},0);
+        var optTag=r.optTag!=null?r.optTag:0;
+        var margeOpt=r.margeOpt!=null?r.margeOpt:0;
+        var target=monthSum*optTag*margeOpt;
+        teamDaysSum+=monthSum;teamTargetSum+=target;if(margeOpt)margeVals.push(margeOpt);
+        var c=COLORS[e.color%COLORS.length];
+        var weeksHtml=weeksMeta.map(function(wm,i){
+          var isHol=wm.holidayNames.length>0;
+          return '<div style="display:flex;flex-direction:column;align-items:center;position:relative">'
+            +'<div style="font-size:8.5px;color:var(--text3);font-weight:700;margin-bottom:2px">'+wm.kw+'</div>'
+            +'<input type="number" min="0" max="7" value="'+weeks[i]+'" onchange="updateZielField(\''+e.id+'\',\'week\','+i+',this.value)" '
+            +(isHol?'title="'+wm.holidayNames.join(', ')+'"':'')
+            +' style="width:32px;height:28px;text-align:center;border:1px solid '+(isHol?'var(--amber)':'var(--border2)')+';background:'+(isHol?'var(--amber-bg)':'#fff')+';color:'+(isHol?'var(--amber-dark)':'var(--text)')+';border-radius:5px;font-size:12px;font-weight:'+(isHol?'700':'400')+';font-family:inherit">'
+            +'</div>';
+        }).join('');
+        return '<tr>'
+          +'<td style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding:10px 8px"><div class="av" style="width:26px;height:26px;font-size:10px;background:'+c.bg+';color:'+c.text+'">'+ini(e.name)+'</div><div><div style="font-weight:600;font-size:12.5px">'+e.name+'</div><div style="font-size:10px;color:var(--text3)">'+e.role+'</div></div></td>'
+          +'<td style="border-bottom:1px solid var(--border);padding:10px 8px"><div style="display:flex;gap:4px">'+weeksHtml+'</div></td>'
+          +'<td style="border-bottom:1px solid var(--border);padding:10px 8px;font-weight:700;text-align:center">'+monthSum+'</td>'
+          +'<td style="border-bottom:1px solid var(--border);padding:10px 8px;text-align:right"><input type="number" min="0" value="'+optTag+'" onchange="updateZielField(\''+e.id+'\',\'optTag\',null,this.value)" style="width:56px;padding:6px 7px;border:1px solid var(--border2);border-radius:6px;font-size:12.5px;font-family:inherit;text-align:right"></td>'
+          +'<td style="border-bottom:1px solid var(--border);padding:10px 8px;text-align:right"><input type="number" min="0" value="'+margeOpt+'" onchange="updateZielField(\''+e.id+'\',\'margeOpt\',null,this.value)" style="width:56px;padding:6px 7px;border:1px solid var(--border2);border-radius:6px;font-size:12.5px;font-family:inherit;text-align:right"></td>'
+          +'<td style="border-bottom:1px solid var(--border);padding:10px 8px;font-weight:700;color:var(--purple-dark);text-align:right">€ '+Math.round(target).toLocaleString('de-DE')+'</td>'
+          +'</tr>';
+      }).join('');
+      var avgMarge=margeVals.length?Math.round(margeVals.reduce(function(a,b){return a+b;},0)/margeVals.length):0;
+      return '<div class="card">'
+        +'<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:18px">'
+        +'<button onclick="setZielMonth(-1)" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:#fff;color:var(--text2);font-size:14px;cursor:pointer">◀</button>'
+        +'<div style="font-size:16px;font-weight:700;min-width:160px;text-align:center">'+monthLabel+'</div>'
+        +'<button onclick="setZielMonth(1)" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:#fff;color:var(--text2);font-size:14px;cursor:pointer">▶</button>'
+        +'</div>'
+        +'<table style="width:100%;border-collapse:collapse">'
+        +'<tr><th style="font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text3);font-weight:600;text-align:left;padding:0 8px 10px;border-bottom:1px solid var(--border)">Mitarbeiter</th>'
+        +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text3);font-weight:600;text-align:left;padding:0 8px 10px;border-bottom:1px solid var(--border)">Einsatztage je KW — automatisch feiertagsbereinigt (Bayern)</th>'
+        +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text3);font-weight:600;text-align:center;padding:0 8px 10px;border-bottom:1px solid var(--border)">Σ Mon.</th>'
+        +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text3);font-weight:600;text-align:right;padding:0 8px 10px;border-bottom:1px solid var(--border)">Opt./Tag</th>'
+        +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text3);font-weight:600;text-align:right;padding:0 8px 10px;border-bottom:1px solid var(--border)">Marge/Opt.</th>'
+        +'<th style="font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--text3);font-weight:600;text-align:right;padding:0 8px 10px;border-bottom:1px solid var(--border)">Ziel Marge/Mon.</th></tr>'
+        +rowsHtml
+        +'<tr style="background:rgba(32,106,114,0.06)"><td style="font-weight:700;padding:10px 8px;border-top:2px solid var(--purple)">Team gesamt</td><td style="border-top:2px solid var(--purple)"></td>'
+        +'<td style="font-weight:700;text-align:center;padding:10px 8px;border-top:2px solid var(--purple)">'+teamDaysSum+'</td>'
+        +'<td style="text-align:right;padding:10px 8px;border-top:2px solid var(--purple)">–</td>'
+        +'<td style="font-weight:700;text-align:right;padding:10px 8px;border-top:2px solid var(--purple)">Ø € '+avgMarge+'</td>'
+        +'<td style="font-weight:700;color:var(--purple-dark);text-align:right;padding:10px 8px;border-top:2px solid var(--purple)">€ '+Math.round(teamTargetSum).toLocaleString('de-DE')+'</td></tr>'
+        +'</table>'
+        +'<div style="margin-top:16px;display:flex;align-items:center;gap:12px">'
+        +'<button class="btn btn-primary btn-sm" style="width:auto" onclick="saveZielvereinbarung()"><i class="ti ti-check"></i> Zielvereinbarung speichern</button>'
+        +'<span id="ziel-status" style="font-size:12px;color:var(--teal)"></span>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:11px;color:var(--text3)"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block"></span> Woche enthält einen bayerischen Feiertag — Standardwert bereits reduziert, Hover für Details</div>'
+        +'</div>';
+    })():'')
 
     // ══ INTEGRATIONEN ══
     +(settingsView==='integrations'?(
