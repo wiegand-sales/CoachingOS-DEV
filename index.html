@@ -1877,12 +1877,23 @@ function hexToRgba(hex,alpha){
   var r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16);
   return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
-function vGradient(canvas,color,a1,a2){
+function vGradient(canvas,color,a1,a2,y0,y1){
   var ctx=canvas.getContext('2d');
-  var grad=ctx.createLinearGradient(0,0,0,canvas.clientHeight||260);
+  var top=(y0!==undefined&&y0!==null)?y0:0;
+  var bottom=(y1!==undefined&&y1!==null&&y1>top)?y1:(canvas.clientHeight||260);
+  var grad=ctx.createLinearGradient(0,top,0,bottom);
   grad.addColorStop(0,hexToRgba(color,a1));
   grad.addColorStop(1,hexToRgba(color,a2));
   return grad;
+}
+// Setzt den Gradient erst NACH dem ersten Chart.js-Render neu, da erst dann die echte
+// Zeichenflaeche (chartArea) bekannt ist - vorher war canvas.clientHeight oft 0/zu klein
+// und der Verlauf wirkte "zerdrueckt".
+function reapplyChartGradient(chart,canvas,a1,a2){
+  if(!chart||!chart.data||!chart.data.datasets[0])return;
+  var ca=chart.chartArea||{top:0,bottom:canvas.clientHeight||260};
+  chart.data.datasets[0].backgroundColor=vGradient(canvas,chart.data.datasets[0].borderColor,a1,a2,ca.top,ca.bottom);
+  chart.update('none');
 }
 // UTC-sichere Datumsberechnung: vermeidet den Bug, dass new Date(dateStr+'T00:00:00') lokale Zeit
 // interpretiert und .toISOString() dann in Zeitzonen mit positivem UTC-Offset (z.B. Deutschland)
@@ -2451,12 +2462,12 @@ function buildOverviewTab(liste){
       crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#2A8792'},
       crYes:      {f:'crYes',      l:'CR Yes %', c:'#32A8B4'},
       crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#5FBAC4'},
-      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#7ED2DB'},
+      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#3FC2CE'},
       aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
       convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#174C52'},
       upsells:    {f:'upsells',    l:'Upsells',  c:'#3f6c72'},
       wka:        {f:'wka',        l:'WKA',      c:'#6FA3A9'},
-      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#9FE1E8'}
+      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#4FA8B3'}
     };
     var m=mMap[metric]||mMap.crOEM;
     window._overviewChartData=null;
@@ -2558,6 +2569,7 @@ function buildOverviewTab(liste){
         }
       }
     });
+    reapplyChartGradient(canvas._ci,canvas,0.55,0.05);
   });});
 
   return h;
@@ -2870,8 +2882,8 @@ function renderTeam(){
         {k:'crTeilweise',l:'CR TW',      c:'#2A8792'},
         {k:'crYes',      l:'CR Yes',     c:'#32A8B4'},
         {k:'crSuperYes', l:'CR SY',      c:'#5FBAC4'},
-        {k:'crMegaYes',  l:'CR MY',      c:'#7ED2DB'},
-        {k:'margeGesamt',l:'Marge',      c:'#9FE1E8'},
+        {k:'crMegaYes',  l:'CR MY',      c:'#3FC2CE'},
+        {k:'margeGesamt',l:'Marge',      c:'#4FA8B3'},
       ];
       var s='<div class="card" style="margin-bottom:22px">';
       s+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">';
@@ -2942,10 +2954,10 @@ function renderTeam(){
       crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#2A8792'},
       crYes:      {f:'crYes',      l:'CR Yes %', c:'#32A8B4'},
       crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#5FBAC4'},
-      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#7ED2DB'},
+      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#3FC2CE'},
       aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
       convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#174C52'},
-      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#9FE1E8'}
+      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#4FA8B3'}
     };
     var m=mMap[metric]||mMap.crOEM;
     if(!allRows||!allRows.length){return;}
@@ -3008,6 +3020,7 @@ function renderTeam(){
         }
       }
     });
+    reapplyChartGradient(canvas._ci,canvas,0.55,0.05);
   },150);
 }
 
@@ -3361,8 +3374,8 @@ function renderTab(){
       crTeilweise:{f:'crTeilweise',l:'CR TW %',c:'#2A8792'},
       crYes:{f:'crYes',l:'CR Yes %',c:'#32A8B4'},
       crSuperYes:{f:'crSuperYes',l:'CR SY %',c:'#5FBAC4'},
-      crMegaYes:{f:'crMegaYes',l:'CR MY %',c:'#7ED2DB'},
-      margeGesamt:{f:'margeGesamt',l:'Marge',c:'#9FE1E8'}
+      crMegaYes:{f:'crMegaYes',l:'CR MY %',c:'#3FC2CE'},
+      margeGesamt:{f:'margeGesamt',l:'Marge',c:'#4FA8B3'}
     };
     html+='<div class="card" style="margin-bottom:22px">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">'
@@ -4542,8 +4555,8 @@ function renderTab(){
         crTeilweise: {f:'crTeilweise', l:'CR TW %',        c:'#2A8792'},
         crYes:       {f:'crYes',       l:'CR Yes %',       c:'#32A8B4'},
         crSuperYes:  {f:'crSuperYes',  l:'CR SY %',        c:'#5FBAC4'},
-        crMegaYes:   {f:'crMegaYes',   l:'CR MY %',        c:'#7ED2DB'},
-        margeGesamt: {f:'margeGesamt', l:'Marge Gesamt €', c:'#9FE1E8'}
+        crMegaYes:   {f:'crMegaYes',   l:'CR MY %',        c:'#3FC2CE'},
+        margeGesamt: {f:'margeGesamt', l:'Marge Gesamt €', c:'#4FA8B3'}
       };
       var m=mMap[perfMetric]||{f:perfMetric,l:perfMetric,c:'#206A72'};
       var vals=data.map(function(d){return d[m.f]||0;});
@@ -4722,6 +4735,7 @@ function renderTab(){
           }
         }
       });
+      reapplyChartGradient(activeChart,canvas,0.55,0.05);
 
       // ── Impact Coaching: immer 3 Zeilen, unabhängig von KPI/Datenlage ──
       (function(){
