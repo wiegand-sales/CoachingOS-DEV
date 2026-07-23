@@ -979,7 +979,7 @@ function renderCoachingAnsicht(){
   }
   var gep=all.filter(function(x){return x.d>=heute&&x.s==='geplant';}).sort(function(a,b){return a.d.localeCompare(b.d);});
   var abg=all.filter(function(x){return x.s==='abgeschlossen';});
-  function ec(id){var e=employees.find(function(x){return x.id===id;});return e?COLORS[e.color%COLORS.length]:{bg:'#EEEDFE',text:'#3C3489'};}
+  function ec(id){var e=employees.find(function(x){return x.id===id;});return e?COLORS[e.color%COLORS.length]:{bg:'var(--purple-bg)',text:'var(--purple-dark)'};}
   function wday(d){return new Date(d+'T00:00:00').toLocaleDateString('de-DE',{weekday:'short'});}
   function mday(d){var dt=new Date(d+'T00:00:00'),m=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];return dt.getDate()+'. '+m[dt.getMonth()];}
   function tdiff(d){var df=Math.round((new Date(d+'T00:00:00')-hD)/86400000);return df===0?'Heute':df===1?'Morgen':df<0?Math.abs(df)+'d her':'in '+df+'d';}
@@ -1670,7 +1670,7 @@ function emailSession(eid,datum,fokus){
 
 // ── C
 // ── CONSTANTS ──
-var COLORS=[{bg:'#EEEDFE',text:'#3C3489'},{bg:'#E1F5EE',text:'#085041'},{bg:'#FAECE7',text:'#712B13'},{bg:'#FBEAF0',text:'#72243E'},{bg:'#E6F1FB',text:'#0C447C'},{bg:'#EAF3DE',text:'#27500A'}];
+var COLORS=[{bg:'var(--purple-bg)',text:'var(--purple-dark)'}];
 var RATINGS=['Mega Yes','Super Yes','Yes','Teilweise'];
 var RS={'Mega Yes':{bg:'#EAF3DE',color:'#27500A'},'Super Yes':{bg:'#EEEDFE',color:'#3C3489'},'Yes':{bg:'#E6F1FB',color:'#0C447C'},'Teilweise':{bg:'#FAEEDA',color:'#633806'}};
 var SKILLS=['Needs Analysis','Value Argumentation','Objection Handling','Trust Building','Closing Technique'];
