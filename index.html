@@ -1871,6 +1871,19 @@ function fd(d){
   return wd+', '+p[2]+'.'+p[1]+'.'+p[0];
 }
 function today(){return new Date().toISOString().slice(0,10);}
+function hexToRgba(hex,alpha){
+  hex=(hex||'#206A72').replace('#','');
+  if(hex.length===3)hex=hex.split('').map(function(c){return c+c;}).join('');
+  var r=parseInt(hex.substring(0,2),16),g=parseInt(hex.substring(2,4),16),b=parseInt(hex.substring(4,6),16);
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
+}
+function vGradient(canvas,color,a1,a2){
+  var ctx=canvas.getContext('2d');
+  var grad=ctx.createLinearGradient(0,0,0,canvas.clientHeight||260);
+  grad.addColorStop(0,hexToRgba(color,a1));
+  grad.addColorStop(1,hexToRgba(color,a2));
+  return grad;
+}
 // UTC-sichere Datumsberechnung: vermeidet den Bug, dass new Date(dateStr+'T00:00:00') lokale Zeit
 // interpretiert und .toISOString() dann in Zeitzonen mit positivem UTC-Offset (z.B. Deutschland)
 // auf den Vortag zurückrutscht. Immer nutzen, wenn ein berechnetes Datum mit echten
@@ -2531,6 +2544,7 @@ function buildOverviewTab(liste){
     var canvas=document.getElementById('overviewPerfChart');
     if(!canvas)return;
     if(canvas._ci){try{canvas._ci.destroy();}catch(e){}}
+    if(d.datasets[0])d.datasets[0].backgroundColor=vGradient(canvas,d.datasets[0].borderColor,0.28,0.02);
     canvas._ci=new Chart(canvas,{
       type:'line',
       data:{labels:d.labels,datasets:d.datasets},
@@ -2981,6 +2995,7 @@ function renderTeam(){
     var canvas=document.getElementById('teamPerfChart');
     if(!canvas)return;
     if(canvas._ci){try{canvas._ci.destroy();}catch(e){}}
+    if(d.datasets[0])d.datasets[0].backgroundColor=vGradient(canvas,d.datasets[0].borderColor,0.28,0.02);
     canvas._ci=new Chart(canvas,{
       type:'line',
       data:{labels:d.labels,datasets:d.datasets},
@@ -4663,6 +4678,7 @@ function renderTab(){
         }
       };
 
+      if(datasets[0])datasets[0].backgroundColor=vGradient(canvas,datasets[0].borderColor,0.28,0.02);
       activeChart=new Chart(canvas,{
         type:'line',
         data:{labels:labels,datasets:datasets},
