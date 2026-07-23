@@ -2459,15 +2459,15 @@ function buildOverviewTab(liste){
   (function(allRows,metric,groupMode){
     var mMap={
       crOEM:      {f:'crOEM',      l:'CR OEM %', c:'#206A72'},
-      crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#2A8792'},
-      crYes:      {f:'crYes',      l:'CR Yes %', c:'#32A8B4'},
-      crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#5FBAC4'},
-      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#3FC2CE'},
+      crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#206A72'},
+      crYes:      {f:'crYes',      l:'CR Yes %', c:'#206A72'},
+      crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#206A72'},
+      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#206A72'},
       aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
       convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#174C52'},
-      upsells:    {f:'upsells',    l:'Upsells',  c:'#3f6c72'},
+      upsells:    {f:'upsells',    l:'Upsells',  c:'#206A72'},
       wka:        {f:'wka',        l:'WKA',      c:'#6FA3A9'},
-      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#4FA8B3'}
+      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#206A72'}
     };
     var m=mMap[metric]||mMap.crOEM;
     window._overviewChartData=null;
@@ -2879,11 +2879,11 @@ function renderTeam(){
         {k:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
         {k:'convOEM',    l:'Conv. OEM',  c:'#174C52'},
         {k:'crOEM',      l:'CR OEM',     c:'#206A72'},
-        {k:'crTeilweise',l:'CR TW',      c:'#2A8792'},
-        {k:'crYes',      l:'CR Yes',     c:'#32A8B4'},
-        {k:'crSuperYes', l:'CR SY',      c:'#5FBAC4'},
-        {k:'crMegaYes',  l:'CR MY',      c:'#3FC2CE'},
-        {k:'margeGesamt',l:'Marge',      c:'#4FA8B3'},
+        {k:'crTeilweise',l:'CR TW',      c:'#206A72'},
+        {k:'crYes',      l:'CR Yes',     c:'#206A72'},
+        {k:'crSuperYes', l:'CR SY',      c:'#206A72'},
+        {k:'crMegaYes',  l:'CR MY',      c:'#206A72'},
+        {k:'margeGesamt',l:'Marge',      c:'#206A72'},
       ];
       var s='<div class="card" style="margin-bottom:22px">';
       s+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">';
@@ -2951,13 +2951,13 @@ function renderTeam(){
   (function(allRows,metric,days,kpiTargets){
     var mMap={
       crOEM:      {f:'crOEM',      l:'CR OEM %', c:'#206A72'},
-      crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#2A8792'},
-      crYes:      {f:'crYes',      l:'CR Yes %', c:'#32A8B4'},
-      crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#5FBAC4'},
-      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#3FC2CE'},
+      crTeilweise:{f:'crTeilweise',l:'CR TW %',  c:'#206A72'},
+      crYes:      {f:'crYes',      l:'CR Yes %', c:'#206A72'},
+      crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#206A72'},
+      crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#206A72'},
       aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
       convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#174C52'},
-      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#4FA8B3'}
+      margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#206A72'}
     };
     var m=mMap[metric]||mMap.crOEM;
     if(!allRows||!allRows.length){return;}
@@ -3371,11 +3371,11 @@ function renderTab(){
       convOEM:{f:'convOEM',l:'Conv. OEM',c:'#174C52'},
       optGesamt:{f:'optGesamt',l:'Opt. Gesamt',c:'#1B5B63'},
       crOEM:{f:'crOEM',l:'CR OEM %',c:'#206A72'},
-      crTeilweise:{f:'crTeilweise',l:'CR TW %',c:'#2A8792'},
-      crYes:{f:'crYes',l:'CR Yes %',c:'#32A8B4'},
-      crSuperYes:{f:'crSuperYes',l:'CR SY %',c:'#5FBAC4'},
-      crMegaYes:{f:'crMegaYes',l:'CR MY %',c:'#3FC2CE'},
-      margeGesamt:{f:'margeGesamt',l:'Marge',c:'#4FA8B3'}
+      crTeilweise:{f:'crTeilweise',l:'CR TW %',c:'#206A72'},
+      crYes:{f:'crYes',l:'CR Yes %',c:'#206A72'},
+      crSuperYes:{f:'crSuperYes',l:'CR SY %',c:'#206A72'},
+      crMegaYes:{f:'crMegaYes',l:'CR MY %',c:'#206A72'},
+      margeGesamt:{f:'margeGesamt',l:'Marge',c:'#206A72'}
     };
     html+='<div class="card" style="margin-bottom:22px">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">'
@@ -4552,11 +4552,11 @@ function renderTab(){
         convOEM:     {f:'convOEM',     l:'Conv. OEM',      c:'#174C52'},
         optGesamt:   {f:'optGesamt',   l:'Opt. Gesamt',    c:'#1B5B63'},
         crOEM:       {f:'crOEM',       l:'CR OEM %',       c:'#206A72'},
-        crTeilweise: {f:'crTeilweise', l:'CR TW %',        c:'#2A8792'},
-        crYes:       {f:'crYes',       l:'CR Yes %',       c:'#32A8B4'},
-        crSuperYes:  {f:'crSuperYes',  l:'CR SY %',        c:'#5FBAC4'},
-        crMegaYes:   {f:'crMegaYes',   l:'CR MY %',        c:'#3FC2CE'},
-        margeGesamt: {f:'margeGesamt', l:'Marge Gesamt €', c:'#4FA8B3'}
+        crTeilweise: {f:'crTeilweise', l:'CR TW %',        c:'#206A72'},
+        crYes:       {f:'crYes',       l:'CR Yes %',       c:'#206A72'},
+        crSuperYes:  {f:'crSuperYes',  l:'CR SY %',        c:'#206A72'},
+        crMegaYes:   {f:'crMegaYes',   l:'CR MY %',        c:'#206A72'},
+        margeGesamt: {f:'margeGesamt', l:'Marge Gesamt €', c:'#206A72'}
       };
       var m=mMap[perfMetric]||{f:perfMetric,l:perfMetric,c:'#206A72'};
       var vals=data.map(function(d){return d[m.f]||0;});
