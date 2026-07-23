@@ -5154,6 +5154,17 @@ function renderEinstellungen(){
     +(settingsView==='ziel'?(function(){
       var PT_TH='background:var(--bg2);padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border2);white-space:nowrap';
       var PT_TD='padding:10px 14px;border-bottom:1px solid var(--border)';
+      // Gemeinsame feste Spaltenbreiten fuer BEIDE Tabellen, damit die Spalten exakt untereinander sitzen
+      var ZIEL_WK_COL=64;
+      var ZIEL_NAME_COL=210;   // Mitarbeiter (Wochentabelle) == Monat (Jahresübersicht)
+      var ZIEL_SUM_COL=76;     // Σ Mon. (Wochentabelle)
+      var ZIEL_OPT_COL=80;     // Opt./Tag == Ø Opt./Tag
+      var ZIEL_MARGE_COL=90;   // Marge/Opt. == Ø Marge/Opt.
+      var weeksMeta=getMonthWeeksZiel(zielMonth);
+      // Breite der "Σ Einsatztage"-Spalte in der Jahresübersicht = Summe aus allen KW-Spalten + Σ Mon.-Spalte
+      // der aktuell angezeigten Monatsdetail-Tabelle darunter - so schliessen KW1 und Opt./Tag exakt buendig an.
+      var ZIEL_SUMWIDE_COL=ZIEL_WK_COL*weeksMeta.length+ZIEL_SUM_COL;
+
       // ── Jahresübersicht: Team-Summen je Monat, mit eigenem Jahres-Filter ──
       var yearHtml=(function(){
         var year=zielYearView;
@@ -5179,10 +5190,10 @@ function renderEinstellungen(){
           var isCurrent=mk===zielMonth;
           var rowBg=isCurrent?'background:var(--purple-bg);':(m%2===0?'background:rgba(0,0,0,0.03);':'');
           monthRows.push('<tr style="cursor:pointer;'+rowBg+'" onclick="jumpToZielMonth(\''+mk+'\')">'
-            +'<td style="'+PT_TD+';font-weight:'+(isCurrent?'700':'600')+'">'+MONTH_NAMES_ZIEL[m-1]+'</td>'
-            +'<td style="'+PT_TD+';text-align:center;font-weight:600">'+mDaysSum+'</td>'
-            +'<td style="'+PT_TD+';text-align:center;color:var(--text2)">'+(mAvgOpt||'–')+'</td>'
-            +'<td style="'+PT_TD+';text-align:center;color:var(--text2)">'+(mAvgMarge?'€ '+mAvgMarge:'–')+'</td>'
+            +'<td style="'+PT_TD+';width:'+ZIEL_NAME_COL+'px;font-weight:'+(isCurrent?'700':'600')+'">'+MONTH_NAMES_ZIEL[m-1]+'</td>'
+            +'<td style="'+PT_TD+';width:'+ZIEL_SUMWIDE_COL+'px;text-align:center;font-weight:600">'+mDaysSum+'</td>'
+            +'<td style="'+PT_TD+';width:'+ZIEL_OPT_COL+'px;text-align:center;color:var(--text2)">'+(mAvgOpt||'–')+'</td>'
+            +'<td style="'+PT_TD+';width:'+ZIEL_MARGE_COL+'px;text-align:center;color:var(--text2)">'+(mAvgMarge?'€ '+mAvgMarge:'–')+'</td>'
             +'<td style="'+PT_TD+';text-align:right;font-weight:600;color:var(--purple)">€ '+Math.round(mTargetSum).toLocaleString('de-DE')+'</td>'
             +'</tr>');
         }
@@ -5194,11 +5205,11 @@ function renderEinstellungen(){
           +'<div style="font-size:14px;font-weight:700;min-width:60px;text-align:center">'+year+'</div>'
           +'<button class="btn" onclick="setZielYearView(1)">▶</button>'
           +'</div></div>'
-          +'<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;border-collapse:collapse"><thead><tr>'
-          +'<th style="'+PT_TH+'">Monat</th>'
-          +'<th style="'+PT_TH+';text-align:center">Σ Einsatztage</th>'
-          +'<th style="'+PT_TH+';text-align:center">Ø Opt./Tag</th>'
-          +'<th style="'+PT_TH+';text-align:center">Ø Marge/Opt.</th>'
+          +'<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)"><table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr>'
+          +'<th style="'+PT_TH+';width:'+ZIEL_NAME_COL+'px">Monat</th>'
+          +'<th style="'+PT_TH+';width:'+ZIEL_SUMWIDE_COL+'px;text-align:center">Σ Einsatztage</th>'
+          +'<th style="'+PT_TH+';width:'+ZIEL_OPT_COL+'px;text-align:center">Ø Opt./Tag</th>'
+          +'<th style="'+PT_TH+';width:'+ZIEL_MARGE_COL+'px;text-align:center">Ø Marge/Opt.</th>'
           +'<th style="'+PT_TH+';text-align:right">Ziel Marge/Mon.</th></tr></thead><tbody>'
           +monthRows.join('')
           +'</tbody></table></div>'
@@ -5206,12 +5217,10 @@ function renderEinstellungen(){
           +'</div>';
       })();
 
-      var weeksMeta=getMonthWeeksZiel(zielMonth);
       var monthLabel=MONTH_NAMES_ZIEL[+zielMonth.slice(5,7)-1]+' '+zielMonth.slice(0,4);
       var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;}).sort(function(a,b){return a.name.localeCompare(b.name);});
       var rec=zielStore[zielMonth]||{};
       var teamDaysSum=0,teamTargetSum=0,margeVals=[];
-      var ZIEL_WK_COL=64;
       var weekHeaderCells=weeksMeta.map(function(wm){
         var isHol=wm.holidayNames.length>0;
         var isShort=wm.defaultDays<5;
@@ -5235,11 +5244,11 @@ function renderEinstellungen(){
         }).join('');
         var rowBg=idx%2===1?'background:rgba(0,0,0,0.03);':'';
         return '<tr style="'+rowBg+'">'
-          +'<td style="'+PT_TD+';white-space:nowrap"><div style="display:flex;align-items:center;gap:8px"><div class="av" style="width:28px;height:28px;font-size:10.5px;background:'+c.bg+';color:'+c.text+'">'+ini(e.name)+'</div><div><div style="font-weight:600">'+e.name+'</div><div style="font-size:10.5px;color:var(--text3)">'+e.role+'</div></div></div></td>'
+          +'<td style="'+PT_TD+';width:'+ZIEL_NAME_COL+'px;white-space:nowrap"><div style="display:flex;align-items:center;gap:8px"><div class="av" style="width:28px;height:28px;font-size:10.5px;background:'+c.bg+';color:'+c.text+'">'+ini(e.name)+'</div><div><div style="font-weight:600">'+e.name+'</div><div style="font-size:10.5px;color:var(--text3)">'+e.role+'</div></div></div></td>'
           +weekCells
-          +'<td style="'+PT_TD+';font-weight:600;text-align:center">'+monthSum+'</td>'
-          +'<td style="'+PT_TD+';width:80px"><input type="number" min="0" value="'+optTag+'" onchange="updateZielField(\''+e.id+'\',\'optTag\',null,this.value)" style="text-align:right"></td>'
-          +'<td style="'+PT_TD+';width:80px"><input type="number" min="0" value="'+margeOpt+'" onchange="updateZielField(\''+e.id+'\',\'margeOpt\',null,this.value)" style="text-align:right"></td>'
+          +'<td style="'+PT_TD+';width:'+ZIEL_SUM_COL+'px;font-weight:600;text-align:center">'+monthSum+'</td>'
+          +'<td style="'+PT_TD+';width:'+ZIEL_OPT_COL+'px"><input type="number" min="0" value="'+optTag+'" onchange="updateZielField(\''+e.id+'\',\'optTag\',null,this.value)" style="text-align:right"></td>'
+          +'<td style="'+PT_TD+';width:'+ZIEL_MARGE_COL+'px"><input type="number" min="0" value="'+margeOpt+'" onchange="updateZielField(\''+e.id+'\',\'margeOpt\',null,this.value)" style="text-align:right"></td>'
           +'<td style="'+PT_TD+';font-weight:600;color:var(--purple);text-align:right;white-space:nowrap">€ '+Math.round(target).toLocaleString('de-DE')+'</td>'
           +'</tr>';
       }).join('');
@@ -5254,12 +5263,12 @@ function renderEinstellungen(){
         +'<button class="btn" onclick="setZielMonth(1)">▶</button>'
         +'</div></div>'
         +'<div style="overflow-x:auto;border-radius:var(--r-md);border:1px solid var(--border2)">'
-        +'<table style="width:100%;border-collapse:collapse"><thead><tr>'
-        +'<th style="'+PT_TH+'">Mitarbeiter</th>'
+        +'<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr>'
+        +'<th style="'+PT_TH+';width:'+ZIEL_NAME_COL+'px">Mitarbeiter</th>'
         +weekHeaderCells
-        +'<th style="'+PT_TH+';text-align:center">Σ Mon.</th>'
-        +'<th style="'+PT_TH+';text-align:right">Opt./Tag</th>'
-        +'<th style="'+PT_TH+';text-align:right">Marge/Opt.</th>'
+        +'<th style="'+PT_TH+';width:'+ZIEL_SUM_COL+'px;text-align:center">Σ Mon.</th>'
+        +'<th style="'+PT_TH+';width:'+ZIEL_OPT_COL+'px;text-align:right">Opt./Tag</th>'
+        +'<th style="'+PT_TH+';width:'+ZIEL_MARGE_COL+'px;text-align:right">Marge/Opt.</th>'
         +'<th style="'+PT_TH+';text-align:right">Ziel Marge/Mon.</th></tr></thead><tbody>'
         +rowsHtml
         +'<tr style="background:var(--bg2)"><td style="font-weight:700;padding:10px 14px;border-top:1px solid var(--border2);white-space:nowrap">Team gesamt</td>'
