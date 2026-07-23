@@ -2011,11 +2011,18 @@ function updateZielField(empId,field,weekIdx,value){
   else{rec[field]=num;}
   renderEinstellungen();
 }
+function empActiveInZielMonth(e,monthKey){
+  var b=monthBoundsUTC(monthKey+'-01',0);
+  if(e.endDate)return e.endDate>=b.from&&(!e.startDate||e.startDate<=b.to);
+  if(e.active===false)return false;
+  if(e.startDate&&e.startDate>b.to)return false;
+  return true;
+}
 function saveZielvereinbarung(){
   var st=document.getElementById('ziel-status');
   if(st)st.textContent='Speichere...';
   var weeksMeta=getMonthWeeksZiel(zielMonth);
-  var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;});
+  var visibleEmps=employees.filter(function(e){return empActiveInZielMonth(e,zielMonth)&&!e.isPureCoach;});
   var rec=zielStore[zielMonth]||{};
   var rows=visibleEmps.map(function(e){
     var r=rec[e.id]||{};
@@ -5181,7 +5188,7 @@ function renderEinstellungen(){
       var weekDetailHtml=(function(){
         if(!zielMonth)return '';
         var monthLabel=MONTH_NAMES_ZIEL[+zielMonth.slice(5,7)-1]+' '+zielMonth.slice(0,4);
-        var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;}).sort(function(a,b){return a.name.localeCompare(b.name);});
+        var visibleEmps=employees.filter(function(e){return empActiveInZielMonth(e,zielMonth)&&!e.isPureCoach;}).sort(function(a,b){return a.name.localeCompare(b.name);});
         var rec=zielStore[zielMonth]||{};
         var teamDaysSum=0,teamTargetSum=0,margeVals=[];
         var weekHeaderCells=weeksMeta.map(function(wm){
@@ -5251,7 +5258,7 @@ function renderEinstellungen(){
         var mk=year+'-'+(m<10?'0'+m:m);
         var wMeta=getMonthWeeksZiel(mk);
         var mRec=zielStore[mk]||{};
-        var mVisible=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;});
+        var mVisible=employees.filter(function(e){return empActiveInZielMonth(e,mk)&&!e.isPureCoach;});
         var mDaysSum=0,mTargetSum=0,mMargeVals=[],mOptVals=[];
         mVisible.forEach(function(e){
           var r=mRec[e.id]||{};
