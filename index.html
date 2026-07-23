@@ -1986,6 +1986,16 @@ function loadZielvereinbarungFromSupabase(){
 var zielYearView=today().slice(0,4);
 function setZielYearView(delta){zielYearView=(+zielYearView+delta)+'';renderEinstellungen();}
 function jumpToZielMonth(monthKey){zielMonth=monthKey;renderEinstellungen();}
+function toggleZielMonth(monthKey){zielMonth=(zielMonth===monthKey)?'':monthKey;renderEinstellungen();}
+var zielNlTargets={};
+function updateZielNlTarget(monthKey,value){
+  var num=parseFloat(value);if(isNaN(num))num=0;
+  zielNlTargets[monthKey]=num;
+  sb.from('settings').upsert({key:'ziel_nl_'+monthKey,value:String(num)},{onConflict:'key'}).then(function(res){
+    if(res.error)console.warn('Ziel NL Marge speichern fehlgeschlagen:',res.error);
+  });
+  renderEinstellungen();
+}
 function setZielMonth(delta){
   var y=+zielMonth.slice(0,4),m=+zielMonth.slice(5,7);
   m+=delta;if(m<1){m=12;y--;}else if(m>12){m=1;y++;}
@@ -5161,13 +5171,15 @@ function renderEinstellungen(){
       var ZIEL_SUM_COL=76;     // Σ Mon. (Wochenansicht)
       var ZIEL_OPT_COL=80;     // Opt./Tag == Ø Opt./Tag
       var ZIEL_MARGE_COL=90;   // Marge/Opt. == Ø Marge/Opt.
+      var ZIEL_NL_COL=120;     // Ziel NL Marge/Mon. (manuell, nur Monatszeile)
       var weeksMeta=getMonthWeeksZiel(zielMonth);
       var weekGridTemplate=ZIEL_NAME_COL+'px repeat('+weeksMeta.length+','+ZIEL_WK_COL+'px) '+ZIEL_SUM_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px 1fr';
       var ZIEL_SUMWIDE_COL=ZIEL_WK_COL*weeksMeta.length+ZIEL_SUM_COL;
-      var yearGridTemplate=ZIEL_NAME_COL+'px '+ZIEL_SUMWIDE_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px 1fr';
+      var yearGridTemplate=ZIEL_NAME_COL+'px '+ZIEL_SUMWIDE_COL+'px '+ZIEL_OPT_COL+'px '+ZIEL_MARGE_COL+'px '+ZIEL_NL_COL+'px 1fr';
 
       // ── Aufgeklappter Wochen-Detailblick fuer den aktuell gewaehlten Monat (wird unter dessen Monatszeile eingehaengt) ──
       var weekDetailHtml=(function(){
+        if(!zielMonth)return '';
         var monthLabel=MONTH_NAMES_ZIEL[+zielMonth.slice(5,7)-1]+' '+zielMonth.slice(0,4);
         var visibleEmps=employees.filter(function(e){return e.active!==false&&!e.isPureCoach;}).sort(function(a,b){return a.name.localeCompare(b.name);});
         var rec=zielStore[zielMonth]||{};
@@ -5227,17 +5239,14 @@ function renderEinstellungen(){
           +'<div style="font-weight:700;color:var(--purple);padding:10px 14px;border-top:1px solid var(--border2);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(teamTargetSum).toLocaleString('de-DE')+'</div>'
           +'</div>'
           +'</div></div>'
-          +'<div style="margin-top:14px;display:flex;align-items:center;gap:12px">'
-          +'<button class="btn btn-primary" style="width:auto" onclick="saveZielvereinbarung()"><i class="ti ti-check"></i> Zielvereinbarung speichern</button>'
-          +'<span id="ziel-status" style="font-size:12px;color:var(--teal)"></span>'
-          +'</div>'
           +'<div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:var(--text3)"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block"></span> Woche enthält einen bayerischen Feiertag — Standardwert bereits reduziert, Hover für Details</div>'
           +'</div>';
       })();
 
-      // ── Eine Tabelle: 12 Monatszeilen, Klick klappt den Wochen-Detailblick direkt darunter auf ──
+      // ── Eine Tabelle: 12 Monatszeilen, Klick klappt den Wochen-Detailblick direkt darunter auf/zu ──
       var year=zielYearView;
       var monthRows=[];
+      var yearDaysSum=0,yearNlSum=0,yearTargetSum=0;
       for(var m=1;m<=12;m++){
         var mk=year+'-'+(m<10?'0'+m:m);
         var wMeta=getMonthWeeksZiel(mk);
@@ -5256,17 +5265,28 @@ function renderEinstellungen(){
         });
         var mAvgMarge=mMargeVals.length?Math.round(mMargeVals.reduce(function(a,b){return a+b;},0)/mMargeVals.length):0;
         var mAvgOpt=mOptVals.length?Math.round(mOptVals.reduce(function(a,b){return a+b;},0)/mOptVals.length):0;
+        var mNl=zielNlTargets[mk]!=null?zielNlTargets[mk]:0;
+        yearDaysSum+=mDaysSum;yearNlSum+=mNl;yearTargetSum+=mTargetSum;
         var isCurrent=mk===zielMonth;
         var rowBg=isCurrent?'background:var(--purple-bg);':(m%2===0?'background:rgba(0,0,0,0.03);':'');
-        monthRows.push('<div style="display:grid;grid-template-columns:'+yearGridTemplate+';cursor:pointer;'+rowBg+(isCurrent?'border-left:3px solid var(--purple);':'')+'" onclick="jumpToZielMonth(\''+mk+'\')">'
+        monthRows.push('<div style="display:grid;grid-template-columns:'+yearGridTemplate+';cursor:pointer;'+rowBg+(isCurrent?'border-left:3px solid var(--purple);':'')+'" onclick="toggleZielMonth(\''+mk+'\')">'
           +'<div style="'+GD+';font-weight:'+(isCurrent?'700':'600')+'"><i class="ti ti-chevron-'+(isCurrent?'down':'right')+'" style="font-size:12px;margin-right:6px;color:var(--text3)"></i>'+MONTH_NAMES_ZIEL[m-1]+'</div>'
           +'<div style="'+GD+';justify-content:center;font-weight:600">'+mDaysSum+'</div>'
           +'<div style="'+GD+';justify-content:center;color:var(--text2)">'+(mAvgOpt||'–')+'</div>'
           +'<div style="'+GD+';justify-content:center;color:var(--text2)">'+(mAvgMarge?'€ '+mAvgMarge:'–')+'</div>'
+          +'<div style="'+GD+'" onclick="event.stopPropagation()"><input type="number" min="0" value="'+mNl+'" onchange="updateZielNlTarget(\''+mk+'\',this.value)" style="text-align:right" placeholder="0"></div>'
           +'<div style="'+GD+';justify-content:flex-end;font-weight:600;color:var(--purple)">€ '+Math.round(mTargetSum).toLocaleString('de-DE')+'</div>'
           +'</div>');
         if(isCurrent)monthRows.push(weekDetailHtml);
       }
+      var yearTotalRow='<div style="display:grid;grid-template-columns:'+yearGridTemplate+';background:var(--bg2)">'
+        +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center">Jahresergebnis</div>'
+        +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">'+yearDaysSum+'</div>'
+        +'<div style="padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">–</div>'
+        +'<div style="padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:center">–</div>'
+        +'<div style="font-weight:800;padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(yearNlSum).toLocaleString('de-DE')+'</div>'
+        +'<div style="font-weight:800;color:var(--purple-dark);padding:10px 14px;border-top:2px solid var(--purple);display:flex;align-items:center;justify-content:flex-end">€ '+Math.round(yearTargetSum).toLocaleString('de-DE')+'</div>'
+        +'</div>';
       return '<div class="card">'
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
         +'<div class="card-title" style="margin:0"><i class="ti ti-target"></i> Zielvereinbarung</div>'
@@ -5282,11 +5302,17 @@ function renderEinstellungen(){
         +'<div style="'+GH+';justify-content:center">Σ Einsatztage</div>'
         +'<div style="'+GH+';justify-content:center">Ø Opt./Tag</div>'
         +'<div style="'+GH+';justify-content:center">Ø Marge/Opt.</div>'
+        +'<div style="'+GH+';justify-content:flex-end">Ziel NL Marge/Mon.</div>'
         +'<div style="'+GH+';justify-content:flex-end">Ziel Marge/Mon.</div>'
         +'</div>'
         +monthRows.join('')
+        +yearTotalRow
         +'</div></div>'
-        +'<div style="font-size:11px;color:var(--text3);margin-top:10px">Monat anklicken, um die Mitarbeiter-Wochenansicht auf-/zuzuklappen.</div>'
+        +'<div style="margin-top:16px;display:flex;align-items:center;gap:12px">'
+        +'<button class="btn btn-primary" style="width:auto" onclick="saveZielvereinbarung()"><i class="ti ti-check"></i> Zielvereinbarung speichern</button>'
+        +'<span id="ziel-status" style="font-size:12px;color:var(--teal)"></span>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--text3);margin-top:10px">Monat anklicken, um die Mitarbeiter-Wochenansicht auf-/zuzuklappen. "Ziel NL Marge/Mon." ist der zu Jahresbeginn kalkulierte Referenzwert und wird beim Eintragen sofort gespeichert.</div>'
         +'</div>';
     })():'')
 
@@ -5958,6 +5984,7 @@ function loadSettingsFromSupabase(){
     if(res.error){console.warn('settings load failed:',res.error);return false;}
     res.data.forEach(function(r){
       if(r.key==='ftpUrl')settings.ftpUrl=r.value||'';
+      if(r.key.indexOf('ziel_nl_')===0)zielNlTargets[r.key.slice(8)]=parseFloat(r.value)||0;
     });
     return true;
   });
