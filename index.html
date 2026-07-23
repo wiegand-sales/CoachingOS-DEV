@@ -5186,7 +5186,7 @@ function renderEinstellungen(){
           +'</tr>';
       }).join('');
       var avgMarge=margeVals.length?Math.round(margeVals.reduce(function(a,b){return a+b;},0)/margeVals.length):0;
-      var weekTotalCells=weeksMeta.map(function(){return '<td style="border-top:2px solid var(--purple)"></td>';}).join('');
+      var weekTotalCells=weeksMeta.map(function(){return '<td style="width:'+ZIEL_WK_COL+'px;min-width:'+ZIEL_WK_COL+'px;max-width:'+ZIEL_WK_COL+'px;padding:12px 2px;border-top:2px solid var(--purple)"></td>';}).join('');
       return '<div class="card">'
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">'
         +'<div style="font-size:14px;font-weight:700">Zielvereinbarung</div>'
