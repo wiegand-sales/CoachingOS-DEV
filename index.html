@@ -2223,7 +2223,7 @@ function buildOverviewTab(liste){
   var effTo=overviewToDate||monthEnd;
   var perfAll=isAll?[]:(performance[emp.id]||[]).filter(function(x){return x.date>=effFrom&&x.date<=effTo;}).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
 
-  function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
+  function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'#206A72':'var(--red)';}
   var h='';
   h+=buildMonthBar(visible);
 
@@ -2278,7 +2278,7 @@ function buildOverviewTab(liste){
         +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
         +'</div>'
-        +sparkline(spark7K,'#7ED2DB',54,26)
+        +sparkline(spark7K,'#206A72',54,26)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:10.5px;color:'+targetCol+';margin-top:2px;font-weight:600">'+targetTxt+'</div>'
@@ -2317,7 +2317,7 @@ function buildOverviewTab(liste){
       +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
       +'</div>'
-      +sparkline(spark7K,'#7ED2DB',54,26)
+      +sparkline(spark7K,'#206A72',54,26)
       +'</div>'
       +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(k.pct?'%':''):'—')+'</div>'
       +'<div style="font-size:10.5px;color:'+targetCol+';margin-top:2px;font-weight:600">'+targetTxt+'</div>'
@@ -3249,7 +3249,7 @@ function renderTab(){
       +'<div style="'+LBL+'">QA CALLS</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
       +'<div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:20px;font-weight:700;color:#7ED2DB">'+qaAll.length+'</div><div style="font-size:13px;font-weight:700;color:'+qaTrend.col+'">'+qaTrend.arrow+'</div></div>'
-      +sparkline(qaMonthCounts,'#7ED2DB',54,26)
+      +sparkline(qaMonthCounts,'#206A72',54,26)
       +'</div>'
       +'<div style="'+SUB+'">Ø/Monat '+(qaMonthCounts.length?(qaMonthCounts.reduce(function(a,b){return a+b;},0)/qaMonthCounts.length).toFixed(1):'—')+'</div>'
       +'<div style="'+SUB+';margin-top:2px">dies. Monat '+(qaMonthCounts.length?qaMonthCounts[qaMonthCounts.length-1]:0)+'</div>'
@@ -3318,7 +3318,7 @@ function renderTab(){
     var perfAll=(performance[emp.id]||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
     var perfRangeData=empGetPerf(emp.id);
     function avgRange(key){if(!perfRangeData.length)return null;return perfRangeData.reduce(function(a,x){return a+(x[key]||0);},0)/perfRangeData.length;}
-    function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'var(--teal)':'var(--red)';}
+    function kpiCol(v,t,dir){if(v===null)return 'var(--text3)';return(dir==='lte'?v<=t:v>=t)?'#206A72':'var(--red)';}
     var kpis=[
       {label:'CR OEM', key:'crOEM',      target:empT.crOEM.val,      dir:empT.crOEM.dir,      pct:true},
       {label:'CR TW',  key:'crTeilweise', target:empT.crTeilweise.val, dir:empT.crTeilweise.dir, pct:true},
@@ -3350,7 +3350,7 @@ function renderTab(){
         +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
         +'</div>'
-        +sparkline(spark7K,'#7ED2DB',80,28)
+        +sparkline(spark7K,'#206A72',80,28)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:10.5px;color:'+targetCol+';margin-top:2px;font-weight:600">'+targetTxt+'</div>'
@@ -3718,7 +3718,7 @@ function renderTab(){
         +'<div style="font-size:20px;font-weight:700">'+(cur!==null?Math.round(cur)+(d.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
         +'</div>'
-        +sparkline(spark7,'#7ED2DB',54,26)
+        +sparkline(spark7,'#206A72',54,26)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(d.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:10.5px;color:'+vsRoleCol+';margin-top:2px;font-weight:600">'+vsRoleTxt+'</div>'
@@ -3984,7 +3984,7 @@ function renderTab(){
         +'<div style="font-size:20px;font-weight:700">'+(cur!==null?Math.round(cur)+(d.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
         +'</div>'
-        +sparkline(spark7,'#7ED2DB',54,26)
+        +sparkline(spark7,'#206A72',54,26)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(d.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:10.5px;color:'+vsRoleCol+';margin-top:2px;font-weight:600">'+vsRoleTxt+'</div>'
@@ -4270,7 +4270,7 @@ function renderTab(){
       +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">OPEN</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
       +'<div style="font-size:20px;font-weight:700;color:var(--purple)">'+openCount+'</div>'
-      +sparkline([],'#7ED2DB',54,26)
+      +sparkline([],'#206A72',54,26)
       +'</div>'
       +'<div style="font-size:10.5px;color:var(--text3)">'+(openCount===0?'Alles erledigt':'zu erledigen')+'</div>'
       +'<div style="font-size:10.5px;color:var(--text3);margin-top:2px">&nbsp;</div>'
@@ -4279,7 +4279,7 @@ function renderTab(){
       +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">OVERDUE</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
       +'<div style="font-size:20px;font-weight:700;color:'+(overdueCount>0?'var(--red)':'var(--teal-dark)')+'">'+overdueCount+'</div>'
-      +sparkline([],'#7ED2DB',54,26)
+      +sparkline([],'#206A72',54,26)
       +'</div>'
       +'<div style="font-size:10.5px;color:var(--text3)">'+(overdueCount>0?'Frist überschritten':'keine überfällig')+'</div>'
       +'<div style="font-size:10.5px;color:var(--text3);margin-top:2px">&nbsp;</div>'
@@ -4288,7 +4288,7 @@ function renderTab(){
       +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">IN PROGRESS</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
       +'<div style="font-size:20px;font-weight:700;color:#32A8B4">'+inProgressTasks.length+'</div>'
-      +sparkline([],'#7ED2DB',54,26)
+      +sparkline([],'#206A72',54,26)
       +'</div>'
       +'<div style="font-size:10.5px;color:var(--text3)">in Bearbeitung</div>'
       +'<div style="font-size:10.5px;color:var(--text3);margin-top:2px">&nbsp;</div>'
@@ -4297,7 +4297,7 @@ function renderTab(){
       +'<div style="font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.04em;margin-bottom:4px">COMPLETED</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">'
       +'<div style="font-size:20px;font-weight:700;color:var(--teal-dark)">'+doneTasks.length+'</div>'
-      +sparkline([],'#7ED2DB',54,26)
+      +sparkline([],'#206A72',54,26)
       +'</div>'
       +'<div style="font-size:10.5px;color:var(--text3)">'+(empTasks.length>0?Math.round(doneTasks.length/empTasks.length*100)+'% abgeschlossen':'noch keine Aufgaben')+'</div>'
       +'<div style="font-size:10.5px;color:var(--text3);margin-top:2px">&nbsp;</div>'
