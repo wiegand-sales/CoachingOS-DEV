@@ -2463,10 +2463,10 @@ function buildOverviewTab(liste){
       crYes:      {f:'crYes',      l:'CR Yes %', c:'#206A72'},
       crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#206A72'},
       crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#206A72'},
-      aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
-      convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#174C52'},
+      aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#206A72'},
+      convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#206A72'},
       upsells:    {f:'upsells',    l:'Upsells',  c:'#206A72'},
-      wka:        {f:'wka',        l:'WKA',      c:'#6FA3A9'},
+      wka:        {f:'wka',        l:'WKA',      c:'#206A72'},
       margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#206A72'}
     };
     var m=mMap[metric]||mMap.crOEM;
@@ -2876,8 +2876,8 @@ function renderTeam(){
     // Team Performance Trend Chart (inkl. kombinierter Filter-Zeile)
     +(function(){
       var TMETRICS=[
-        {k:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
-        {k:'convOEM',    l:'Conv. OEM',  c:'#174C52'},
+        {k:'aktivitaeten',l:'Aktivitäten',c:'#206A72'},
+        {k:'convOEM',    l:'Conv. OEM',  c:'#206A72'},
         {k:'crOEM',      l:'CR OEM',     c:'#206A72'},
         {k:'crTeilweise',l:'CR TW',      c:'#206A72'},
         {k:'crYes',      l:'CR Yes',     c:'#206A72'},
@@ -2955,8 +2955,8 @@ function renderTeam(){
       crYes:      {f:'crYes',      l:'CR Yes %', c:'#206A72'},
       crSuperYes: {f:'crSuperYes', l:'CR SY %',  c:'#206A72'},
       crMegaYes:  {f:'crMegaYes',  l:'CR MY %',  c:'#206A72'},
-      aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
-      convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#174C52'},
+      aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',c:'#206A72'},
+      convOEM:    {f:'convOEM',    l:'Conv. OEM',c:'#206A72'},
       margeGesamt:{f:'margeGesamt',l:'Marge €',  c:'#206A72'}
     };
     var m=mMap[metric]||mMap.crOEM;
@@ -3367,9 +3367,9 @@ function renderTab(){
     }
     // Chart
     var mMap={
-      calls:{f:'aktivitaeten',l:'Aktivitäten',c:'#0F3D42'},
-      convOEM:{f:'convOEM',l:'Conv. OEM',c:'#174C52'},
-      optGesamt:{f:'optGesamt',l:'Opt. Gesamt',c:'#1B5B63'},
+      calls:{f:'aktivitaeten',l:'Aktivitäten',c:'#206A72'},
+      convOEM:{f:'convOEM',l:'Conv. OEM',c:'#206A72'},
+      optGesamt:{f:'optGesamt',l:'Opt. Gesamt',c:'#206A72'},
       crOEM:{f:'crOEM',l:'CR OEM %',c:'#206A72'},
       crTeilweise:{f:'crTeilweise',l:'CR TW %',c:'#206A72'},
       crYes:{f:'crYes',l:'CR Yes %',c:'#206A72'},
@@ -4548,9 +4548,9 @@ function renderTab(){
       var data=empGetPerf(selectedEmp);
       var labels=data.map(function(d){return fd(d.date);});
       var mMap={
-        aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',    c:'#0F3D42'},
-        convOEM:     {f:'convOEM',     l:'Conv. OEM',      c:'#174C52'},
-        optGesamt:   {f:'optGesamt',   l:'Opt. Gesamt',    c:'#1B5B63'},
+        aktivitaeten:{f:'aktivitaeten',l:'Aktivitäten',    c:'#206A72'},
+        convOEM:     {f:'convOEM',     l:'Conv. OEM',      c:'#206A72'},
+        optGesamt:   {f:'optGesamt',   l:'Opt. Gesamt',    c:'#206A72'},
         crOEM:       {f:'crOEM',       l:'CR OEM %',       c:'#206A72'},
         crTeilweise: {f:'crTeilweise', l:'CR TW %',        c:'#206A72'},
         crYes:       {f:'crYes',       l:'CR Yes %',       c:'#206A72'},
