@@ -2641,6 +2641,73 @@ function buildOverviewTab(liste){
     h+='</div>';
   })();
 
+  // ── Zielvereinbarung — Jahresverlauf (Entwurf C: Ziel NL als gestrichelte Referenzlinie, Ziel/Erzielt als Balken mit Farbverlauf) ──
+  (function(){
+    var yr=today().slice(0,4);
+    var MONTH_SHORT_DE=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    var zielNlArr=[],zielMargeArr=[],erzieltArr=[];
+    for(var m=1;m<=12;m++){
+      var mk=yr+'-'+(m<10?'0'+m:m);
+      var wMeta=getMonthWeeksZiel(mk);
+      var mRec=zielStore[mk]||{};
+      var mVisible=employees.filter(function(e){return empActiveInZielMonth(e,mk)&&!e.isPureCoach;});
+      var mTargetSum=0;
+      mVisible.forEach(function(e){
+        var r=mRec[e.id]||{};
+        var weeks=wMeta.map(function(wm,i){return(r.weeks&&r.weeks[i]!=null)?r.weeks[i]:wm.defaultDays;});
+        var monthSum=weeks.reduce(function(a,b){return a+b;},0);
+        var optTag=r.optTag!=null?r.optTag:0;
+        var margeOpt=r.margeOpt!=null?r.margeOpt:0;
+        mTargetSum+=monthSum*optTag*margeOpt;
+      });
+      var erzieltSum=0,hasData=false;
+      mVisible.forEach(function(e){
+        (performance[e.id]||[]).forEach(function(x){
+          if((x.date||'').slice(0,7)!==mk)return;
+          erzieltSum+=x.margeGesamt||x.margin||0; hasData=true;
+        });
+      });
+      zielNlArr.push(zielNlTargets[mk]!=null?zielNlTargets[mk]:0);
+      zielMargeArr.push(Math.round(mTargetSum));
+      erzieltArr.push(hasData?Math.round(erzieltSum):null);
+    }
+    var maxV=Math.max.apply(null,zielNlArr.concat(zielMargeArr).concat(erzieltArr.filter(function(v){return v!=null;})).concat([1]));
+    var W=1000,H=260,padL=8,padB=26,padT=14;
+    var groupW=(W-padL)/12;
+    var barW=(groupW*0.55)/2;
+    var gap=4;
+    function yy(v){return H-padB-(v/maxV)*(H-padT-padB);}
+    function barRect(x,v,fill,label){
+      if(v==null)return '';
+      var yTop=yy(v),h=(H-padB)-yTop;
+      return '<rect x="'+x+'" y="'+yTop+'" width="'+barW+'" height="'+h+'" rx="3" fill="'+fill+'"><title>'+label+': €'+Math.round(v).toLocaleString('de-DE')+'</title></rect>';
+    }
+    var bars='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+W+'" y2="'+(H-padB)+'" stroke="rgba(0,0,0,0.12)"/>';
+    for(var i=0;i<12;i++){
+      var gx=padL+i*groupW+6;
+      var nlY=yy(zielNlArr[i]);
+      bars+='<line x1="'+gx+'" y1="'+nlY+'" x2="'+(gx+2*barW+gap)+'" y2="'+nlY+'" stroke="#7A8F91" stroke-width="1.5" stroke-dasharray="4,3"><title>Ziel NL: €'+zielNlArr[i].toLocaleString('de-DE')+'</title></line>';
+      bars+=barRect(gx,zielMargeArr[i],'url(#zielGrad)','Ziel Marge');
+      bars+=barRect(gx+barW+gap,erzieltArr[i],'url(#erzieltGrad)','Erzielt');
+      bars+='<text x="'+(gx+barW+gap/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="10.5" fill="#6b6b67" font-family="Inter,sans-serif">'+MONTH_SHORT_DE[i]+'</text>';
+    }
+    h+='<div class="card" style="margin-bottom:22px">';
+    h+='<div class="section-hdr" style="margin-top:0"><span style="display:flex;align-items:center;gap:6px"><i class="ti ti-chart-bar" style="color:var(--purple)"></i> Zielvereinbarung — Jahresverlauf</span> <span style="font-weight:400;color:var(--text3);font-size:11px">'+yr+'</span></div>';
+    h+='<div style="display:flex;gap:16px;margin-bottom:12px;font-size:11.5px;color:var(--text2);flex-wrap:wrap">'
+      +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;border:1.5px dashed #7A8F91"></span>Ziel NL Marge/Mon. (Referenz)</span>'
+      +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#7ED2DB,#5FBAC4)"></span>Ziel Marge/Mon.</span>'
+      +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#247982,#0F3D42)"></span>Erzielte Marge</span>'
+      +'</div>';
+    h+='<div style="overflow-x:auto"><svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
+      +'<defs>'
+      +'<linearGradient id="zielGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7ED2DB"/><stop offset="100%" stop-color="#5FBAC4"/></linearGradient>'
+      +'<linearGradient id="erzieltGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#247982"/><stop offset="100%" stop-color="#0F3D42"/></linearGradient>'
+      +'</defs>'
+      +bars
+      +'</svg></div>'
+      +'</div>';
+  })();
+
   // Performance-Tabelle (Tag/Woche/Monat) für den gewählten Mitarbeiter
   h+='<div class="card">';
   var monthNames=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
