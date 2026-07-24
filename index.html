@@ -2672,40 +2672,32 @@ function buildOverviewTab(liste){
       erzieltArr.push(hasData?Math.round(erzieltSum):null);
     }
     var maxV=Math.max.apply(null,zielNlArr.concat(zielMargeArr).concat(erzieltArr.filter(function(v){return v!=null;})).concat([1]));
-    var W=1000,H=260,padL=8,padB=26,padT=14;
-    var groupW=(W-padL)/12;
-    var barW=(groupW*0.55)/2;
-    var gap=4;
-    function yy(v){return H-padB-(v/maxV)*(H-padT-padB);}
-    function barRect(x,v,fill,label){
-      if(v==null)return '';
-      var yTop=yy(v),h=(H-padB)-yTop;
-      return '<rect x="'+x+'" y="'+yTop+'" width="'+barW+'" height="'+h+'" rx="3" fill="'+fill+'"><title>'+label+': €'+Math.round(v).toLocaleString('de-DE')+'</title></rect>';
-    }
-    var bars='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+W+'" y2="'+(H-padB)+'" stroke="rgba(0,0,0,0.12)"/>';
+    var CH=200; // Diagrammhoehe in px
+    function pct(v){return v==null?0:Math.max(v>0?2:0,Math.round(v/maxV*100));}
+    var barsHtml='<div style="display:flex;align-items:flex-end;gap:6px;height:'+CH+'px;padding:0 4px">';
     for(var i=0;i<12;i++){
-      var gx=padL+i*groupW+6;
-      var nlY=yy(zielNlArr[i]);
-      bars+='<line x1="'+gx+'" y1="'+nlY+'" x2="'+(gx+2*barW+gap)+'" y2="'+nlY+'" stroke="#7A8F91" stroke-width="1.5" stroke-dasharray="4,3"><title>Ziel NL: €'+zielNlArr[i].toLocaleString('de-DE')+'</title></line>';
-      bars+=barRect(gx,zielMargeArr[i],'url(#zielGrad)','Ziel Marge');
-      bars+=barRect(gx+barW+gap,erzieltArr[i],'url(#erzieltGrad)','Erzielt');
-      bars+='<text x="'+(gx+barW+gap/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="10.5" fill="#6b6b67" font-family="Inter,sans-serif">'+MONTH_SHORT_DE[i]+'</text>';
+      var pctNl=pct(zielNlArr[i]),pctZiel=pct(zielMargeArr[i]),pctErz=erzieltArr[i]!=null?pct(erzieltArr[i]):null;
+      barsHtml+='<div style="flex:1;position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center">'
+        +'<div style="position:absolute;left:6px;right:6px;bottom:'+pctNl+'%;border-top:1.5px dashed #7A8F91" title="Ziel NL Marge/Mon.: €'+zielNlArr[i].toLocaleString('de-DE')+'"></div>'
+        +'<div style="display:flex;align-items:flex-end;gap:4px;height:100%">'
+        +'<div style="width:16px;height:'+pctZiel+'%;background:linear-gradient(180deg,#7ED2DB,#5FBAC4);border-radius:3px 3px 0 0" title="Ziel Marge/Mon.: €'+zielMargeArr[i].toLocaleString('de-DE')+'"></div>'
+        +(pctErz!=null?'<div style="width:16px;height:'+pctErz+'%;background:linear-gradient(180deg,#247982,#0F3D42);border-radius:3px 3px 0 0" title="Erzielte Marge: €'+erzieltArr[i].toLocaleString('de-DE')+'"></div>':'<div style="width:16px"></div>')
+        +'</div>'
+        +'</div>';
     }
-    h+='<div class="card" style="margin-bottom:22px">';
+    barsHtml+='</div>';
+    barsHtml+='<div style="display:flex;gap:6px;padding:0 4px;margin-top:8px">';
+    for(var i=0;i<12;i++){barsHtml+='<div style="flex:1;text-align:center;font-size:10.5px;color:var(--text3)">'+MONTH_SHORT_DE[i]+'</div>';}
+    barsHtml+='</div>';
+    h+='<div class="card">';
     h+='<div class="section-hdr" style="margin-top:0"><span style="display:flex;align-items:center;gap:6px"><i class="ti ti-chart-bar" style="color:var(--purple)"></i> Zielvereinbarung — Jahresverlauf</span> <span style="font-weight:400;color:var(--text3);font-size:11px">'+yr+'</span></div>';
-    h+='<div style="display:flex;gap:16px;margin-bottom:12px;font-size:11.5px;color:var(--text2);flex-wrap:wrap">'
+    h+='<div style="display:flex;gap:16px;margin-bottom:14px;font-size:11.5px;color:var(--text2);flex-wrap:wrap">'
       +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;border:1.5px dashed #7A8F91"></span>Ziel NL Marge/Mon. (Referenz)</span>'
       +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#7ED2DB,#5FBAC4)"></span>Ziel Marge/Mon.</span>'
       +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#247982,#0F3D42)"></span>Erzielte Marge</span>'
       +'</div>';
-    h+='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block">'
-      +'<defs>'
-      +'<linearGradient id="zielGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7ED2DB"/><stop offset="100%" stop-color="#5FBAC4"/></linearGradient>'
-      +'<linearGradient id="erzieltGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#247982"/><stop offset="100%" stop-color="#0F3D42"/></linearGradient>'
-      +'</defs>'
-      +bars
-      +'</svg>'
-      +'</div>';
+    h+=barsHtml;
+    h+='</div>';
   })();
 
   // Performance-Tabelle (Tag/Woche/Monat) für den gewählten Mitarbeiter
