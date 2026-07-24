@@ -2698,13 +2698,13 @@ function buildOverviewTab(liste){
       +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#7ED2DB,#5FBAC4)"></span>Ziel Marge/Mon.</span>'
       +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#247982,#0F3D42)"></span>Erzielte Marge</span>'
       +'</div>';
-    h+='<div style="overflow-x:auto"><svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'
+    h+='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block">'
       +'<defs>'
       +'<linearGradient id="zielGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7ED2DB"/><stop offset="100%" stop-color="#5FBAC4"/></linearGradient>'
       +'<linearGradient id="erzieltGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#247982"/><stop offset="100%" stop-color="#0F3D42"/></linearGradient>'
       +'</defs>'
       +bars
-      +'</svg></div>'
+      +'</svg>'
       +'</div>';
   })();
 
