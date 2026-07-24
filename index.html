@@ -2200,6 +2200,16 @@ function allTeams(){
 function activeEmployees(){
   return employees.filter(function(e){return e.active!==false;});
 }
+// Fuer die SFP Wiegand Overview: aktuell Aktive PLUS Mitarbeiter, deren Vertragsende innerhalb der
+// letzten 12 Monate liegt - damit sie in der Performance-Tabelle so lange sichtbar bleiben, wie ihr
+// Vertragsende es hergibt, statt sofort beim Deaktivieren zu verschwinden.
+function activeOrRecentlyEndedEmployees(){
+  var cutoff=monthBoundsUTC(today(),12).from;
+  return employees.filter(function(e){
+    if(e.active!==false)return true;
+    return e.endDate&&e.endDate>=cutoff;
+  });
+}
 
 function empTargets(emp){
   var g=KPI_TARGETS||{};
@@ -2235,7 +2245,7 @@ function renderSidebar(){
     var el=document.getElementById('nav-settings-'+sv);if(el)el.classList.toggle('active',view==='settings'&&settingsView===sv);
   });
   var HIDDEN=[];
-  var visible=employees.filter(function(e){return e.active!==false&&HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
+  var visible=activeOrRecentlyEndedEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   // Mitarbeiter in Onboarding-Phase kommen alle in eine Gruppe -- AUSSER VLC (Valencia):
   // VLC wird immer als eigener Standort gefuehrt, unabhaengig vom Onboarding-Status
   var onboardingEmps=visible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
@@ -2942,7 +2952,7 @@ function renderTeam(){
   }
   function teamGetPerf(id){return customActive?getPerfRange(id,fromBound,toBound):getPerf(id,days);}
   var HIDDEN=[];
-  var allVisible=activeEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
+  var allVisible=activeOrRecentlyEndedEmployees().filter(function(e){return HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   var inactiveAll=employees.filter(function(e){return e.active===false&&HIDDEN.indexOf(e.role)<0&&!e.isPureCoach;});
   var onboardingEmpsT=allVisible.filter(function(e){return e.phase==='Onboarding'&&e.role!=='VLC';});
   var FDEFS=[
