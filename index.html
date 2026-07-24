@@ -2756,7 +2756,7 @@ function buildOverviewTab(liste){
     h+='<div class="g2" style="margin-bottom:22px">';
 
     h+='<div class="card" style="margin-bottom:0">';
-    h+='<div class="section-hdr" style="margin-top:0"><i class="ti ti-trophy" style="color:var(--purple)"></i> Top 3</div>';
+    h+='<div class="section-hdr" style="margin-top:0"><span style="display:flex;align-items:center;gap:6px"><i class="ti ti-trophy" style="color:var(--purple)"></i> Top 3</span></div>';
     if(!topRows.length){
       h+='<div style="font-size:12px;color:var(--text3);padding:8px 0">Noch keine Performance-Daten in diesem Monat.</div>';
     } else {
@@ -2774,7 +2774,7 @@ function buildOverviewTab(liste){
     h+='</div>';
 
     h+='<div class="card" style="margin-bottom:0">';
-    h+='<div class="section-hdr" style="margin-top:0"><i class="ti ti-alert-triangle" style="color:var(--red)"></i> Worst 3</div>';
+    h+='<div class="section-hdr" style="margin-top:0"><span style="display:flex;align-items:center;gap:6px"><i class="ti ti-alert-triangle" style="color:var(--red)"></i> Worst 3</span></div>';
     if(!worstRows.length){
       h+='<div style="font-size:12px;color:var(--text3);padding:8px 0">Noch keine Performance-Daten in diesem Monat.</div>';
     } else {
