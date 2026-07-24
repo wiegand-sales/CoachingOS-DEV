@@ -2678,7 +2678,7 @@ function buildOverviewTab(liste){
     for(var i=0;i<12;i++){
       var pctNl=pct(zielNlArr[i]),pctZiel=pct(zielMargeArr[i]),pctErz=erzieltArr[i]!=null?pct(erzieltArr[i]):null;
       barsHtml+='<div style="flex:1;position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center">'
-        +'<div style="position:absolute;left:14px;right:14px;bottom:'+pctNl+'%;border-top:2px dashed #BD2D29" title="Ziel NL Marge/Mon. (Mindestziel): €'+zielNlArr[i].toLocaleString('de-DE')+'"></div>'
+        +'<div style="position:absolute;left:26px;right:26px;bottom:'+pctNl+'%;border-top:2px dashed #BD2D29" title="Ziel NL Marge/Mon. (Mindestziel): €'+zielNlArr[i].toLocaleString('de-DE')+'"></div>'
         +'<div style="display:flex;align-items:flex-end;gap:4px;height:100%">'
         +'<div style="width:24px;height:'+pctZiel+'%;background:linear-gradient(180deg,#7ED2DB,#5FBAC4);border-radius:3px 3px 0 0" title="Ziel Marge/Mon.: €'+zielMargeArr[i].toLocaleString('de-DE')+'"></div>'
         +(pctErz!=null?'<div style="width:24px;height:'+pctErz+'%;background:linear-gradient(180deg,#247982,#0F3D42);border-radius:3px 3px 0 0" title="Erzielte Marge: €'+erzieltArr[i].toLocaleString('de-DE')+'"></div>':'<div style="width:24px"></div>')
@@ -2691,11 +2691,6 @@ function buildOverviewTab(liste){
     barsHtml+='</div>';
     h+='<div class="card">';
     h+='<div class="section-hdr" style="margin-top:0"><span style="display:flex;align-items:center;gap:6px"><i class="ti ti-chart-bar" style="color:var(--purple)"></i> Zielvereinbarung — Jahresverlauf</span> <span style="font-weight:400;color:var(--text3);font-size:11px">'+yr+'</span></div>';
-    h+='<div style="display:flex;gap:16px;margin-bottom:14px;font-size:11.5px;color:var(--text2);flex-wrap:wrap">'
-      +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;border:2px dashed #BD2D29"></span>Ziel NL Marge/Mon. (Mindestziel)</span>'
-      +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#7ED2DB,#5FBAC4)"></span>Ziel Marge/Mon.</span>'
-      +'<span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;display:inline-block;background:linear-gradient(180deg,#247982,#0F3D42)"></span>Erzielte Marge</span>'
-      +'</div>';
     h+=barsHtml;
     h+='</div>';
   })();
