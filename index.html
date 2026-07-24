@@ -2075,6 +2075,15 @@ function updateZielField(empId,field,weekIdx,value){
   else{rec[field]=num;}
   renderEinstellungen();
 }
+// Farbe fuer KPI-Werte OHNE hinterlegten Zielwert: nur Petrol (besser/gleich Vormonat) oder Rot
+// (schlechter als Vormonat) - nie neutral schwarz. Ohne Vormonatswert (z.B. neuer Mitarbeiter) faellt
+// die Farbe auf Petrol zurueck, da kein Vergleich moeglich ist.
+function noTargetKpiCol(cur,prev,dir){
+  if(cur===null)return 'var(--text3)';
+  if(prev===null)return '#206A72';
+  var better=(dir==='lte')?(cur<=prev):(cur>=prev);
+  return better?'#206A72':'var(--red)';
+}
 function empActiveInZielMonth(e,monthKey){
   var b=monthBoundsUTC(monthKey+'-01',0);
   if(e.endDate)return e.endDate>=b.from&&(!e.startDate||e.startDate<=b.to);
@@ -2544,7 +2553,7 @@ function buildOverviewTab(liste){
       var prev=teamMonthAvg(k.key,1);
       var vR=cur!==null?(k.pct?Math.round(cur):+cur.toFixed(1)):null;
       var hit=cur!==null&&k.target!==null&&(k.dir==='lte'?cur<=k.target:cur>=k.target);
-      var col=cur!==null?(k.target!==null?kpiCol(cur,k.target,k.dir):'var(--text)'):'var(--text3)';
+      var col=cur!==null?(k.target!==null?kpiCol(cur,k.target,k.dir):noTargetKpiCol(cur,prev,k.dir)):'var(--text3)';
       var trend=(cur!==null&&prev!==null)?cur-prev:null;
       var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
       var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
@@ -2558,7 +2567,7 @@ function buildOverviewTab(liste){
         +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
         +'</div>'
-        +sparkline(spark7K,'#206A72',54,26)
+        +sparkline(spark7K,col,54,26)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:10.5px;color:'+targetCol+';margin-top:2px;font-weight:600">'+targetTxt+'</div>'
@@ -2579,7 +2588,7 @@ function buildOverviewTab(liste){
     var prev=monthAvg(emp.id,k.key,1);
     var vR=cur!==null?(k.pct?Math.round(cur):+cur.toFixed(1)):null;
     var hit=cur!==null&&k.target!==null&&(k.dir==='lte'?cur<=k.target:cur>=k.target);
-    var col=cur!==null?(k.target!==null?kpiCol(cur,k.target,k.dir):'var(--text)'):'var(--text3)';
+    var col=cur!==null?(k.target!==null?kpiCol(cur,k.target,k.dir):noTargetKpiCol(cur,prev,k.dir)):'var(--text3)';
     var trend=(cur!==null&&prev!==null)?cur-prev:null;
     var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
     var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
@@ -2597,7 +2606,7 @@ function buildOverviewTab(liste){
       +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
       +'</div>'
-      +sparkline(spark7K,'#206A72',54,26)
+      +sparkline(spark7K,col,54,26)
       +'</div>'
       +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(k.pct?'%':''):'—')+'</div>'
       +'<div style="font-size:10.5px;color:'+targetCol+';margin-top:2px;font-weight:600">'+targetTxt+'</div>'
@@ -3685,7 +3694,7 @@ function renderTab(){
       var prev=monthAvg(emp.id,k.key,1);
       var vR=cur!==null?(k.pct?Math.round(cur):+cur.toFixed(1)):null;
       var hit=cur!==null&&k.target!==null&&(k.dir==='lte'?cur<=k.target:cur>=k.target);
-      var col=cur!==null?(k.target!==null?kpiCol(cur,k.target,k.dir):'var(--text)'):'var(--text3)';
+      var col=cur!==null?(k.target!==null?kpiCol(cur,k.target,k.dir):noTargetKpiCol(cur,prev,k.dir)):'var(--text3)';
       var trend=(cur!==null&&prev!==null)?cur-prev:null;
       var trendArrow=trend===null?'':(trend>0.5?'↑':trend<-0.5?'↓':'→');
       var trendCol=trend===null?'var(--text3)':(trend>0.5?'var(--teal-dark)':trend<-0.5?'var(--red)':'var(--text2)');
@@ -3703,7 +3712,7 @@ function renderTab(){
         +'<div style="font-size:20px;font-weight:700;color:'+col+'">'+(vR!==null?vR+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:13px;font-weight:700;color:'+trendCol+'">'+trendArrow+'</div>'
         +'</div>'
-        +sparkline(spark7K,'#206A72',80,28)
+        +sparkline(spark7K,col,80,28)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text3)">Vormonat: '+(prev!==null?Math.round(prev)+(k.pct?'%':''):'—')+'</div>'
         +'<div style="font-size:10.5px;color:'+targetCol+';margin-top:2px;font-weight:600">'+targetTxt+'</div>'
